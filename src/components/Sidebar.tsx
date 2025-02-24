@@ -1,7 +1,8 @@
 
-import { Menu, Play, Pause, FilePen, Plus, PenSquare } from "lucide-react";
+import { Menu, Play, Pause, FilePen, Plus, PenSquare, UserCircle2, DollarSign } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -26,6 +27,7 @@ const campaigns = {
 
 const Sidebar = ({ isOpen, onToggle, onApiKeyChange, onNewCampaign }: SidebarProps) => {
   const [expandedSection, setExpandedSection] = useState<string>("live");
+  const navigate = useNavigate();
 
   const toggleSection = (section: string) => {
     setExpandedSection(expandedSection === section ? "" : section);
@@ -74,9 +76,19 @@ const Sidebar = ({ isOpen, onToggle, onApiKeyChange, onNewCampaign }: SidebarPro
             </button>
           </div>
 
-          <div className="flex-col flex-1 transition-opacity duration-500 relative -mr-2 pr-2 overflow-y-auto">
+          <div onClick={() => navigate('/account')} className="mt-4 p-4 bg-[#383737] rounded-lg cursor-pointer hover:bg-[#404040] transition-colors">
+            <div className="flex items-center gap-3">
+              <UserCircle2 className="h-8 w-8 text-gray-400" />
+              <div>
+                <div className="text-sm font-medium text-white">Your Account</div>
+                <div className="text-xs text-gray-400">Standard Tier</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex-col flex-1 transition-opacity duration-500 relative -mr-2 pr-2 overflow-y-auto mt-4">
             <div className="bg-[#2F2F2F] pt-0">
-              <div className="mt-4 flex flex-col gap-1">
+              <div className="flex flex-col gap-1">
                 <div onClick={() => toggleSection("live")} className="flex items-center gap-2 px-3 py-2 text-sm font-medium cursor-pointer hover:bg-[#383737] rounded-lg text-green-500">
                   <Play className="h-4 w-4" />
                   <span>Live Campaigns</span>
@@ -96,6 +108,16 @@ const Sidebar = ({ isOpen, onToggle, onApiKeyChange, onNewCampaign }: SidebarPro
                 {renderCampaignList(campaigns.draft, "draft")}
               </div>
             </div>
+          </div>
+
+          <div className="mt-auto pb-4">
+            <button
+              onClick={() => navigate('/pricing')}
+              className="flex w-full items-center gap-2 px-3 py-2 text-sm font-medium text-gray-400 hover:bg-[#383737] rounded-lg"
+            >
+              <DollarSign className="h-4 w-4" />
+              <span>Pricing</span>
+            </button>
           </div>
         </nav>
       </div>
