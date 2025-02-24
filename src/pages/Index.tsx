@@ -6,6 +6,7 @@ import ChatHeader from '@/components/ChatHeader';
 import ChatInput from '@/components/ChatInput';
 import ActionButtons from '@/components/ActionButtons';
 import MessageList from '@/components/MessageList';
+import NewCampaignModal from '@/components/NewCampaignModal';
 
 type Message = {
   role: 'user' | 'assistant' | 'system';
@@ -13,18 +14,22 @@ type Message = {
 };
 
 const Index = () => {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true); // Set default to true
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [isNewCampaignFlow, setIsNewCampaignFlow] = useState(false);
+  const [isNewCampaignModalOpen, setIsNewCampaignModalOpen] = useState(false);
   const { toast } = useToast();
 
   const handleStartNewCampaign = () => {
+    setIsNewCampaignModalOpen(true);
+  };
+
+  const handleCreateCampaign = (data: { name: string; goals: string; notes: string }) => {
     setMessages([{
       role: 'system',
-      content: "Let's create a new campaign! To start, what would you like to name this campaign? (e.g., 'Summer Dresses - Amazon SP')"
+      content: `Creating new campaign: "${data.name}". You've set your goals as: "${data.goals}". Let's begin with platform selection. Which platform are you advertising on? (Amazon, Walmart, Instacart?)`
     }]);
-    setIsNewCampaignFlow(true);
+    setIsNewCampaignModalOpen(false);
   };
 
   const handleSendMessage = async (content: string) => {
@@ -47,24 +52,12 @@ const Index = () => {
       
       setMessages(newMessages);
 
-      // Handle campaign name input if in new campaign flow
-      if (isNewCampaignFlow) {
-        setMessages([
-          ...newMessages,
-          {
-            role: 'assistant',
-            content: `Okay, campaign name set as '${content}'. (Placeholder: Next steps for campaign creation will be implemented in future iterations.)`
-          }
-        ]);
-        setIsNewCampaignFlow(false);
-      } else {
-        // Regular chat flow response
-        const assistantMessage: Message = {
-          role: 'assistant',
-          content: "I am a hardcoded response. The database connection has been removed for testing purposes. You can modify this response in the Index.tsx file."
-        };
-        setMessages([...newMessages, assistantMessage]);
-      }
+      // Regular chat flow response
+      const assistantMessage: Message = {
+        role: 'assistant',
+        content: "I am a hardcoded response. The database connection has been removed for testing purposes. You can modify this response in the Index.tsx file."
+      };
+      setMessages([...newMessages, assistantMessage]);
     } catch (error: any) {
       toast({
         title: "Error",
@@ -116,6 +109,12 @@ const Index = () => {
           )}
         </div>
       </main>
+
+      <NewCampaignModal
+        isOpen={isNewCampaignModalOpen}
+        onClose={() => setIsNewCampaignModalOpen(false)}
+        onCreateCampaign={handleCreateCampaign}
+      />
     </div>
   );
 };
