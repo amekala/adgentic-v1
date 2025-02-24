@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import Sidebar from '@/components/Sidebar';
@@ -27,7 +26,8 @@ const Index = () => {
     setIsNewCampaignModalOpen(true);
   };
 
-  const handleCreateCampaign = (data: { name: string; goals: string }) => {
+  const handleCreateCampaign = async (data: { name: string; goals: string }) => {
+    setIsNewCampaignModalOpen(false);
     navigate('/campaign/new');
   };
 
