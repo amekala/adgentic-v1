@@ -29,7 +29,6 @@ const Index = () => {
 
   const handleCreateCampaign = async (data: { name: string; goals: string; notes: string }) => {
     setIsNewCampaignModalOpen(false);
-    navigate('/campaign/new');
   };
 
   const handleSendMessage = async (content: string) => {
