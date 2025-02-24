@@ -1,61 +1,51 @@
 
-import { BarChart3, Plus, Lightbulb, RefreshCw } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Plus, BarChart2, Lightbulb, RotateCw } from "lucide-react";
 
 interface ActionButtonsProps {
-  onActionClick: (action: string) => void;
+  onActionClick?: (action: string) => void;
 }
 
 const ActionButtons = ({ onActionClick }: ActionButtonsProps) => {
   const actions = [
-    {
-      id: 'create',
-      label: 'Create Campaign',
-      icon: <Plus className="h-5 w-5" />,
-      className: 'bg-blue-600 hover:bg-blue-700 text-white'
+    { 
+      icon: <Plus className="h-4 w-4 text-white" />, 
+      label: "Create Campaign",
+      primary: true 
     },
-    {
-      id: 'analyze',
-      label: 'Analyze Campaigns',
-      icon: <BarChart3 className="h-5 w-5" />,
-      message: "Let's analyze your campaigns performance and identify opportunities for improvement. I can help you look at metrics like CTR, conversion rates, and ROI.",
-      className: 'bg-[#2F2F2F] hover:bg-[#383737] text-white'
+    { 
+      icon: <BarChart2 className="h-4 w-4 text-blue-400" />, 
+      label: "Analyze Campaigns" 
     },
-    {
-      id: 'keywords',
-      label: 'Get Keyword Ideas',
-      icon: <Lightbulb className="h-5 w-5" />,
-      message: "I can help you discover high-performing keywords for your campaigns. What product or service are you advertising?",
-      className: 'bg-[#2F2F2F] hover:bg-[#383737] text-white'
+    { 
+      icon: <Lightbulb className="h-4 w-4 text-yellow-400" />, 
+      label: "Get Keyword Ideas" 
     },
-    {
-      id: 'optimize',
-      label: 'Optimize Campaigns',
-      icon: <RefreshCw className="h-5 w-5" />,
-      message: "I'll help you optimize your campaigns for better performance. Let's review your current settings and identify areas for improvement.",
-      className: 'bg-[#2F2F2F] hover:bg-[#383737] text-white'
-    }
+    { 
+      icon: <RotateCw className="h-4 w-4 text-green-400" />, 
+      label: "Optimize Campaigns" 
+    },
   ];
 
-  const handleClick = (action: typeof actions[0]) => {
-    if (action.id === 'create') {
-      onActionClick('Create Campaign');
-    } else if (action.message) {
-      onActionClick(action.message);
-    }
-  };
-
   return (
-    <div className="flex flex-wrap gap-3 justify-center">
+    <div className="flex gap-2 flex-wrap justify-center mt-4">
       {actions.map((action) => (
-        <Button
-          key={action.id}
-          onClick={() => handleClick(action)}
-          className={`flex items-center gap-2 px-6 py-4 rounded-full text-base ${action.className}`}
+        <button 
+          key={action.label} 
+          onClick={() => onActionClick?.(action.label)}
+          className={`
+            relative flex h-[42px] items-center gap-1.5 rounded-full 
+            px-3 py-2 text-start text-[13px] shadow-xxs transition 
+            enabled:hover:bg-token-main-surface-secondary 
+            disabled:cursor-not-allowed xl:gap-2 xl:text-[14px]
+            ${action.primary 
+              ? 'bg-blue-600 hover:bg-blue-700 text-white' 
+              : 'border border-[#383737]'
+            }
+          `}
         >
           {action.icon}
-          <span>{action.label}</span>
-        </Button>
+          {action.label}
+        </button>
       ))}
     </div>
   );
