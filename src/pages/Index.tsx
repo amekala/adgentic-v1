@@ -75,8 +75,12 @@ const Index = () => {
     }
   };
 
-  const handlePillAction = (message: string) => {
-    handleSendMessage(message);
+  const handleActionClick = (action: string) => {
+    if (action === "Create Campaign") {
+      handleStartNewCampaign();
+    } else {
+      handleSendMessage(action);
+    }
   };
 
   return (
@@ -99,11 +103,7 @@ const Index = () => {
                 <ChatInput onSend={handleSendMessage} isLoading={isLoading} />
               </div>
               <div className="mt-4">
-                <ActionButtons onActionClick={(action) => {
-                  if (action === "Create Campaign") {
-                    handleStartNewCampaign();
-                  }
-                }} />
+                <ActionButtons onActionClick={handleActionClick} />
               </div>
             </div>
           ) : (
@@ -113,7 +113,7 @@ const Index = () => {
                 <div className="w-full max-w-3xl mx-auto px-4">
                   <ChatInput onSend={handleSendMessage} isLoading={isLoading} />
                 </div>
-                <ChatActionPills onPillClick={handlePillAction} />
+                <ChatActionPills onPillClick={handleSendMessage} />
                 <div className="text-xs text-center text-gray-500">
                   Adgentic can make mistakes. Check important info.
                 </div>
