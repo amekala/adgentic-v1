@@ -20,8 +20,13 @@ serve(async (req) => {
   }
 
   try {
+    const apiKey = Deno.env.get('OPENAI_API_KEY')
+    if (!apiKey) {
+      throw new Error('OpenAI API key not configured')
+    }
+
     const configuration = new Configuration({
-      apiKey: Deno.env.get('OPENAI_API_KEY'),
+      apiKey: apiKey,
     })
     const openai = new OpenAIApi(configuration)
 
@@ -31,6 +36,8 @@ serve(async (req) => {
       throw new Error('Messages array is required')
     }
 
+    console.log('Processing chat request with messages:', messages)
+
     // Add system message if not present
     const systemMessage: Message = {
       role: 'system',
@@ -39,6 +46,8 @@ serve(async (req) => {
 
     const allMessages = messages[0]?.role === 'system' ? messages : [systemMessage, ...messages]
 
+    console.log('Sending request to OpenAI with messages:', allMessages)
+
     const completion = await openai.createChatCompletion({
       model: 'gpt-3.5-turbo',
       messages: allMessages,
@@ -46,7 +55,13 @@ serve(async (req) => {
       max_tokens: 1000,
     })
 
+    if (!completion.data.choices[0].message) {
+      throw new Error('No response received from OpenAI')
+    }
+
     const response = completion.data.choices[0].message
+
+    console.log('Received response from OpenAI:', response)
 
     return new Response(
       JSON.stringify(response),
@@ -54,14 +69,20 @@ serve(async (req) => {
         headers: { 
           ...corsHeaders,
           'Content-Type': 'application/json'
-        } 
+        },
+        status: 200
       },
     )
 
   } catch (error) {
     console.error('Chat function error:', error)
+    
+    // Return a properly formatted error response
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message || 'An error occurred processing your request',
+        status: 'error'
+      }),
       { 
         status: 500,
         headers: { 
