@@ -1,6 +1,6 @@
 
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useLocation } from 'react-router-dom';
 import { supabase } from "@/integrations/supabase/client";
 import Sidebar from '@/components/Sidebar';
 import ChatHeader from '@/components/ChatHeader';
@@ -14,56 +14,80 @@ type Message = {
 };
 
 type ChatMessageRow = {
-  chat_id: string;
+  id: string;
+  campaign_id: string | null;
   content: string;
   created_at: string;
-  id: string;
-  role: string;
+  message_type: 'user' | 'assistant' | 'system';
+  parent_id: string | null;
 };
 
 const Chat = () => {
-  const { id } = useParams();
+  const { id: campaignId } = useParams();
+  const location = useLocation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
+  // Function to convert database message type to UI message role
+  const convertMessageTypeToRole = (type: string): Message['role'] => {
+    switch (type) {
+      case 'user':
+        return 'user';
+      case 'assistant':
+        return 'assistant';
+      case 'system':
+        return 'system';
+      default:
+        return 'system';
+    }
+  };
+
   useEffect(() => {
     const fetchMessages = async () => {
-      if (!id) return;
-
-      const { data, error } = await supabase
+      console.log('Fetching messages for:', campaignId || 'main chat');
+      
+      let query = supabase
         .from('chat_messages')
         .select('*')
-        .eq('chat_id', id)
         .order('created_at', { ascending: true });
+
+      // If we're in a campaign chat, filter by campaign_id
+      if (campaignId) {
+        query = query.eq('campaign_id', campaignId);
+      } else {
+        // For main chat, get messages with null campaign_id
+        query = query.is('campaign_id', null);
+      }
+
+      const { data, error } = await query;
 
       if (error) {
         console.error('Error fetching messages:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load chat history",
+          variant: "destructive"
+        });
         return;
       }
 
-      // Type guard function
-      const isValidRole = (role: string): role is Message['role'] => {
-        return ['user', 'assistant', 'system'].includes(role);
-      };
-
-      // Convert and filter valid messages
-      const validMessages = (data as ChatMessageRow[])
-        .filter(msg => isValidRole(msg.role))
-        .map(msg => ({
-          role: msg.role as Message['role'],
+      if (data) {
+        console.log('Fetched messages:', data);
+        const validMessages = data.map(msg => ({
+          role: convertMessageTypeToRole(msg.message_type),
           content: msg.content
         }));
-
-      setMessages(validMessages);
+        setMessages(validMessages);
+      }
     };
 
     fetchMessages();
-  }, [id]);
+  }, [campaignId, toast]);
 
   const handleSendMessage = async (content: string) => {
-    if (!content.trim() || !id) {
+    if (!content.trim()) {
       toast({
         title: "Error",
         description: "Please enter a message",
@@ -80,17 +104,19 @@ const Chat = () => {
         content
       };
 
-      const newMessages = [...messages, userMessage];
-      setMessages(newMessages);
-
-      // Save message to database
-      await supabase
+      // Save user message to database first
+      const { error: insertError } = await supabase
         .from('chat_messages')
         .insert([{
-          chat_id: id,
-          role: userMessage.role,
-          content: userMessage.content
+          campaign_id: campaignId || null,
+          message_type: 'user',
+          content: content
         }]);
+
+      if (insertError) throw insertError;
+
+      const newMessages = [...messages, userMessage];
+      setMessages(newMessages);
 
       // Get AI response
       const { data, error } = await supabase.functions.invoke('chat', {
@@ -104,17 +130,19 @@ const Chat = () => {
           role: 'assistant',
           content: data.content
         };
-        
-        setMessages([...newMessages, assistantMessage]);
 
         // Save AI response to database
-        await supabase
+        const { error: aiInsertError } = await supabase
           .from('chat_messages')
           .insert([{
-            chat_id: id,
-            role: assistantMessage.role,
-            content: assistantMessage.content
+            campaign_id: campaignId || null,
+            message_type: 'assistant',
+            content: data.content
           }]);
+
+        if (aiInsertError) throw aiInsertError;
+        
+        setMessages([...newMessages, assistantMessage]);
       }
 
     } catch (error: any) {
