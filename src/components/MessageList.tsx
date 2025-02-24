@@ -1,7 +1,8 @@
+
 import Message from './Message';
 
 type Message = {
-  role: 'user' | 'assistant';
+  role: 'user' | 'assistant' | 'system';
   content: string;
 };
 

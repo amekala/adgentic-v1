@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import Sidebar from '@/components/Sidebar';
@@ -7,7 +8,7 @@ import ActionButtons from '@/components/ActionButtons';
 import MessageList from '@/components/MessageList';
 
 type Message = {
-  role: 'user' | 'assistant';
+  role: 'user' | 'assistant' | 'system';
   content: string;
 };
 
@@ -15,7 +16,16 @@ const Index = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isNewCampaignFlow, setIsNewCampaignFlow] = useState(false);
   const { toast } = useToast();
+
+  const handleStartNewCampaign = () => {
+    setMessages([{
+      role: 'system',
+      content: "Let's create a new campaign! To start, what would you like to name this campaign? (e.g., 'Summer Dresses - Amazon SP')"
+    }]);
+    setIsNewCampaignFlow(true);
+  };
 
   const handleSendMessage = async (content: string) => {
     if (!content.trim()) {
@@ -37,15 +47,24 @@ const Index = () => {
       
       setMessages(newMessages);
 
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      const assistantMessage: Message = {
-        role: 'assistant',
-        content: "I am a hardcoded response. The database connection has been removed for testing purposes. You can modify this response in the Index.tsx file."
-      };
-
-      setMessages([...newMessages, assistantMessage]);
+      // Handle campaign name input if in new campaign flow
+      if (isNewCampaignFlow) {
+        setMessages([
+          ...newMessages,
+          {
+            role: 'assistant',
+            content: `Okay, campaign name set as '${content}'. (Placeholder: Next steps for campaign creation will be implemented in future iterations.)`
+          }
+        ]);
+        setIsNewCampaignFlow(false);
+      } else {
+        // Regular chat flow response
+        const assistantMessage: Message = {
+          role: 'assistant',
+          content: "I am a hardcoded response. The database connection has been removed for testing purposes. You can modify this response in the Index.tsx file."
+        };
+        setMessages([...newMessages, assistantMessage]);
+      }
     } catch (error: any) {
       toast({
         title: "Error",
@@ -63,6 +82,7 @@ const Index = () => {
         isOpen={isSidebarOpen} 
         onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
         onApiKeyChange={() => {}} // Empty function since we don't need API key anymore
+        onNewCampaign={handleStartNewCampaign}
       />
       
       <main className={`flex-1 transition-all duration-300 ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}>
@@ -84,7 +104,7 @@ const Index = () => {
                 <ChatInput onSend={handleSendMessage} isLoading={isLoading} />
               </div>
               <div className="text-xs text-center text-gray-500 py-2">
-                ChatGPT can make mistakes. Check important info.
+                Adgentic can make mistakes. Check important info.
               </div>
             </>
           )}
