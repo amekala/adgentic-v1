@@ -1,11 +1,12 @@
 
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
-import { Plus, PenIcon, PlayCircle } from 'lucide-react';
+import { Plus, PenIcon, PlayCircle, BarChart3 } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
 import ChatHeader from '@/components/ChatHeader';
 import MessageList from '@/components/MessageList';
 import ChatInput from '@/components/ChatInput';
+import ChatActionPills from '@/components/ChatActionPills';
 
 // Example static messages for demonstration
 const exampleMessages: Array<{ role: 'assistant' | 'user' | 'system'; content: string }> = [
@@ -20,9 +21,41 @@ const Campaign = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [messages] = useState(exampleMessages);
 
+  const metrics = [
+    {
+      id: 'roas',
+      label: 'RoAS',
+      value: '3.5x',
+      timeframe: 'Last 7 Days'
+    },
+    {
+      id: 'sales',
+      label: 'Sales',
+      value: '$1,500',
+      timeframe: 'Last 7 Days'
+    },
+    {
+      id: 'spend',
+      label: 'Spend',
+      value: '$428',
+      timeframe: 'Last 7 Days'
+    },
+    {
+      id: 'clicks',
+      label: 'Clicks',
+      value: '875',
+      timeframe: 'Last 7 Days'
+    }
+  ];
+
   const handleSendMessage = (message: string) => {
     console.log('Sending message:', message);
     // Message handling will be implemented later
+  };
+
+  const handlePillAction = (message: string) => {
+    console.log('Pill clicked:', message);
+    // Pill action handling will be implemented later
   };
 
   return (
@@ -50,7 +83,7 @@ const Campaign = () => {
 
           <div className="flex-1 overflow-y-auto">
             <div className="max-w-3xl mx-auto px-4 py-4">
-              <div className="grid grid-cols-2 gap-6">
+              <div className="grid grid-cols-2 gap-6 mb-8">
                 <div className="bg-[#2F2F2F] rounded-2xl border border-[#383737] p-6 hover:bg-[#383737] cursor-pointer transition-colors">
                   <div className="flex items-center justify-between mb-2">
                     <h2 className="text-xl font-semibold text-white">Add files</h2>
@@ -72,6 +105,25 @@ const Campaign = () => {
                 </div>
               </div>
 
+              <div className="mb-8">
+                <div className="flex items-center gap-2 mb-4">
+                  <BarChart3 className="h-5 w-5 text-white" />
+                  <h2 className="text-xl font-semibold text-white">Campaign Performance</h2>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {metrics.map((metric) => (
+                    <div 
+                      key={metric.id}
+                      className="bg-[#2F2F2F] rounded-xl border border-[#383737] p-4"
+                    >
+                      <div className="text-sm text-gray-400 mb-1">{metric.label}</div>
+                      <div className="text-2xl font-semibold text-white mb-1">{metric.value}</div>
+                      <div className="text-xs text-gray-500">{metric.timeframe}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
               <div className="mt-6">
                 <MessageList messages={messages} />
               </div>
@@ -79,11 +131,12 @@ const Campaign = () => {
           </div>
 
           <div className="px-4 py-4 border-t border-[#383737]">
-            <div className="max-w-3xl mx-auto">
+            <div className="max-w-3xl mx-auto space-y-4">
               <ChatInput 
                 onSend={handleSendMessage} 
                 placeholder="Start a new chat with Adgentic about this campaign..."
               />
+              <ChatActionPills onPillClick={handlePillAction} />
             </div>
           </div>
         </div>
