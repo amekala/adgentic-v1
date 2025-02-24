@@ -1,6 +1,6 @@
 
 import { useNavigate } from 'react-router-dom';
-import { useState } from 'react'; // Add this import
+import { useState } from 'react';
 import { Plus, FolderIcon, PenIcon } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
 import ChatHeader from '@/components/ChatHeader';
@@ -10,7 +10,7 @@ const Campaign = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   return (
-    <div className="flex h-screen">
+    <div className="flex h-screen bg-[#212121]">
       <Sidebar 
         isOpen={isSidebarOpen} 
         onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -24,37 +24,37 @@ const Campaign = () => {
         <div className="flex flex-col h-full pt-[60px] pb-4">
           <div className="flex-1 overflow-y-auto">
             <div className="max-w-3xl mx-auto px-4">
-              <div className="bg-white rounded-2xl border mt-6">
+              <div className="mt-6">
                 <input
                   type="text"
                   placeholder="New chat in this project"
-                  className="w-full p-4 rounded-2xl text-gray-600 focus:outline-none"
+                  className="w-full p-4 rounded-2xl bg-[#2F2F2F] text-white placeholder-gray-400 focus:outline-none border border-[#383737]"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-6 mt-6">
-                <div className="bg-white rounded-2xl border p-6 hover:bg-gray-50 cursor-pointer transition-colors">
+                <div className="bg-[#2F2F2F] rounded-2xl border border-[#383737] p-6 hover:bg-[#383737] cursor-pointer transition-colors">
                   <div className="flex items-center justify-between mb-2">
-                    <h2 className="text-xl font-semibold">Add files</h2>
-                    <Plus className="h-5 w-5" />
+                    <h2 className="text-xl font-semibold text-white">Add files</h2>
+                    <Plus className="h-5 w-5 text-white" />
                   </div>
-                  <p className="text-gray-600">
+                  <p className="text-gray-400">
                     Chats in this project can access file content
                   </p>
                 </div>
 
-                <div className="bg-white rounded-2xl border p-6 hover:bg-gray-50 cursor-pointer transition-colors">
+                <div className="bg-[#2F2F2F] rounded-2xl border border-[#383737] p-6 hover:bg-[#383737] cursor-pointer transition-colors">
                   <div className="flex items-center justify-between mb-2">
-                    <h2 className="text-xl font-semibold">Add instructions</h2>
-                    <PenIcon className="h-5 w-5" />
+                    <h2 className="text-xl font-semibold text-white">Add instructions</h2>
+                    <PenIcon className="h-5 w-5 text-white" />
                   </div>
-                  <p className="text-gray-600">
+                  <p className="text-gray-400">
                     Tailor the way ChatGPT responds in this project
                   </p>
                 </div>
               </div>
 
-              <div className="mt-16 text-center text-gray-600">
+              <div className="mt-16 text-center text-gray-400">
                 Start a new chat, or drag an old one in
               </div>
             </div>
