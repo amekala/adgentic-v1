@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import Sidebar from '@/components/Sidebar';
@@ -5,6 +6,7 @@ import ChatHeader from '@/components/ChatHeader';
 import ChatInput from '@/components/ChatInput';
 import ActionButtons from '@/components/ActionButtons';
 import MessageList from '@/components/MessageList';
+import ChatActionPills from '@/components/ChatActionPills';
 import NewCampaignModal from '@/components/NewCampaignModal';
 import { useNavigate } from 'react-router-dom';
 
@@ -66,6 +68,14 @@ const Index = () => {
     }
   };
 
+  const handlePillAction = (message: string) => {
+    const systemMessage: Message = {
+      role: 'system',
+      content: message
+    };
+    setMessages([...messages, systemMessage]);
+  };
+
   return (
     <div className="flex h-screen">
       <Sidebar 
@@ -96,11 +106,14 @@ const Index = () => {
           ) : (
             <>
               <MessageList messages={messages} />
-              <div className="w-full max-w-3xl mx-auto px-4 py-2">
-                <ChatInput onSend={handleSendMessage} isLoading={isLoading} />
-              </div>
-              <div className="text-xs text-center text-gray-500 py-2">
-                Adgentic can make mistakes. Check important info.
+              <div className="space-y-4 mt-auto">
+                <div className="w-full max-w-3xl mx-auto px-4">
+                  <ChatInput onSend={handleSendMessage} isLoading={isLoading} />
+                </div>
+                <ChatActionPills onPillClick={handlePillAction} />
+                <div className="text-xs text-center text-gray-500">
+                  Adgentic can make mistakes. Check important info.
+                </div>
               </div>
             </>
           )}
