@@ -35,10 +35,17 @@ const Chat = () => {
         return;
       }
 
-      setMessages(data.map(msg => ({
-        role: msg.role,
-        content: msg.content
-      })));
+      // Ensure the role is one of the allowed types
+      const validMessages = data
+        .filter((msg): msg is { role: 'user' | 'assistant' | 'system', content: string } => {
+          return ['user', 'assistant', 'system'].includes(msg.role);
+        })
+        .map(msg => ({
+          role: msg.role,
+          content: msg.content
+        }));
+
+      setMessages(validMessages);
     };
 
     fetchMessages();
@@ -57,11 +64,12 @@ const Chat = () => {
     setIsLoading(true);
 
     try {
-      const newMessages = [
-        ...messages,
-        { role: 'user', content } as const
-      ];
-      
+      const userMessage: Message = {
+        role: 'user',
+        content
+      };
+
+      const newMessages = [...messages, userMessage];
       setMessages(newMessages);
 
       // Save message to database
@@ -69,8 +77,8 @@ const Chat = () => {
         .from('chat_messages')
         .insert([{
           chat_id: id,
-          role: 'user',
-          content
+          role: userMessage.role,
+          content: userMessage.content
         }]);
 
       // Get AI response
@@ -81,7 +89,11 @@ const Chat = () => {
       if (error) throw error;
 
       if (data?.content) {
-        const assistantMessage = { role: 'assistant', content: data.content };
+        const assistantMessage: Message = {
+          role: 'assistant',
+          content: data.content
+        };
+        
         setMessages([...newMessages, assistantMessage]);
 
         // Save AI response to database
@@ -89,8 +101,8 @@ const Chat = () => {
           .from('chat_messages')
           .insert([{
             chat_id: id,
-            role: 'assistant',
-            content: data.content
+            role: assistantMessage.role,
+            content: assistantMessage.content
           }]);
       }
 
