@@ -30,7 +30,7 @@ export type Database = {
           targeting_type: Database["public"]["Enums"]["targeting_type"]
         }
         Insert: {
-          campaign_name: string
+          campaign_name?: string
           campaign_notes?: string | null
           campaign_status?: Database["public"]["Enums"]["campaign_status"]
           clicks_last_7_days?: number | null

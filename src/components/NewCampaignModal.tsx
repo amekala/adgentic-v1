@@ -29,15 +29,6 @@ const NewCampaignModal = ({ isOpen, onClose, onCreateCampaign }: NewCampaignModa
   const { toast } = useToast();
 
   const handleSubmit = async () => {
-    if (!name.trim()) {
-      toast({
-        title: "Error",
-        description: "Please enter a campaign name",
-        variant: "destructive",
-      });
-      return;
-    }
-
     setIsLoading(true);
 
     try {
@@ -45,14 +36,10 @@ const NewCampaignModal = ({ isOpen, onClose, onCreateCampaign }: NewCampaignModa
         .from('campaigns')
         .insert([
           {
-            campaign_name: name.trim(),
+            campaign_name: name.trim() || 'Untitled Campaign', // Use provided name or default
             goals_description: goals.trim() || null,
             campaign_notes: notes.trim() || null,
-            platform: 'amazon_sp', // Hardcoded for MVP
-            campaign_status: 'draft', // Initial status
-            daily_budget: null,      // Leave budget null initially
-            targeting_type: null,    // Leave targeting type null initially
-            product_asins: null      // Leave product ASINs null initially
+            // All other fields will use database defaults
           }
         ])
         .select()
