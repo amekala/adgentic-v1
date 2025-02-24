@@ -1,10 +1,22 @@
-
-import { Menu, Play, Pause, FilePen, Plus, UserCircle2, DollarSign, Search } from "lucide-react";
+import { Menu, Play, Pause, FilePen, Plus, UserCircle2, DollarSign, Search, MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "./ui/input";
+
+interface Campaign {
+  id: string;
+  campaign_name: string;
+  campaign_status: 'draft' | 'live' | 'paused';
+}
+
+interface Chat {
+  id: string;
+  title: string;
+  chat_type: string;
+  created_at: string;
+}
 
 interface SidebarProps {
   isOpen: boolean;
@@ -13,14 +25,8 @@ interface SidebarProps {
   onNewCampaign: () => void;
 }
 
-interface Campaign {
-  id: string;
-  campaign_name: string;
-  campaign_status: 'draft' | 'live' | 'paused';
-}
-
 const Sidebar = ({ isOpen, onToggle, onApiKeyChange, onNewCampaign }: SidebarProps) => {
-  const [expandedSection, setExpandedSection] = useState<string>("draft");
+  const [expandedSection, setExpandedSection] = useState<string>("live");
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [campaigns, setCampaigns] = useState<{
@@ -32,6 +38,7 @@ const Sidebar = ({ isOpen, onToggle, onApiKeyChange, onNewCampaign }: SidebarPro
     paused: [],
     draft: []
   });
+  const [chats, setChats] = useState<Chat[]>([]);
 
   useEffect(() => {
     const fetchCampaigns = async () => {
@@ -53,29 +60,39 @@ const Sidebar = ({ isOpen, onToggle, onApiKeyChange, onNewCampaign }: SidebarPro
       setCampaigns(categorizedCampaigns);
     };
 
-    fetchCampaigns();
+    const fetchChats = async () => {
+      const { data, error } = await supabase
+        .from('chats')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-    const channel = supabase
+      if (error) {
+        console.error('Error fetching chats:', error);
+        return;
+      }
+
+      setChats(data);
+    };
+
+    fetchCampaigns();
+    fetchChats();
+
+    const campaignsChannel = supabase
       .channel('campaigns-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'campaigns'
-        },
-        () => {
-          fetchCampaigns();
-        }
-      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'campaigns' }, fetchCampaigns)
+      .subscribe();
+
+    const chatsChannel = supabase
+      .channel('chats-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'chats' }, fetchChats)
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(campaignsChannel);
+      supabase.removeChannel(chatsChannel);
     };
   }, []);
 
-  // Check if a section has any matching campaigns
   const hasMatchingCampaigns = (items: Campaign[]) => {
     if (!searchQuery) return false;
     return items.some(campaign => 
@@ -94,7 +111,6 @@ const Sidebar = ({ isOpen, onToggle, onApiKeyChange, onNewCampaign }: SidebarPro
     setExpandedSection(expandedSection === section ? "" : section);
   };
 
-  // Effect to expand sections with search results
   useEffect(() => {
     if (searchQuery) {
       if (hasMatchingCampaigns(campaigns.live)) setExpandedSection("live");
@@ -205,6 +221,29 @@ const Sidebar = ({ isOpen, onToggle, onApiKeyChange, onNewCampaign }: SidebarPro
               {isOpen && <span>Draft Campaigns {searchQuery && hasMatchingCampaigns(campaigns.draft) && '(matches found)'}</span>}
             </button>
             {isOpen && renderCampaignList(campaigns.draft, "draft")}
+
+            <button onClick={() => toggleSection("chats")}
+              className={cn(
+                "flex w-full items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg text-blue-500 hover:bg-[#383737]",
+                !isOpen && "justify-center px-2"
+              )}
+            >
+              <MessageSquare className="h-5 w-5" />
+              {isOpen && <span>Chats</span>}
+            </button>
+            {isOpen && expandedSection === "chats" && (
+              <div className="space-y-1">
+                {chats.map(chat => (
+                  <div
+                    key={chat.id}
+                    onClick={() => navigate(`/chat/${chat.id}`)}
+                    className="group flex h-9 items-center gap-2.5 rounded-lg px-2 hover:bg-[#383737] cursor-pointer text-sm text-gray-400 hover:text-white ml-8"
+                  >
+                    {chat.title}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 

@@ -69,6 +69,59 @@ export type Database = {
         }
         Relationships: []
       }
+      chat_messages: {
+        Row: {
+          chat_id: string | null
+          content: string
+          created_at: string | null
+          id: string
+          role: string
+        }
+        Insert: {
+          chat_id?: string | null
+          content: string
+          created_at?: string | null
+          id?: string
+          role: string
+        }
+        Update: {
+          chat_id?: string | null
+          content?: string
+          created_at?: string | null
+          id?: string
+          role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_chat_id_fkey"
+            columns: ["chat_id"]
+            isOneToOne: false
+            referencedRelation: "chats"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chats: {
+        Row: {
+          chat_type: string
+          created_at: string | null
+          id: string
+          title: string
+        }
+        Insert: {
+          chat_type: string
+          created_at?: string | null
+          id?: string
+          title: string
+        }
+        Update: {
+          chat_type?: string
+          created_at?: string | null
+          id?: string
+          title?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
