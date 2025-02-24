@@ -1,7 +1,7 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { Configuration, OpenAIApi } from 'https://esm.sh/openai@3.2.1'
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -25,11 +25,6 @@ serve(async (req) => {
       throw new Error('OpenAI API key not configured')
     }
 
-    const configuration = new Configuration({
-      apiKey: apiKey,
-    })
-    const openai = new OpenAIApi(configuration)
-
     const { messages } = await req.json()
 
     if (!messages || !Array.isArray(messages)) {
@@ -48,23 +43,31 @@ serve(async (req) => {
 
     console.log('Sending request to OpenAI with messages:', allMessages)
 
-    const completion = await openai.createChatCompletion({
-      model: 'gpt-3.5-turbo',
-      messages: allMessages,
-      temperature: 0.7,
-      max_tokens: 1000,
-    })
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: allMessages,
+        temperature: 0.7,
+        max_tokens: 1000,
+      }),
+    });
 
-    if (!completion.data.choices[0].message) {
-      throw new Error('No response received from OpenAI')
+    const data = await response.json();
+
+    if (!data.choices?.[0]?.message) {
+      console.error('OpenAI response:', data);
+      throw new Error('Invalid response from OpenAI');
     }
 
-    const response = completion.data.choices[0].message
-
-    console.log('Received response from OpenAI:', response)
+    console.log('Received response from OpenAI:', data.choices[0].message);
 
     return new Response(
-      JSON.stringify(response),
+      JSON.stringify(data.choices[0].message),
       { 
         headers: { 
           ...corsHeaders,
@@ -77,7 +80,6 @@ serve(async (req) => {
   } catch (error) {
     console.error('Chat function error:', error)
     
-    // Return a properly formatted error response
     return new Response(
       JSON.stringify({ 
         error: error.message || 'An error occurred processing your request',
