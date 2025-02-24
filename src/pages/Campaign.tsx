@@ -1,9 +1,9 @@
 
 import { useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, PenIcon, PlayCircle, BarChart3 } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import Sidebar from '@/components/Sidebar';
 import ChatHeader from '@/components/ChatHeader';
 import MessageList from '@/components/MessageList';
@@ -13,6 +13,7 @@ import { AdCreativesSection } from '@/components/AdCreativesSection';
 
 const Campaign = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [messages, setMessages] = useState<Array<{ role: 'assistant' | 'user' | 'system'; content: string }>>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -68,14 +69,20 @@ const Campaign = () => {
       
       setMessages(newMessages);
 
+      console.log('Sending message to chat function:', { messages: newMessages });
+
       const { data, error } = await supabase.functions.invoke('chat', {
         body: { messages: newMessages }
       });
+
+      console.log('Response from chat function:', { data, error });
 
       if (error) throw error;
 
       if (data?.content) {
         setMessages([...newMessages, { role: 'assistant', content: data.content }]);
+      } else {
+        throw new Error('No response content received');
       }
 
     } catch (error: any) {
@@ -94,6 +101,14 @@ const Campaign = () => {
     console.log('Pill clicked:', message);
     handleSendMessage(message);
   };
+
+  // Add initial system message when component mounts
+  useEffect(() => {
+    setMessages([{
+      role: 'system',
+      content: 'This is a new campaign conversation. How can I help you with your campaign?'
+    }]);
+  }, []);
 
   return (
     <div className="flex h-screen bg-[#212121]">
@@ -166,7 +181,7 @@ const Campaign = () => {
               </div>
 
               <div className="mt-6">
-                <MessageList messages={messages} />
+                <MessageList messages={messages.filter(msg => msg.role !== 'system')} />
               </div>
             </div>
           </div>
