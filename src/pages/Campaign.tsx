@@ -8,18 +8,10 @@ import MessageList from '@/components/MessageList';
 import ChatInput from '@/components/ChatInput';
 
 // Example static messages for demonstration
-const exampleMessages = [
+const exampleMessages: Array<{ role: 'assistant' | 'user' | 'system'; content: string }> = [
   {
     role: 'assistant',
     content: 'Welcome to your new campaign! How can I help you optimize your retail media strategy today?'
-  },
-  {
-    role: 'user',
-    content: 'I need help with keyword suggestions for our new product launch'
-  },
-  {
-    role: 'assistant',
-    content: 'I can help you find relevant keywords. Could you tell me more about your product and target audience?'
   }
 ];
 
