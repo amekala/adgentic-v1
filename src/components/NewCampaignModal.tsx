@@ -17,9 +17,10 @@ import { useToast } from "@/hooks/use-toast";
 interface NewCampaignModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onCreateCampaign: (data: { name: string; goals: string; notes: string }) => void;
 }
 
-const NewCampaignModal = ({ isOpen, onClose }: NewCampaignModalProps) => {
+const NewCampaignModal = ({ isOpen, onClose, onCreateCampaign }: NewCampaignModalProps) => {
   const [name, setName] = useState("");
   const [goals, setGoals] = useState("");
   const [notes, setNotes] = useState("");
@@ -63,6 +64,9 @@ const NewCampaignModal = ({ isOpen, onClose }: NewCampaignModalProps) => {
         title: "Success",
         description: "Campaign created successfully!",
       });
+
+      // Call the onCreateCampaign prop with the form data
+      onCreateCampaign({ name: name.trim(), goals: goals.trim(), notes: notes.trim() });
 
       // Reset form
       setName("");
