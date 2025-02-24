@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import Sidebar from '@/components/Sidebar';
@@ -7,6 +6,7 @@ import ChatInput from '@/components/ChatInput';
 import ActionButtons from '@/components/ActionButtons';
 import MessageList from '@/components/MessageList';
 import NewCampaignModal from '@/components/NewCampaignModal';
+import { useNavigate } from 'react-router-dom';
 
 type Message = {
   role: 'user' | 'assistant' | 'system';
@@ -19,17 +19,14 @@ const Index = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isNewCampaignModalOpen, setIsNewCampaignModalOpen] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const handleStartNewCampaign = () => {
     setIsNewCampaignModalOpen(true);
   };
 
-  const handleCreateCampaign = (data: { name: string; goals: string; notes: string }) => {
-    setMessages([{
-      role: 'system',
-      content: `Creating new campaign: "${data.name}". You've set your goals as: "${data.goals}". Let's begin with platform selection. Which platform are you advertising on? (Amazon, Walmart, Instacart?)`
-    }]);
-    setIsNewCampaignModalOpen(false);
+  const handleCreateCampaign = (data: { name: string; goals: string }) => {
+    navigate('/campaign/new');
   };
 
   const handleSendMessage = async (content: string) => {
