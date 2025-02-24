@@ -1,5 +1,6 @@
 
 import { useNavigate } from 'react-router-dom';
+import { useState } from 'react'; // Add this import
 import { Plus, FolderIcon, PenIcon } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
 import ChatHeader from '@/components/ChatHeader';
