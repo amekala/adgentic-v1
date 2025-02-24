@@ -1,6 +1,7 @@
 
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from "@/integrations/supabase/client";
 import Sidebar from '@/components/Sidebar';
 import ChatHeader from '@/components/ChatHeader';
 import ChatInput from '@/components/ChatInput';
@@ -29,6 +30,7 @@ const Index = () => {
 
   const handleCreateCampaign = async (data: { name: string; goals: string; notes: string }) => {
     setIsNewCampaignModalOpen(false);
+    navigate('/campaign/new');
   };
 
   const handleSendMessage = async (content: string) => {
@@ -51,16 +53,21 @@ const Index = () => {
       
       setMessages(newMessages);
 
-      // Regular chat flow response
-      const assistantMessage: Message = {
-        role: 'assistant',
-        content: "I am a hardcoded response. The database connection has been removed for testing purposes. You can modify this response in the Index.tsx file."
-      };
-      setMessages([...newMessages, assistantMessage]);
+      const { data, error } = await supabase.functions.invoke('chat', {
+        body: { messages: newMessages }
+      });
+
+      if (error) throw error;
+
+      if (data?.content) {
+        setMessages([...newMessages, { role: 'assistant', content: data.content }]);
+      }
+
     } catch (error: any) {
+      console.error('Chat error:', error);
       toast({
         title: "Error",
-        description: error.message,
+        description: error.message || "Failed to send message",
         variant: "destructive"
       });
     } finally {
@@ -69,11 +76,7 @@ const Index = () => {
   };
 
   const handlePillAction = (message: string) => {
-    const systemMessage: Message = {
-      role: 'system',
-      content: message
-    };
-    setMessages([...messages, systemMessage]);
+    handleSendMessage(message);
   };
 
   return (

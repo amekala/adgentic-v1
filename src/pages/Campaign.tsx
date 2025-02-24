@@ -1,6 +1,9 @@
+
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { Plus, PenIcon, PlayCircle, BarChart3 } from 'lucide-react';
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 import Sidebar from '@/components/Sidebar';
 import ChatHeader from '@/components/ChatHeader';
 import MessageList from '@/components/MessageList';
@@ -8,12 +11,11 @@ import ChatInput from '@/components/ChatInput';
 import ChatActionPills from '@/components/ChatActionPills';
 import { AdCreativesSection } from '@/components/AdCreativesSection';
 
-const exampleMessages: Array<{ role: 'assistant' | 'user' | 'system'; content: string }> = [];
-
 const Campaign = () => {
   const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [messages] = useState(exampleMessages);
+  const [messages, setMessages] = useState<Array<{ role: 'assistant' | 'user' | 'system'; content: string }>>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   const metrics = [
     {
@@ -46,14 +48,51 @@ const Campaign = () => {
     }
   ];
 
-  const handleSendMessage = (message: string) => {
-    console.log('Sending message:', message);
-    // Message handling will be implemented later
+  const handleSendMessage = async (content: string) => {
+    if (!content.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter a message",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const newMessages = [
+        ...messages,
+        { role: 'user', content } as const
+      ];
+      
+      setMessages(newMessages);
+
+      const { data, error } = await supabase.functions.invoke('chat', {
+        body: { messages: newMessages }
+      });
+
+      if (error) throw error;
+
+      if (data?.content) {
+        setMessages([...newMessages, { role: 'assistant', content: data.content }]);
+      }
+
+    } catch (error: any) {
+      console.error('Chat error:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to send message",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handlePillAction = (message: string) => {
     console.log('Pill clicked:', message);
-    // Pill action handling will be implemented later
+    handleSendMessage(message);
   };
 
   return (
@@ -136,6 +175,7 @@ const Campaign = () => {
             <div className="max-w-3xl mx-auto space-y-4">
               <ChatInput 
                 onSend={handleSendMessage} 
+                isLoading={isLoading}
                 placeholder="Start a new chat with Adgentic about this campaign..."
               />
               <ChatActionPills onPillClick={handlePillAction} />
