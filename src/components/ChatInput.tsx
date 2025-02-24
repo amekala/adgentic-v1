@@ -1,12 +1,14 @@
+
 import { useState } from "react";
 import { ArrowUp, Loader2 } from "lucide-react";
 
 interface ChatInputProps {
   onSend: (message: string) => void;
   isLoading?: boolean;
+  placeholder?: string;
 }
 
-const ChatInput = ({ onSend, isLoading = false }: ChatInputProps) => {
+const ChatInput = ({ onSend, isLoading = false, placeholder = "Message Adgentic..." }: ChatInputProps) => {
   const [message, setMessage] = useState("");
 
   const handleSubmit = () => {
@@ -31,8 +33,8 @@ const ChatInput = ({ onSend, isLoading = false }: ChatInputProps) => {
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Message Claude"
-          className="w-full resize-none rounded-full bg-[#2F2F2F] px-4 py-4 pr-12 focus:outline-none"
+          placeholder={placeholder}
+          className="w-full resize-none rounded-full bg-[#2F2F2F] px-4 py-4 pr-12 focus:outline-none text-white placeholder-gray-400"
           style={{ maxHeight: "200px" }}
           disabled={isLoading}
         />

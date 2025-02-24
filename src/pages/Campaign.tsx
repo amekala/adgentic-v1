@@ -1,13 +1,37 @@
 
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
-import { Plus, FolderIcon, PenIcon } from 'lucide-react';
+import { Plus, PenIcon, PlayCircle } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
 import ChatHeader from '@/components/ChatHeader';
+import MessageList from '@/components/MessageList';
+import ChatInput from '@/components/ChatInput';
+
+// Example static messages for demonstration
+const exampleMessages = [
+  {
+    role: 'assistant',
+    content: 'Welcome to your new campaign! How can I help you optimize your retail media strategy today?'
+  },
+  {
+    role: 'user',
+    content: 'I need help with keyword suggestions for our new product launch'
+  },
+  {
+    role: 'assistant',
+    content: 'I can help you find relevant keywords. Could you tell me more about your product and target audience?'
+  }
+];
 
 const Campaign = () => {
   const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [messages] = useState(exampleMessages);
+
+  const handleSendMessage = (message: string) => {
+    console.log('Sending message:', message);
+    // Message handling will be implemented later
+  };
 
   return (
     <div className="flex h-screen bg-[#212121]">
@@ -21,42 +45,53 @@ const Campaign = () => {
       <main className={`flex-1 transition-all duration-300 ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}>
         <ChatHeader isSidebarOpen={isSidebarOpen} />
         
-        <div className="flex flex-col h-full pt-[60px] pb-4">
-          <div className="flex-1 overflow-y-auto">
-            <div className="max-w-3xl mx-auto px-4">
-              <div className="mt-6">
-                <input
-                  type="text"
-                  placeholder="New chat in this project"
-                  className="w-full p-4 rounded-2xl bg-[#2F2F2F] text-white placeholder-gray-400 focus:outline-none border border-[#383737]"
-                />
-              </div>
+        <div className="flex flex-col h-full pt-[60px]">
+          <div className="flex items-center px-4 py-3 border-b border-[#383737]">
+            <h1 className="text-xl font-semibold text-white flex items-center gap-2">
+              New Product Launch Campaign
+              <span className="flex items-center gap-1 text-sm font-normal text-green-500">
+                <PlayCircle className="h-4 w-4" />
+                Live
+              </span>
+            </h1>
+          </div>
 
-              <div className="grid grid-cols-2 gap-6 mt-6">
+          <div className="flex-1 overflow-y-auto">
+            <div className="max-w-3xl mx-auto px-4 py-4">
+              <div className="grid grid-cols-2 gap-6">
                 <div className="bg-[#2F2F2F] rounded-2xl border border-[#383737] p-6 hover:bg-[#383737] cursor-pointer transition-colors">
                   <div className="flex items-center justify-between mb-2">
                     <h2 className="text-xl font-semibold text-white">Add files</h2>
                     <Plus className="h-5 w-5 text-white" />
                   </div>
                   <p className="text-gray-400">
-                    Chats in this project can access file content
+                    Upload campaign assets and documents
                   </p>
                 </div>
 
                 <div className="bg-[#2F2F2F] rounded-2xl border border-[#383737] p-6 hover:bg-[#383737] cursor-pointer transition-colors">
                   <div className="flex items-center justify-between mb-2">
-                    <h2 className="text-xl font-semibold text-white">Add instructions</h2>
+                    <h2 className="text-xl font-semibold text-white">Campaign Goals</h2>
                     <PenIcon className="h-5 w-5 text-white" />
                   </div>
                   <p className="text-gray-400">
-                    Tailor the way ChatGPT responds in this project
+                    Define and edit your campaign objectives
                   </p>
                 </div>
               </div>
 
-              <div className="mt-16 text-center text-gray-400">
-                Start a new chat, or drag an old one in
+              <div className="mt-6">
+                <MessageList messages={messages} />
               </div>
+            </div>
+          </div>
+
+          <div className="px-4 py-4 border-t border-[#383737]">
+            <div className="max-w-3xl mx-auto">
+              <ChatInput 
+                onSend={handleSendMessage} 
+                placeholder="Start a new chat with Adgentic about this campaign..."
+              />
             </div>
           </div>
         </div>
