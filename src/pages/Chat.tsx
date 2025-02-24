@@ -1,6 +1,6 @@
 
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from "@/integrations/supabase/client";
 import Sidebar from '@/components/Sidebar';
 import ChatHeader from '@/components/ChatHeader';
@@ -14,7 +14,8 @@ type Message = {
 };
 
 const Chat = () => {
-  const { id: campaignId } = useParams();
+  const { id: chatId } = useParams();
+  const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -22,19 +23,18 @@ const Chat = () => {
 
   useEffect(() => {
     const fetchMessages = async () => {
-      console.log('Fetching messages for:', campaignId || 'main chat');
+      console.log('Fetching messages for chat:', chatId);
       
       let query = supabase
         .from('chat_messages')
         .select('*')
         .order('created_at', { ascending: true });
 
-      // If we're in a campaign chat, filter by chat_id
-      if (campaignId) {
-        query = query.eq('chat_id', campaignId);
+      if (chatId) {
+        query = query.eq('chat_id', chatId);
       } else {
-        // For main chat, get messages with null chat_id
-        query = query.is('chat_id', null);
+        // For new chats, don't load any messages
+        return;
       }
 
       const { data, error } = await query;
@@ -60,7 +60,7 @@ const Chat = () => {
     };
 
     fetchMessages();
-  }, [campaignId, toast]);
+  }, [chatId, toast]);
 
   const handleSendMessage = async (content: string) => {
     if (!content.trim()) {
@@ -75,16 +75,38 @@ const Chat = () => {
     setIsLoading(true);
 
     try {
+      // If this is a new chat, create it first
+      if (!chatId) {
+        const { data: chatData, error: chatError } = await supabase
+          .from('chats')
+          .insert({
+            title: content.substring(0, 50), // Use first 50 chars of first message as title
+            chat_type: 'campaign'
+          })
+          .select()
+          .single();
+
+        if (chatError) throw chatError;
+
+        if (chatData) {
+          // Navigate to the new chat's URL
+          navigate(`/chat/${chatData.id}`);
+          // We don't need to continue with this execution as the navigation
+          // will trigger a re-render and the message will be sent in the new context
+          return;
+        }
+      }
+
       const userMessage: Message = {
         role: 'user',
         content
       };
 
-      // Save user message to database first
+      // Save user message to database
       const { error: insertError } = await supabase
         .from('chat_messages')
         .insert({
-          chat_id: campaignId || null,
+          chat_id: chatId,
           role: 'user',
           content: content
         });
@@ -111,7 +133,7 @@ const Chat = () => {
         const { error: aiInsertError } = await supabase
           .from('chat_messages')
           .insert({
-            chat_id: campaignId || null,
+            chat_id: chatId,
             role: 'assistant',
             content: data.content
           });
