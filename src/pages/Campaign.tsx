@@ -8,13 +8,8 @@ import MessageList from '@/components/MessageList';
 import ChatInput from '@/components/ChatInput';
 import ChatActionPills from '@/components/ChatActionPills';
 
-// Example static messages for demonstration
-const exampleMessages: Array<{ role: 'assistant' | 'user' | 'system'; content: string }> = [
-  {
-    role: 'assistant',
-    content: 'Welcome to your new campaign! How can I help you optimize your retail media strategy today?'
-  }
-];
+// Initialize with empty messages array - removing welcome message
+const exampleMessages: Array<{ role: 'assistant' | 'user' | 'system'; content: string }> = [];
 
 const Campaign = () => {
   const navigate = useNavigate();
@@ -26,25 +21,29 @@ const Campaign = () => {
       id: 'roas',
       label: 'RoAS',
       value: '3.5x',
-      timeframe: 'Last 7 Days'
+      timeframe: 'Last 7 Days',
+      className: 'bg-[#1E2A1F] border-[#2D3F2E] hover:bg-[#232E24]' // Muted green
     },
     {
       id: 'sales',
       label: 'Sales',
       value: '$1,500',
-      timeframe: 'Last 7 Days'
+      timeframe: 'Last 7 Days',
+      className: 'bg-[#1E2429] border-[#2D363D] hover:bg-[#232B31]' // Muted blue
     },
     {
       id: 'spend',
       label: 'Spend',
       value: '$428',
-      timeframe: 'Last 7 Days'
+      timeframe: 'Last 7 Days',
+      className: 'bg-[#2A231E] border-[#3D332D] hover:bg-[#2E2723]' // Muted amber
     },
     {
       id: 'clicks',
       label: 'Clicks',
       value: '875',
-      timeframe: 'Last 7 Days'
+      timeframe: 'Last 7 Days',
+      className: 'bg-[#241E2A] border-[#362D3D] hover:bg-[#2A232E]' // Muted purple
     }
   ];
 
@@ -82,42 +81,42 @@ const Campaign = () => {
           </div>
 
           <div className="flex-1 overflow-y-auto">
-            <div className="max-w-3xl mx-auto px-4 py-4">
-              <div className="grid grid-cols-2 gap-6 mb-8">
-                <div className="bg-[#2F2F2F] rounded-2xl border border-[#383737] p-6 hover:bg-[#383737] cursor-pointer transition-colors">
-                  <div className="flex items-center justify-between mb-2">
-                    <h2 className="text-xl font-semibold text-white">Add files</h2>
+            <div className="max-w-3xl mx-auto px-4 py-6">
+              <div className="grid grid-cols-2 gap-6 mb-10">
+                <div className="bg-[#2F2F2F] rounded-xl border border-[#383737] p-6 hover:bg-[#383737] cursor-pointer transition-colors">
+                  <div className="flex items-center justify-between mb-3">
+                    <h2 className="text-lg font-semibold text-white">Add files</h2>
                     <Plus className="h-5 w-5 text-white" />
                   </div>
-                  <p className="text-gray-400">
+                  <p className="text-gray-400 leading-relaxed text-sm">
                     Upload campaign assets and documents
                   </p>
                 </div>
 
-                <div className="bg-[#2F2F2F] rounded-2xl border border-[#383737] p-6 hover:bg-[#383737] cursor-pointer transition-colors">
-                  <div className="flex items-center justify-between mb-2">
-                    <h2 className="text-xl font-semibold text-white">Campaign Goals</h2>
+                <div className="bg-[#2F2F2F] rounded-xl border border-[#383737] p-6 hover:bg-[#383737] cursor-pointer transition-colors">
+                  <div className="flex items-center justify-between mb-3">
+                    <h2 className="text-lg font-semibold text-white">Campaign Goals</h2>
                     <PenIcon className="h-5 w-5 text-white" />
                   </div>
-                  <p className="text-gray-400">
+                  <p className="text-gray-400 leading-relaxed text-sm">
                     Define and edit your campaign objectives
                   </p>
                 </div>
               </div>
 
-              <div className="mb-8">
-                <div className="flex items-center gap-2 mb-4">
+              <div className="mb-10">
+                <div className="flex items-center gap-2 mb-5">
                   <BarChart3 className="h-5 w-5 text-white" />
-                  <h2 className="text-xl font-semibold text-white">Campaign Performance</h2>
+                  <h2 className="text-lg font-semibold text-white">Campaign Performance</h2>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   {metrics.map((metric) => (
                     <div 
                       key={metric.id}
-                      className="bg-[#2F2F2F] rounded-xl border border-[#383737] p-4"
+                      className={`rounded-xl border p-4 transition-colors ${metric.className}`}
                     >
-                      <div className="text-sm text-gray-400 mb-1">{metric.label}</div>
-                      <div className="text-2xl font-semibold text-white mb-1">{metric.value}</div>
+                      <div className="text-sm text-gray-400 mb-1.5 font-medium">{metric.label}</div>
+                      <div className="text-2xl font-bold text-white mb-1.5">{metric.value}</div>
                       <div className="text-xs text-gray-500">{metric.timeframe}</div>
                     </div>
                   ))}
