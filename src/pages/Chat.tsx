@@ -13,6 +13,14 @@ type Message = {
   content: string;
 };
 
+type ChatMessageRow = {
+  chat_id: string;
+  content: string;
+  created_at: string;
+  id: string;
+  role: string;
+};
+
 const Chat = () => {
   const { id } = useParams();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -35,13 +43,16 @@ const Chat = () => {
         return;
       }
 
-      // Ensure the role is one of the allowed types
-      const validMessages = data
-        .filter((msg): msg is { role: 'user' | 'assistant' | 'system', content: string } => {
-          return ['user', 'assistant', 'system'].includes(msg.role);
-        })
+      // Type guard function
+      const isValidRole = (role: string): role is Message['role'] => {
+        return ['user', 'assistant', 'system'].includes(role);
+      };
+
+      // Convert and filter valid messages
+      const validMessages = (data as ChatMessageRow[])
+        .filter(msg => isValidRole(msg.role))
         .map(msg => ({
-          role: msg.role,
+          role: msg.role as Message['role'],
           content: msg.content
         }));
 
