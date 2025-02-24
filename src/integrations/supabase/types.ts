@@ -9,7 +9,66 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      campaigns: {
+        Row: {
+          campaign_name: string
+          campaign_notes: string | null
+          campaign_status: Database["public"]["Enums"]["campaign_status"]
+          clicks_last_7_days: number | null
+          created_at: string
+          ctr_last_7_days: number | null
+          daily_budget: number
+          goals_description: string | null
+          id: string
+          impressions_last_7_days: number | null
+          platform: Database["public"]["Enums"]["retail_platform"]
+          product_asins: string[] | null
+          roas_last_7_days: number | null
+          sales_last_7_days: number | null
+          sales_lift_last_7_days: number | null
+          spend_last_7_days: number | null
+          targeting_type: Database["public"]["Enums"]["targeting_type"]
+        }
+        Insert: {
+          campaign_name: string
+          campaign_notes?: string | null
+          campaign_status?: Database["public"]["Enums"]["campaign_status"]
+          clicks_last_7_days?: number | null
+          created_at?: string
+          ctr_last_7_days?: number | null
+          daily_budget?: number
+          goals_description?: string | null
+          id?: string
+          impressions_last_7_days?: number | null
+          platform?: Database["public"]["Enums"]["retail_platform"]
+          product_asins?: string[] | null
+          roas_last_7_days?: number | null
+          sales_last_7_days?: number | null
+          sales_lift_last_7_days?: number | null
+          spend_last_7_days?: number | null
+          targeting_type?: Database["public"]["Enums"]["targeting_type"]
+        }
+        Update: {
+          campaign_name?: string
+          campaign_notes?: string | null
+          campaign_status?: Database["public"]["Enums"]["campaign_status"]
+          clicks_last_7_days?: number | null
+          created_at?: string
+          ctr_last_7_days?: number | null
+          daily_budget?: number
+          goals_description?: string | null
+          id?: string
+          impressions_last_7_days?: number | null
+          platform?: Database["public"]["Enums"]["retail_platform"]
+          product_asins?: string[] | null
+          roas_last_7_days?: number | null
+          sales_last_7_days?: number | null
+          sales_lift_last_7_days?: number | null
+          spend_last_7_days?: number | null
+          targeting_type?: Database["public"]["Enums"]["targeting_type"]
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -18,7 +77,9 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      campaign_status: "live" | "paused" | "draft"
+      retail_platform: "amazon_sp" | "walmart_sp" | "instacart_sp"
+      targeting_type: "automatic" | "manual_keyword" | "manual_product"
     }
     CompositeTypes: {
       [_ in never]: never
