@@ -1,9 +1,10 @@
 
-import { Menu, Play, Pause, FilePen, Plus, UserCircle2, DollarSign } from "lucide-react";
+import { Menu, Play, Pause, FilePen, Plus, UserCircle2, DollarSign, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { Input } from "./ui/input";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -21,6 +22,7 @@ interface Campaign {
 const Sidebar = ({ isOpen, onToggle, onApiKeyChange, onNewCampaign }: SidebarProps) => {
   const [expandedSection, setExpandedSection] = useState<string>("draft");
   const navigate = useNavigate();
+  const [searchQuery, setSearchQuery] = useState("");
   const [campaigns, setCampaigns] = useState<{
     live: Campaign[];
     paused: Campaign[];
@@ -53,7 +55,6 @@ const Sidebar = ({ isOpen, onToggle, onApiKeyChange, onNewCampaign }: SidebarPro
 
     fetchCampaigns();
 
-    // Subscribe to real-time changes
     const channel = supabase
       .channel('campaigns-changes')
       .on(
@@ -74,13 +75,20 @@ const Sidebar = ({ isOpen, onToggle, onApiKeyChange, onNewCampaign }: SidebarPro
     };
   }, []);
 
+  const filterCampaigns = (campaigns: Campaign[]) => {
+    if (!searchQuery) return campaigns;
+    return campaigns.filter(campaign => 
+      campaign.campaign_name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  };
+
   const toggleSection = (section: string) => {
     setExpandedSection(expandedSection === section ? "" : section);
   };
 
   const renderCampaignList = (items: Campaign[], sectionKey: string) => (
     <div className={cn("space-y-1", expandedSection === sectionKey ? "block" : "hidden")}>
-      {items.map(campaign => (
+      {filterCampaigns(items).map(campaign => (
         <div
           key={campaign.id}
           onClick={() => navigate(`/campaign/${campaign.id}`)}
@@ -131,6 +139,20 @@ const Sidebar = ({ isOpen, onToggle, onApiKeyChange, onNewCampaign }: SidebarPro
             </button>
           )}
         </div>
+
+        {isOpen && (
+          <div className="px-3 pb-2">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                placeholder="Search campaigns..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 bg-[#212121] border-[#383737] text-white placeholder-gray-400 h-9"
+              />
+            </div>
+          </div>
+        )}
 
         <div className="flex-1 overflow-y-auto px-3">
           <div className="space-y-1">
