@@ -13,7 +13,7 @@ type Message = {
 };
 
 const Index = () => {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true); // Set default to true
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isNewCampaignFlow, setIsNewCampaignFlow] = useState(false);
@@ -81,7 +81,7 @@ const Index = () => {
       <Sidebar 
         isOpen={isSidebarOpen} 
         onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
-        onApiKeyChange={() => {}} // Empty function since we don't need API key anymore
+        onApiKeyChange={() => {}} 
         onNewCampaign={handleStartNewCampaign}
       />
       
