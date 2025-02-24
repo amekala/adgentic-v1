@@ -1,8 +1,9 @@
 
-import { Menu, Play, Pause, FilePen, Plus, PenSquare, UserCircle2, DollarSign } from "lucide-react";
+import { Menu, Play, Pause, FilePen, Plus, UserCircle2, DollarSign } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -11,36 +12,81 @@ interface SidebarProps {
   onNewCampaign: () => void;
 }
 
-// Example static campaign data
-const campaigns = {
-  live: [
-    { id: 1, name: "New Product Launch" },
-    { id: 2, name: "Holiday Season Campaign" }
-  ],
-  paused: [
-    { id: 3, name: "Summer Sale" }
-  ],
-  draft: [
-    { id: 4, name: "Black Friday 2024" }
-  ]
-};
+interface Campaign {
+  id: string;
+  campaign_name: string;
+  campaign_status: 'draft' | 'live' | 'paused';
+}
 
 const Sidebar = ({ isOpen, onToggle, onApiKeyChange, onNewCampaign }: SidebarProps) => {
-  const [expandedSection, setExpandedSection] = useState<string>("live");
+  const [expandedSection, setExpandedSection] = useState<string>("draft");
   const navigate = useNavigate();
+  const [campaigns, setCampaigns] = useState<{
+    live: Campaign[];
+    paused: Campaign[];
+    draft: Campaign[];
+  }>({
+    live: [],
+    paused: [],
+    draft: []
+  });
+
+  useEffect(() => {
+    const fetchCampaigns = async () => {
+      const { data, error } = await supabase
+        .from('campaigns')
+        .select('id, campaign_name, campaign_status');
+
+      if (error) {
+        console.error('Error fetching campaigns:', error);
+        return;
+      }
+
+      const categorizedCampaigns = {
+        live: data.filter(c => c.campaign_status === 'live'),
+        paused: data.filter(c => c.campaign_status === 'paused'),
+        draft: data.filter(c => c.campaign_status === 'draft')
+      };
+
+      setCampaigns(categorizedCampaigns);
+    };
+
+    fetchCampaigns();
+
+    // Subscribe to real-time changes
+    const channel = supabase
+      .channel('campaigns-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'campaigns'
+        },
+        () => {
+          fetchCampaigns();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   const toggleSection = (section: string) => {
     setExpandedSection(expandedSection === section ? "" : section);
   };
 
-  const renderCampaignList = (items: typeof campaigns.live, sectionKey: string) => (
+  const renderCampaignList = (items: Campaign[], sectionKey: string) => (
     <div className={cn("space-y-1", expandedSection === sectionKey ? "block" : "hidden")}>
       {items.map(campaign => (
         <div
           key={campaign.id}
+          onClick={() => navigate(`/campaign/${campaign.id}`)}
           className="group flex h-9 items-center gap-2.5 rounded-lg px-2 hover:bg-[#383737] cursor-pointer text-sm text-gray-400 hover:text-white ml-8"
         >
-          {campaign.name}
+          {campaign.campaign_name}
         </div>
       ))}
     </div>
