@@ -3,11 +3,12 @@ import { useState } from 'react';
 import { useToast } from "@/components/ui/use-toast";
 import Sidebar from '@/components/Sidebar';
 import ChatHeader from '@/components/ChatHeader';
-import { CreditCard, Link, UserCircle, ChevronDown, ChevronRight, Check, AlertCircle, Palette, Upload, Star, Settings, Plus } from 'lucide-react';
+import { CreditCard, Link, UserCircle, ChevronDown, ChevronRight, Check, AlertCircle, Palette, Upload, Star, Settings, Plus, FileWarning } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 interface Section {
   id: string;
@@ -27,6 +28,9 @@ const Account = () => {
   const [brandDescription, setBrandDescription] = useState('');
   const [brandColor1, setBrandColor1] = useState('#252E42');
   const [brandColor2, setBrandColor2] = useState('#606D8B');
+  const [websiteUrl, setWebsiteUrl] = useState('');
+  const [isExtracting, setIsExtracting] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const sections: Section[] = [
     {
@@ -83,8 +87,86 @@ const Account = () => {
     setExpandedSection(null);
   };
 
+  const handleWebsiteExtract = async () => {
+    if (!websiteUrl) {
+      toast({
+        title: "Error",
+        description: "Please enter a website URL",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsExtracting(true);
+    try {
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      toast({
+        title: "Success",
+        description: "Website data extracted successfully",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to extract website data",
+        variant: "destructive",
+      });
+    } finally {
+      setIsExtracting(false);
+    }
+  };
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      if (file.type.startsWith('image/')) {
+        setSelectedFile(file);
+        toast({
+          title: "Success",
+          description: "Logo uploaded successfully",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Please upload an image file",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
   const renderBrandSettings = () => (
     <div className="space-y-6">
+      <Dialog>
+        <DialogTrigger asChild>
+          <Button className="w-full bg-blue-500 hover:bg-blue-600 text-white mb-4">
+            Extract from Website
+          </Button>
+        </DialogTrigger>
+        <DialogContent className="bg-[#2F2F2F] text-white">
+          <DialogHeader>
+            <DialogTitle>Extract Brand Data</DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Enter your website URL to automatically extract brand information.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            <Input
+              value={websiteUrl}
+              onChange={(e) => setWebsiteUrl(e.target.value)}
+              placeholder="https://example.com"
+              className="bg-[#212121] border-[#383737] text-white"
+            />
+            <Button 
+              onClick={handleWebsiteExtract}
+              disabled={isExtracting}
+              className="w-full bg-blue-500 hover:bg-blue-600 text-white"
+            >
+              {isExtracting ? "Extracting..." : "Extract Data"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <div className="space-y-4">
         <div className="flex items-center justify-between p-4 bg-[#383737] rounded-lg cursor-pointer" 
              onClick={() => toggleSubSection('brandInfo')}>
@@ -169,6 +251,51 @@ const Account = () => {
           )}
         </div>
       </div>
+
+      {expandedSubSection === 'logo' && (
+        <div className="p-4 space-y-4">
+          <div className="text-sm text-gray-400 mb-4">
+            Upload your logo here. A dark-colored logo with a transparent background is recommended.
+          </div>
+          
+          <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4 flex items-start gap-3">
+            <FileWarning className="h-5 w-5 text-yellow-500 mt-0.5" />
+            <p className="text-sm text-yellow-500">
+              Upload a logo to continue brand creation.
+            </p>
+          </div>
+
+          <div className="border-2 border-dashed border-[#383737] rounded-lg p-8 text-center">
+            <input
+              type="file"
+              id="logo-upload"
+              className="hidden"
+              accept="image/*"
+              onChange={handleFileSelect}
+            />
+            <label
+              htmlFor="logo-upload"
+              className="cursor-pointer flex flex-col items-center gap-2"
+            >
+              <Upload className="h-8 w-8 text-gray-400" />
+              <span className="text-sm text-gray-400">
+                {selectedFile ? selectedFile.name : "Click to upload or drag and drop"}
+              </span>
+              <span className="text-xs text-gray-500">
+                SVG, PNG, or JPG (max. 2MB)
+              </span>
+            </label>
+          </div>
+
+          <Button 
+            onClick={() => handleSaveAndContinue('Logo')}
+            className="bg-pink-500 hover:bg-pink-600 text-white w-full"
+            disabled={!selectedFile}
+          >
+            Save and Continue
+          </Button>
+        </div>
+      )}
 
       <div className="flex items-center justify-between p-4 bg-[#383737] rounded-lg cursor-pointer"
            onClick={() => toggleSubSection('colors')}>
