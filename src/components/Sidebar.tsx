@@ -75,6 +75,14 @@ const Sidebar = ({ isOpen, onToggle, onApiKeyChange, onNewCampaign }: SidebarPro
     };
   }, []);
 
+  // Check if a section has any matching campaigns
+  const hasMatchingCampaigns = (items: Campaign[]) => {
+    if (!searchQuery) return false;
+    return items.some(campaign => 
+      campaign.campaign_name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  };
+
   const filterCampaigns = (campaigns: Campaign[]) => {
     if (!searchQuery) return campaigns;
     return campaigns.filter(campaign => 
@@ -85,6 +93,15 @@ const Sidebar = ({ isOpen, onToggle, onApiKeyChange, onNewCampaign }: SidebarPro
   const toggleSection = (section: string) => {
     setExpandedSection(expandedSection === section ? "" : section);
   };
+
+  // Effect to expand sections with search results
+  useEffect(() => {
+    if (searchQuery) {
+      if (hasMatchingCampaigns(campaigns.live)) setExpandedSection("live");
+      else if (hasMatchingCampaigns(campaigns.paused)) setExpandedSection("paused");
+      else if (hasMatchingCampaigns(campaigns.draft)) setExpandedSection("draft");
+    }
+  }, [searchQuery, campaigns]);
 
   const renderCampaignList = (items: Campaign[], sectionKey: string) => (
     <div className={cn("space-y-1", expandedSection === sectionKey ? "block" : "hidden")}>
@@ -163,7 +180,7 @@ const Sidebar = ({ isOpen, onToggle, onApiKeyChange, onNewCampaign }: SidebarPro
               )}
             >
               <Play className="h-5 w-5" />
-              {isOpen && <span>Live Campaigns</span>}
+              {isOpen && <span>Live Campaigns {searchQuery && hasMatchingCampaigns(campaigns.live) && '(matches found)'}</span>}
             </button>
             {isOpen && renderCampaignList(campaigns.live, "live")}
 
@@ -174,7 +191,7 @@ const Sidebar = ({ isOpen, onToggle, onApiKeyChange, onNewCampaign }: SidebarPro
               )}
             >
               <Pause className="h-5 w-5" />
-              {isOpen && <span>Paused Campaigns</span>}
+              {isOpen && <span>Paused Campaigns {searchQuery && hasMatchingCampaigns(campaigns.paused) && '(matches found)'}</span>}
             </button>
             {isOpen && renderCampaignList(campaigns.paused, "paused")}
 
@@ -185,7 +202,7 @@ const Sidebar = ({ isOpen, onToggle, onApiKeyChange, onNewCampaign }: SidebarPro
               )}
             >
               <FilePen className="h-5 w-5" />
-              {isOpen && <span>Draft Campaigns</span>}
+              {isOpen && <span>Draft Campaigns {searchQuery && hasMatchingCampaigns(campaigns.draft) && '(matches found)'}</span>}
             </button>
             {isOpen && renderCampaignList(campaigns.draft, "draft")}
           </div>
