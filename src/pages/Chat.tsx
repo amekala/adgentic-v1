@@ -13,14 +13,6 @@ type Message = {
   content: string;
 };
 
-type ChatMessageRow = {
-  id: string;
-  chat_id: string | null;
-  content: string;
-  created_at: string;
-  role: string;
-};
-
 const Chat = () => {
   const { id: campaignId } = useParams();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -91,11 +83,11 @@ const Chat = () => {
       // Save user message to database first
       const { error: insertError } = await supabase
         .from('chat_messages')
-        .insert([{
+        .insert({
           chat_id: campaignId || null,
           role: 'user',
           content: content
-        }]);
+        });
 
       if (insertError) throw insertError;
 
@@ -118,11 +110,11 @@ const Chat = () => {
         // Save AI response to database
         const { error: aiInsertError } = await supabase
           .from('chat_messages')
-          .insert([{
+          .insert({
             chat_id: campaignId || null,
             role: 'assistant',
             content: data.content
-          }]);
+          });
 
         if (aiInsertError) throw aiInsertError;
         
