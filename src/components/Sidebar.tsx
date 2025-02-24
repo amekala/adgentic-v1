@@ -1,4 +1,5 @@
-import { Menu, Globe, ChevronDown, Key } from "lucide-react";
+
+import { Menu, Play, Pause, FilePen, Key } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
@@ -11,26 +12,21 @@ interface SidebarProps {
 
 const Sidebar = ({ isOpen, onToggle, onApiKeyChange }: SidebarProps) => {
   const [apiKey, setApiKey] = useState("");
-  const timeframes = [
-    { title: "Yesterday", items: ["Using Tailwind CSS Guide"] },
-    { 
-      title: "Previous 7 Days", 
-      items: [
-        "Likeable and Inception Levels",
-        "Viral Figma Board Ideas",
-        "RAG Status in Software Dev",
-        "Image Input ChatGPT API"
-      ] 
+  const campaignGroups = [
+    {
+      title: "Live Campaigns",
+      icon: <Play className="h-4 w-4 text-green-500" />,
+      items: [] // Empty for now as placeholder
     },
     {
-      title: "Previous 30 Days",
-      items: [
-        "Focus on Lovable Viral",
-        "Create Twitter Clone",
-        "Reddit Posting Guidelines",
-        "Revamping Social Features",
-        "US AI Voting Logo"
-      ]
+      title: "Paused Campaigns",
+      icon: <Pause className="h-4 w-4 text-yellow-500" />,
+      items: [] // Empty for now as placeholder
+    },
+    {
+      title: "Draft Campaigns",
+      icon: <FilePen className="h-4 w-4 text-gray-500" />,
+      items: [] // Empty for now as placeholder
     }
   ];
 
@@ -45,7 +41,7 @@ const Sidebar = ({ isOpen, onToggle, onApiKeyChange }: SidebarProps) => {
       "fixed top-0 left-0 z-40 h-screen bg-chatgpt-sidebar transition-all duration-300",
       isOpen ? "w-64" : "w-0"
     )}>
-      <nav className="flex h-full w-full flex-col px-3" aria-label="Chat history">
+      <nav className="flex h-full w-full flex-col px-3" aria-label="Campaign navigation">
         <div className="flex justify-between flex h-[60px] items-center">
           <button onClick={onToggle} className="h-10 rounded-lg px-2 text-token-text-secondary hover:bg-token-sidebar-surface-secondary">
             <Menu className="h-5 w-5" />
@@ -75,27 +71,15 @@ const Sidebar = ({ isOpen, onToggle, onApiKeyChange }: SidebarProps) => {
           )}
 
           <div className="bg-token-sidebar-surface-primary pt-0">
-            <div className="flex flex-col gap-2 px-2 py-2">
-              <div className="group flex h-10 items-center gap-2.5 rounded-lg px-2 hover:bg-token-sidebar-surface-secondary cursor-pointer">
-                <div className="h-6 w-6 flex items-center justify-center">
-                  <Globe className="h-4 w-4" />
-                </div>
-                <span className="text-sm">ChatGPT</span>
-              </div>
-              <div className="group flex h-10 items-center gap-2.5 rounded-lg px-2 hover:bg-token-sidebar-surface-secondary cursor-pointer">
-                <div className="h-6 w-6 flex items-center justify-center">
-                  <Globe className="h-4 w-4" />
-                </div>
-                <span className="text-sm">Explore GPTs</span>
-              </div>
-            </div>
-
             <div className="mt-4 flex flex-col gap-4">
-              {timeframes.map((timeframe) => (
-                <div key={timeframe.title}>
-                  <div className="px-3 py-2 text-xs text-gray-500">{timeframe.title}</div>
-                  {timeframe.items.map((item) => (
-                    <div key={item} className="group flex h-10 items-center gap-2.5 rounded-lg px-2 hover:bg-token-sidebar-surface-secondary cursor-pointer">
+              {campaignGroups.map((group) => (
+                <div key={group.title}>
+                  <div className="flex items-center gap-2 px-3 py-2 text-sm font-medium">
+                    {group.icon}
+                    <span>{group.title}</span>
+                  </div>
+                  {group.items.map((item, index) => (
+                    <div key={index} className="group flex h-10 items-center gap-2.5 rounded-lg px-2 hover:bg-token-sidebar-surface-secondary cursor-pointer">
                       <span className="text-sm">{item}</span>
                     </div>
                   ))}
