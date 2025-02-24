@@ -1,10 +1,13 @@
-
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
+import { useToast } from "@/components/ui/use-toast";
 import Sidebar from '@/components/Sidebar';
 import ChatHeader from '@/components/ChatHeader';
-import { CreditCard, Link, UserCircle, ChevronDown, ChevronRight, Check, AlertCircle } from 'lucide-react';
+import { CreditCard, Link, UserCircle, ChevronDown, ChevronRight, Check, AlertCircle, Palette, Upload, Star, Settings, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
 
 interface Section {
   id: string;
@@ -16,8 +19,14 @@ interface Section {
 
 const Account = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
+  const [expandedSubSection, setExpandedSubSection] = useState<string | null>(null);
+  const [brandName, setBrandName] = useState('');
+  const [brandDescription, setBrandDescription] = useState('');
+  const [brandColor1, setBrandColor1] = useState('#252E42');
+  const [brandColor2, setBrandColor2] = useState('#606D8B');
 
   const sections: Section[] = [
     {
@@ -40,12 +49,222 @@ const Account = () => {
       description: 'Connect and manage your Amazon Ads account integration',
       icon: <Link className="h-5 w-5" />,
       iconColor: 'text-yellow-500'
+    },
+    {
+      id: 'brand',
+      title: 'Brand Settings',
+      description: 'Provide your brand details once, and let our AI generate on-brand ad assets.',
+      icon: <Star className="h-5 w-5" />,
+      iconColor: 'text-pink-500'
     }
   ];
 
   const toggleSection = (sectionId: string) => {
     setExpandedSection(expandedSection === sectionId ? null : sectionId);
   };
+
+  const toggleSubSection = (subSectionId: string) => {
+    setExpandedSubSection(expandedSubSection === subSectionId ? null : subSectionId);
+  };
+
+  const handleSaveAndContinue = (section: string) => {
+    setExpandedSubSection(null);
+    toast({
+      title: "Success",
+      description: `${section} settings saved successfully.`,
+    });
+  };
+
+  const handleCreateBrand = () => {
+    toast({
+      title: "Brand Created",
+      description: "Your brand settings have been saved successfully.",
+    });
+    setExpandedSection(null);
+  };
+
+  const renderBrandSettings = () => (
+    <div className="space-y-6">
+      <div className="space-y-4">
+        <div className="flex items-center justify-between p-4 bg-[#383737] rounded-lg cursor-pointer" 
+             onClick={() => toggleSubSection('brandInfo')}>
+          <div className="flex items-center gap-3">
+            <div className="h-8 w-8 rounded-full bg-purple-500/10 flex items-center justify-center">
+              <Star className="h-4 w-4 text-purple-500" />
+            </div>
+            <div>
+              <div className="text-white font-medium">Write Brand Name & Description</div>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-400">Incomplete</span>
+            {expandedSubSection === 'brandInfo' ? (
+              <ChevronDown className="h-5 w-5 text-gray-400" />
+            ) : (
+              <ChevronRight className="h-5 w-5 text-gray-400" />
+            )}
+          </div>
+        </div>
+
+        {expandedSubSection === 'brandInfo' && (
+          <div className="p-4 space-y-4">
+            <div>
+              <label className="text-sm text-gray-400 block mb-2">
+                Brand Name (Example: AdCreative.ai)
+              </label>
+              <Input
+                value={brandName}
+                onChange={(e) => setBrandName(e.target.value)}
+                className="bg-[#212121] border-[#383737] text-white"
+                placeholder="Enter your brand name"
+                maxLength={100}
+              />
+              <div className="text-right text-sm text-gray-400 mt-1">
+                {brandName.length}/100
+              </div>
+            </div>
+
+            <div>
+              <label className="text-sm text-gray-400 block mb-2">
+                Product/Service Description
+              </label>
+              <Textarea
+                value={brandDescription}
+                onChange={(e) => setBrandDescription(e.target.value)}
+                className="bg-[#212121] border-[#383737] text-white min-h-[100px]"
+                placeholder="Describe your product or service"
+                maxLength={5000}
+              />
+              <div className="text-right text-sm text-gray-400 mt-1">
+                {brandDescription.length}/5000
+              </div>
+            </div>
+
+            <Button 
+              onClick={() => handleSaveAndContinue('Brand Info')}
+              className="bg-pink-500 hover:bg-pink-600 text-white"
+            >
+              Save and Continue
+            </Button>
+          </div>
+        )}
+      </div>
+
+      <div className="flex items-center justify-between p-4 bg-[#383737] rounded-lg cursor-pointer"
+           onClick={() => toggleSubSection('logo')}>
+        <div className="flex items-center gap-3">
+          <div className="h-8 w-8 rounded-full bg-blue-500/10 flex items-center justify-center">
+            <Upload className="h-4 w-4 text-blue-500" />
+          </div>
+          <div>
+            <div className="text-white font-medium">Select Brand Logo</div>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-gray-400">Incomplete</span>
+          {expandedSubSection === 'logo' ? (
+            <ChevronDown className="h-5 w-5 text-gray-400" />
+          ) : (
+            <ChevronRight className="h-5 w-5 text-gray-400" />
+          )}
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between p-4 bg-[#383737] rounded-lg cursor-pointer"
+           onClick={() => toggleSubSection('colors')}>
+        <div className="flex items-center gap-3">
+          <div className="h-8 w-8 rounded-full bg-green-500/10 flex items-center justify-center">
+            <Palette className="h-4 w-4 text-green-500" />
+          </div>
+          <div>
+            <div className="text-white font-medium">Select Brand Colors</div>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-gray-400">Incomplete</span>
+          {expandedSubSection === 'colors' ? (
+            <ChevronDown className="h-5 w-5 text-gray-400" />
+          ) : (
+            <ChevronRight className="h-5 w-5 text-gray-400" />
+          )}
+        </div>
+      </div>
+
+      {expandedSubSection === 'colors' && (
+        <div className="p-4 space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm text-gray-400 block mb-2">Brand Color 1</label>
+              <div className="flex gap-2">
+                <Input
+                  type="text"
+                  value={brandColor1}
+                  onChange={(e) => setBrandColor1(e.target.value)}
+                  className="bg-[#212121] border-[#383737] text-white"
+                />
+                <input
+                  type="color"
+                  value={brandColor1}
+                  onChange={(e) => setBrandColor1(e.target.value)}
+                  className="w-10 h-10 rounded cursor-pointer"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="text-sm text-gray-400 block mb-2">Brand Color 2</label>
+              <div className="flex gap-2">
+                <Input
+                  type="text"
+                  value={brandColor2}
+                  onChange={(e) => setBrandColor2(e.target.value)}
+                  className="bg-[#212121] border-[#383737] text-white"
+                />
+                <input
+                  type="color"
+                  value={brandColor2}
+                  onChange={(e) => setBrandColor2(e.target.value)}
+                  className="w-10 h-10 rounded cursor-pointer"
+                />
+              </div>
+            </div>
+          </div>
+          <Button 
+            onClick={() => handleSaveAndContinue('Brand Colors')}
+            className="bg-pink-500 hover:bg-pink-600 text-white"
+          >
+            Save and Continue
+          </Button>
+        </div>
+      )}
+
+      <div className="flex items-center justify-between p-4 bg-[#383737] rounded-lg cursor-pointer"
+           onClick={() => toggleSubSection('advanced')}>
+        <div className="flex items-center gap-3">
+          <div className="h-8 w-8 rounded-full bg-yellow-500/10 flex items-center justify-center">
+            <Settings className="h-4 w-4 text-yellow-500" />
+          </div>
+          <div>
+            <div className="text-white font-medium">Advanced Setup</div>
+            <div className="text-sm text-gray-400">
+              You can connect ad accounts, select your brand font and upload an alternative logo.
+            </div>
+          </div>
+        </div>
+        {expandedSubSection === 'advanced' ? (
+          <ChevronDown className="h-5 w-5 text-gray-400" />
+        ) : (
+          <ChevronRight className="h-5 w-5 text-gray-400" />
+        )}
+      </div>
+
+      <Button 
+        onClick={handleCreateBrand}
+        className="w-full bg-pink-500 hover:bg-pink-600 text-white"
+      >
+        Create Brand
+      </Button>
+    </div>
+  );
 
   const renderSectionContent = (sectionId: string) => {
     switch (sectionId) {
@@ -173,7 +392,7 @@ const Account = () => {
                   </button>
                   {expandedSection === section.id && (
                     <div className="px-6 pb-6">
-                      {renderSectionContent(section.id)}
+                      {section.id === 'brand' ? renderBrandSettings() : renderSectionContent(section.id)}
                     </div>
                   )}
                 </div>
