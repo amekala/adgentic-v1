@@ -1,4 +1,3 @@
-
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { Plus, PenIcon, PlayCircle, BarChart3 } from 'lucide-react';
@@ -7,8 +6,8 @@ import ChatHeader from '@/components/ChatHeader';
 import MessageList from '@/components/MessageList';
 import ChatInput from '@/components/ChatInput';
 import ChatActionPills from '@/components/ChatActionPills';
+import { AdCreativesSection } from '@/components/AdCreativesSection';
 
-// Initialize with empty messages array - removing welcome message
 const exampleMessages: Array<{ role: 'assistant' | 'user' | 'system'; content: string }> = [];
 
 const Campaign = () => {
@@ -121,6 +120,10 @@ const Campaign = () => {
                     </div>
                   ))}
                 </div>
+              </div>
+
+              <div className="mb-10">
+                <AdCreativesSection />
               </div>
 
               <div className="mt-6">
