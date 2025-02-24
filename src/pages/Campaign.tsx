@@ -23,28 +23,28 @@ const Campaign = () => {
       label: 'RoAS',
       value: '3.5x',
       timeframe: 'Last 7 Days',
-      className: 'bg-[#1E2A1F] border-[#2D3F2E] hover:bg-[#232E24]' // Muted green
+      className: 'bg-[#1E2A1F] border-[#2D3F2E] hover:bg-[#232E24]'
     },
     {
       id: 'sales',
       label: 'Sales',
       value: '$1,500',
       timeframe: 'Last 7 Days',
-      className: 'bg-[#1E2429] border-[#2D363D] hover:bg-[#232B31]' // Muted blue
+      className: 'bg-[#1E2429] border-[#2D363D] hover:bg-[#232B31]'
     },
     {
       id: 'spend',
       label: 'Spend',
       value: '$428',
       timeframe: 'Last 7 Days',
-      className: 'bg-[#2A231E] border-[#3D332D] hover:bg-[#2E2723]' // Muted amber
+      className: 'bg-[#2A231E] border-[#3D332D] hover:bg-[#2E2723]'
     },
     {
       id: 'clicks',
       label: 'Clicks',
       value: '875',
       timeframe: 'Last 7 Days',
-      className: 'bg-[#241E2A] border-[#362D3D] hover:bg-[#2A232E]' // Muted purple
+      className: 'bg-[#241E2A] border-[#362D3D] hover:bg-[#2A232E]'
     }
   ];
 
