@@ -1,11 +1,21 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ChevronRight, Check, Globe, BarChart2, Zap, ArrowRight } from 'lucide-react';
 
 const Marketing = () => {
   const navigate = useNavigate();
+  const [scrollPosition, setScrollPosition] = useState(0);
+
+  // Create scrolling ticker effect
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setScrollPosition((prevPosition) => prevPosition - 1);
+    }, 20);
+
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 text-slate-900">
@@ -90,21 +100,47 @@ const Marketing = () => {
         </div>
       </section>
 
-      {/* As Featured In */}
+      {/* As Featured In - Scrolling Ticker */}
       <section className="py-12 px-6 md:px-16 max-w-6xl mx-auto text-center">
         <h3 className="text-sm uppercase tracking-wider text-gray-500 mb-8">As Featured In</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 justify-items-center">
-          <div className="grayscale opacity-50 hover:opacity-75 transition-opacity">
-            <img src="https://placehold.co/120x40?text=TechCrunch" alt="TechCrunch" className="h-8" />
-          </div>
-          <div className="grayscale opacity-50 hover:opacity-75 transition-opacity">
-            <img src="https://placehold.co/120x40?text=Forbes" alt="Forbes" className="h-8" />
-          </div>
-          <div className="grayscale opacity-50 hover:opacity-75 transition-opacity">
-            <img src="https://placehold.co/120x40?text=AdWeek" alt="AdWeek" className="h-8" />
-          </div>
-          <div className="grayscale opacity-50 hover:opacity-75 transition-opacity">
-            <img src="https://placehold.co/120x40?text=RetailDive" alt="Retail Dive" className="h-8" />
+        <div className="overflow-hidden relative">
+          <div 
+            className="flex space-x-16 whitespace-nowrap"
+            style={{ 
+              transform: `translateX(${scrollPosition % 800}px)`,
+              width: "200%" 
+            }}
+          >
+            {/* Original logos */}
+            <div className="flex space-x-16">
+              <div className="flex items-center">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/b/b9/TechCrunch_logo.svg" alt="TechCrunch" className="h-8" />
+              </div>
+              <div className="flex items-center">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/0/0f/Forbes_logo.svg" alt="Forbes" className="h-8" />
+              </div>
+              <div className="flex items-center">
+                <img src="https://logos-download.com/wp-content/uploads/2019/01/Adweek_Logo-700x185.png" alt="AdWeek" className="h-8" />
+              </div>
+              <div className="flex items-center">
+                <img src="https://www.retaildive.com/static/img/header-logo.png" alt="Retail Dive" className="h-8" />
+              </div>
+            </div>
+            {/* Duplicated logos for continuous scrolling */}
+            <div className="flex space-x-16">
+              <div className="flex items-center">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/b/b9/TechCrunch_logo.svg" alt="TechCrunch" className="h-8" />
+              </div>
+              <div className="flex items-center">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/0/0f/Forbes_logo.svg" alt="Forbes" className="h-8" />
+              </div>
+              <div className="flex items-center">
+                <img src="https://logos-download.com/wp-content/uploads/2019/01/Adweek_Logo-700x185.png" alt="AdWeek" className="h-8" />
+              </div>
+              <div className="flex items-center">
+                <img src="https://www.retaildive.com/static/img/header-logo.png" alt="Retail Dive" className="h-8" />
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -186,7 +222,7 @@ const Marketing = () => {
                   <p className="text-gray-600 text-sm">I'll optimize your Amazon campaigns to reduce ACOS. Here's my plan:</p>
                   <ul className="text-xs text-gray-600 mt-2 space-y-1">
                     <li>• Pause 5 underperforming keywords (high spend, low sales)</li>
-                    <li>• Reduce bids by 15% on 8 keywords with ACOS {'>'}  25%</li>
+                    <li>• Reduce bids by 15% on 8 keywords with ACOS {'>'} 25%</li>
                     <li>• Add 12 new keywords from top-performing products</li>
                   </ul>
                   <div className="mt-3 flex gap-2">
@@ -200,22 +236,22 @@ const Marketing = () => {
         </div>
       </section>
 
-      {/* Platform Integrations */}
+      {/* Platform Integrations - With Brand Colors */}
       <section className="py-16 px-6 md:px-16 max-w-6xl mx-auto text-center">
         <h2 className="text-3xl md:text-4xl font-bold mb-10">Seamlessly Integrated with Leading Retail Platforms</h2>
         
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 justify-items-center items-center">
           <div className="p-4">
-            <img src="https://placehold.co/150x60?text=Amazon+Ads" alt="Amazon Ads" className="h-12" />
+            <img src="https://upload.wikimedia.org/wikipedia/commons/a/a9/Amazon_logo.svg" alt="Amazon Ads" className="h-12" />
           </div>
           <div className="p-4">
-            <img src="https://placehold.co/150x60?text=Walmart+Connect" alt="Walmart Connect" className="h-12" />
+            <img src="https://upload.wikimedia.org/wikipedia/commons/c/ca/Walmart_logo.svg" alt="Walmart Connect" className="h-12" />
           </div>
           <div className="p-4">
-            <img src="https://placehold.co/150x60?text=Instacart+Ads" alt="Instacart Ads" className="h-12" />
+            <img src="https://upload.wikimedia.org/wikipedia/commons/9/9c/Instacart_logo_and_wordmark.svg" alt="Instacart Ads" className="h-12" />
           </div>
           <div className="p-4">
-            <img src="https://placehold.co/150x60?text=Target+Roundel" alt="Target Roundel" className="h-12" />
+            <img src="https://upload.wikimedia.org/wikipedia/commons/9/9a/Target_logo.svg" alt="Target Roundel" className="h-12" />
           </div>
         </div>
         
