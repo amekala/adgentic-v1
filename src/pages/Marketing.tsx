@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -22,7 +23,7 @@ const PLATFORM_LOGOS = [
   },
   {
     name: "Instacart",
-    url: "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9c/Instacart_logo_and_wordmark.svg/512px-Instacart_logo_and_wordmark.svg.png"
+    url: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/68/Instacart_logo_2022.svg/512px-Instacart_logo_2022.svg.png"
   },
   {
     name: "Target",
@@ -33,16 +34,7 @@ const PLATFORM_LOGOS = [
 const Marketing = () => {
   const navigate = useNavigate();
   const tickerRef = useRef<HTMLDivElement>(null);
-
-  // Improved ticker scrolling with CSS animation
-  useEffect(() => {
-    // No calculations needed, using CSS for continuous scrolling
-    const tickerElement = tickerRef.current;
-    if (tickerElement) {
-      tickerElement.style.animation = 'ticker 30s linear infinite';
-    }
-  }, []);
-
+  
   const handleLoginClick = () => {
     navigate('/app');
   };
@@ -135,28 +127,43 @@ const Marketing = () => {
       </section>
 
       {/* As Featured In - Fixed Scrolling Ticker */}
-      <section className="py-12 px-6 md:px-16 max-w-6xl mx-auto text-center">
-        <h3 className="text-sm uppercase tracking-wider text-gray-500 mb-8">As Featured In</h3>
+      <section className="py-12 px-6 md:px-16 max-w-6xl mx-auto">
+        <h3 className="text-sm uppercase tracking-wider text-gray-500 mb-8 text-center">As Featured In</h3>
         <div className="overflow-hidden relative">
-          <div ref={tickerRef} className="flex whitespace-nowrap gap-16">
+          <style>
+            {`
+              @keyframes ticker {
+                0% { transform: translateX(0); }
+                100% { transform: translateX(calc(-250px * ${FEATURED_LOGOS.length})); }
+              }
+            `}
+          </style>
+          <div 
+            ref={tickerRef} 
+            className="flex items-center gap-16"
+            style={{
+              width: `calc(250px * ${FEATURED_LOGOS.length * 3})`,
+              animation: 'ticker 30s linear infinite'
+            }}
+          >
             {/* First set of logos */}
             {FEATURED_LOGOS.map((logo, index) => (
-              <div key={`logo-1-${index}`} className="flex items-center">
-                <img src={logo} alt={`Featured logo ${index + 1}`} className="h-8" />
+              <div key={`logo-1-${index}`} className="flex items-center justify-center w-[200px]">
+                <img src={logo} alt={`Featured logo ${index + 1}`} className="h-8 max-w-full" />
               </div>
             ))}
             
             {/* Duplicate set for continuous scrolling */}
             {FEATURED_LOGOS.map((logo, index) => (
-              <div key={`logo-2-${index}`} className="flex items-center">
-                <img src={logo} alt={`Featured logo ${index + 1}`} className="h-8" />
+              <div key={`logo-2-${index}`} className="flex items-center justify-center w-[200px]">
+                <img src={logo} alt={`Featured logo ${index + 1}`} className="h-8 max-w-full" />
               </div>
             ))}
             
             {/* Third set to ensure continuous display */}
             {FEATURED_LOGOS.map((logo, index) => (
-              <div key={`logo-3-${index}`} className="flex items-center">
-                <img src={logo} alt={`Featured logo ${index + 1}`} className="h-8" />
+              <div key={`logo-3-${index}`} className="flex items-center justify-center w-[200px]">
+                <img src={logo} alt={`Featured logo ${index + 1}`} className="h-8 max-w-full" />
               </div>
             ))}
           </div>
