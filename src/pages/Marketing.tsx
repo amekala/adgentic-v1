@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -189,7 +190,7 @@ const Marketing = () => {
   const performanceAnalysisChat = [
     {
       sender: 'assistant',
-      content: 'Good morning! Here's a quick overview of your campaign performance yesterday.'
+      content: "Good morning! Here's a quick overview of your campaign performance yesterday."
     },
     {
       sender: 'user',
@@ -243,7 +244,7 @@ const Marketing = () => {
   const budgetAllocationChat = [
     {
       sender: 'assistant',
-      content: 'I've analyzed your cross-platform campaigns. Would you like spending recommendations?'
+      content: "I've analyzed your cross-platform campaigns. Would you like spending recommendations?"
     },
     {
       sender: 'user',
