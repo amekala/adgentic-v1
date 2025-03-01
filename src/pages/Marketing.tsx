@@ -1,10 +1,8 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ChevronRight, Check, Globe, BarChart2, Zap, ArrowRight } from 'lucide-react';
+import { ChevronRight, Check, Globe, BarChart2, Zap, ArrowRight, Search, PieChart, TrendingUp, Tag, AlertCircle, Plus } from 'lucide-react';
 
-// Properly store logo URLs to avoid broken images
 const FEATURED_LOGOS = [
   "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b9/TechCrunch_logo.svg/512px-TechCrunch_logo.svg.png",
   "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0f/Forbes_logo.svg/512px-Forbes_logo.svg.png", 
@@ -23,7 +21,7 @@ const PLATFORM_LOGOS = [
   },
   {
     name: "Instacart",
-    url: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/68/Instacart_logo_2022.svg/512px-Instacart_logo_2022.svg.png"
+    url: "https://upload.wikimedia.org/wikipedia/commons/6/68/Instacart_logo_2022.svg"
   },
   {
     name: "Target",
@@ -31,7 +29,6 @@ const PLATFORM_LOGOS = [
   }
 ];
 
-// Pricing tiers from PricingPlans.tsx
 const pricingTiers = [
   {
     name: "Standard",
@@ -78,6 +75,78 @@ const pricingTiers = [
   }
 ];
 
+const ExampleChat = ({ title, conversation, icon: Icon, iconColor }) => {
+  const [currentStep, setCurrentStep] = useState(0);
+  
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (currentStep < conversation.length - 1) {
+        setCurrentStep(currentStep + 1);
+      }
+    }, 1500);
+    
+    return () => clearTimeout(timer);
+  }, [currentStep, conversation.length]);
+  
+  return (
+    <div className="bg-white p-5 rounded-xl shadow-lg border border-gray-200">
+      <div className="flex items-center gap-3 mb-3">
+        <div className={`h-8 w-8 rounded-full ${iconColor} flex items-center justify-center text-white`}>
+          <Icon className="h-5 w-5" />
+        </div>
+        <div className="text-sm text-gray-800 font-medium">{title}</div>
+      </div>
+      
+      <div className="bg-gray-100 rounded-lg p-4">
+        {conversation.slice(0, currentStep + 1).map((message, index) => (
+          <div 
+            key={index} 
+            className={`${message.sender === 'assistant' ? 'bg-white' : 'bg-blue-50'} rounded p-3 shadow-sm mb-3 ${message.sender === 'user' ? 'ml-8' : ''}`}
+          >
+            <p className="text-gray-700 text-sm font-medium">{message.sender === 'assistant' ? 'Adgentic Assistant:' : 'You:'}</p>
+            <p className={`text-sm ${message.sender === 'user' ? 'text-blue-600' : 'text-gray-600'}`}>{message.content}</p>
+            {message.actionButtons && (
+              <div className="mt-3 flex gap-2">
+                {message.actionButtons.map((button, idx) => (
+                  <span 
+                    key={idx} 
+                    className={`text-xs ${button.primary ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'} px-2 py-1 rounded`}
+                  >
+                    {button.label}
+                  </span>
+                ))}
+              </div>
+            )}
+            {message.metrics && (
+              <div className="grid grid-cols-2 gap-2 mt-3">
+                {message.metrics.map((metric, idx) => (
+                  <div key={idx} className="bg-gray-50 p-2 rounded">
+                    <div className="text-xs text-gray-500">{metric.label}</div>
+                    <div className={`text-sm font-medium ${metric.improvement ? 'text-green-600' : 'text-red-600'}`}>
+                      {metric.value} {metric.improvement && '↑'}{!metric.improvement && metric.value !== 'N/A' && '↓'}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+      <div className="flex justify-between items-center mt-3">
+        <div className="text-xs text-gray-500">Powered by AI</div>
+        <div className="flex gap-2">
+          {conversation.map((_, index) => (
+            <div 
+              key={index} 
+              className={`h-2 w-2 rounded-full ${index <= currentStep ? 'bg-blue-500' : 'bg-gray-200'}`}
+            ></div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const Marketing = () => {
   const navigate = useNavigate();
   const pricingSectionRef = useRef<HTMLDivElement>(null);
@@ -87,13 +156,127 @@ const Marketing = () => {
   };
 
   const handlePricingClick = () => {
-    // Scroll to pricing section instead of navigating to a different page
     pricingSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  const campaignCreationChat = [
+    {
+      sender: 'assistant',
+      content: 'Welcome back! How can I help you with your retail media campaigns today?'
+    },
+    {
+      sender: 'user',
+      content: 'I need to create a new campaign for our summer line of products on Amazon.'
+    },
+    {
+      sender: 'assistant',
+      content: "I'll help you set up that Amazon campaign for your summer products. What's your target ACOS and daily budget?",
+    },
+    {
+      sender: 'user',
+      content: 'Target ACOS is 18% and daily budget is $500.'
+    },
+    {
+      sender: 'assistant',
+      content: "Great! I've prepared your Amazon Summer Campaign with the following settings:",
+      actionButtons: [
+        { label: 'Edit Settings', primary: false },
+        { label: 'Launch Campaign', primary: true }
+      ]
+    }
+  ];
+
+  const performanceAnalysisChat = [
+    {
+      sender: 'assistant',
+      content: 'Good morning! Here's a quick overview of your campaign performance yesterday.'
+    },
+    {
+      sender: 'user',
+      content: 'Show me the details of my Amazon Black Friday campaign.'
+    },
+    {
+      sender: 'assistant',
+      content: "Here's the performance data for your Amazon Black Friday campaign over the past 7 days:",
+      metrics: [
+        { label: 'Impressions', value: '142,587', improvement: true },
+        { label: 'Clicks', value: '3,842', improvement: true },
+        { label: 'CTR', value: '2.69%', improvement: true },
+        { label: 'ACOS', value: '15.8%', improvement: true },
+        { label: 'Spend', value: '$4,215', improvement: false },
+        { label: 'Sales', value: '$26,678', improvement: true }
+      ]
+    },
+    {
+      sender: 'assistant',
+      content: "Would you like me to suggest optimizations based on this data?",
+      actionButtons: [
+        { label: 'Yes, optimize campaign', primary: true },
+        { label: 'No, just monitoring', primary: false }
+      ]
+    }
+  ];
+
+  const keywordOptimizationChat = [
+    {
+      sender: 'assistant',
+      content: 'I noticed several of your keywords could benefit from optimization. Would you like me to analyze them?'
+    },
+    {
+      sender: 'user',
+      content: 'Yes, please suggest some better keywords for my vitamin supplement campaign.'
+    },
+    {
+      sender: 'assistant',
+      content: "Based on your vitamin supplement campaign performance, here are keyword recommendations:"
+    },
+    {
+      sender: 'assistant',
+      content: "I suggest pausing: 'multivitamin supplement', 'daily vitamin', 'vitamin pills' (high spend, low conversion). And adding: 'organic vitamin supplements', 'plant-based daily vitamins', 'vegan vitamin formula' (trending in your category).",
+      actionButtons: [
+        { label: 'Review All Changes', primary: false },
+        { label: 'Apply Recommendations', primary: true }
+      ]
+    }
+  ];
+
+  const budgetAllocationChat = [
+    {
+      sender: 'assistant',
+      content: 'I've analyzed your cross-platform campaigns. Would you like spending recommendations?'
+    },
+    {
+      sender: 'user',
+      content: 'Yes, how should I reallocate my budget across Amazon, Walmart, and Instacart?'
+    },
+    {
+      sender: 'assistant',
+      content: "Based on ROAS analysis, I recommend the following budget allocation:",
+      metrics: [
+        { label: 'Amazon (current)', value: '65%', improvement: false },
+        { label: 'Amazon (recommended)', value: '50%', improvement: true },
+        { label: 'Walmart (current)', value: '25%', improvement: false },
+        { label: 'Walmart (recommended)', value: '30%', improvement: true },
+        { label: 'Instacart (current)', value: '10%', improvement: false },
+        { label: 'Instacart (recommended)', value: '20%', improvement: true }
+      ]
+    },
+    {
+      sender: 'user',
+      content: 'Why increase Instacart so much?'
+    },
+    {
+      sender: 'assistant',
+      content: "Your Instacart campaigns show the highest ROAS at 4.2x compared to Amazon (3.1x) and Walmart (3.8x). There's significant growth opportunity with only 10% of your current spend.",
+      actionButtons: [
+        { label: 'Adjust Manually', primary: false },
+        { label: 'Apply Recommendations', primary: true }
+      ]
+    }
+  ];
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 text-slate-900">
-      {/* Navigation */}
       <nav className="flex items-center justify-between py-6 px-8 md:px-16">
         <div className="flex items-center gap-2">
           <div className="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center text-white">
@@ -116,7 +299,6 @@ const Marketing = () => {
         </Button>
       </nav>
 
-      {/* Hero Section */}
       <section className="py-16 md:py-24 px-6 md:px-16 max-w-6xl mx-auto text-center">
         <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
           AI Reimagined, Retail Media Amplified
@@ -131,50 +313,17 @@ const Marketing = () => {
           Get Started <ArrowRight className="ml-2 h-5 w-5" />
         </Button>
 
-        {/* App Preview */}
         <div className="mt-16 relative mx-auto max-w-3xl">
           <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-purple-400/20 rounded-2xl transform rotate-1"></div>
-          <div className="relative bg-white p-6 rounded-2xl shadow-xl border border-gray-200">
-            <div className="bg-gray-100 rounded-lg p-4 mb-4">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center text-white">
-                  <span className="font-bold">A</span>
-                </div>
-                <div className="text-sm text-gray-800 font-medium">Adgentic Assistant</div>
-              </div>
-              <div className="bg-white rounded p-3 shadow-sm mb-3">
-                <p className="text-gray-700 text-sm">How can I help you optimize your retail media campaigns today?</p>
-              </div>
-              <div className="bg-blue-50 rounded p-3 shadow-sm mb-3 ml-8">
-                <p className="text-gray-700 text-sm">I need to create a new Amazon campaign for our summer promotion</p>
-              </div>
-              <div className="bg-white rounded p-3 shadow-sm">
-                <p className="text-gray-700 text-sm">I'll help you set up an Amazon campaign for your summer promotion. Let's start with the basics:</p>
-                <ul className="text-xs text-gray-600 mt-2 space-y-1">
-                  <li>• Campaign name: Summer Promotion 2023</li>
-                  <li>• Platform: Amazon Ads</li>
-                  <li>• Budget: $1,000/day</li>
-                  <li>• Target ACOS: 15%</li>
-                </ul>
-                <div className="mt-3 flex gap-2">
-                  <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">Edit Details</span>
-                  <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">Approve & Create</span>
-                </div>
-              </div>
-            </div>
-            <div className="flex justify-between items-center">
-              <div className="text-xs text-gray-500">Powered by AI</div>
-              <div className="flex gap-2">
-                <div className="h-2 w-2 rounded-full bg-gray-200"></div>
-                <div className="h-2 w-2 rounded-full bg-gray-200"></div>
-                <div className="h-2 w-2 rounded-full bg-blue-500"></div>
-              </div>
-            </div>
-          </div>
+          <ExampleChat 
+            title="Campaign Creation" 
+            conversation={campaignCreationChat}
+            icon={Plus}
+            iconColor="bg-blue-600"
+          />
         </div>
       </section>
 
-      {/* Leading Retail Media Platforms - Replacing "As Featured In" */}
       <section className="py-12 px-6 md:px-16 max-w-6xl mx-auto">
         <h3 className="text-sm uppercase tracking-wider text-gray-500 mb-8 text-center">Leading Retail Media Platforms</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 justify-items-center items-center">
@@ -191,7 +340,6 @@ const Marketing = () => {
         <p className="text-gray-600 mt-8 text-center">Manage your retail media presence across all major retailers from a single platform.</p>
       </section>
 
-      {/* For Section */}
       <section id="benefits" className="py-16 px-6 md:px-16 max-w-6xl mx-auto text-center">
         <h2 className="text-3xl md:text-4xl font-bold mb-12">
           For 🛍️ brands, 🛒 retailers and 🏭 CPG companies
@@ -200,7 +348,6 @@ const Marketing = () => {
           Empowering retail brands and marketers with cutting-edge AI solutions for retail media excellence.
         </p>
 
-        {/* Value Proposition Cards */}
         <div className="grid md:grid-cols-3 gap-8 mb-16">
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
             <div className="h-12 w-12 bg-blue-100 rounded-lg text-blue-600 flex items-center justify-center mx-auto mb-4">
@@ -228,22 +375,21 @@ const Marketing = () => {
         </div>
       </section>
 
-      {/* App Features */}
       <section id="features" className="py-16 bg-gray-50">
         <div className="px-6 md:px-16 max-w-6xl mx-auto">
           <h2 className="text-3xl md:text-4xl font-bold mb-16 text-center">See Adgentic in Action</h2>
           
-          <div className="grid md:grid-cols-2 gap-16 items-center">
+          <div className="grid md:grid-cols-2 gap-16 items-center mb-24">
             <div>
-              <h3 className="text-2xl font-semibold mb-4">Conversational Campaign Creation</h3>
-              <p className="text-gray-600 mb-6">Create, manage, and optimize retail media campaigns through a simple chat interface. No more complex dashboards.</p>
+              <h3 className="text-2xl font-semibold mb-4">Performance Analysis</h3>
+              <p className="text-gray-600 mb-6">Get comprehensive cross-platform performance analytics with actionable insights, all in a simple conversation.</p>
               
               <ul className="space-y-3">
                 {[
-                  "Guided campaign setup",
-                  "AI-recommended keywords and bids",
-                  "Cross-platform campaign management",
-                  "Automatic performance alerts"
+                  "Automated performance reports",
+                  "Cross-platform ROAS comparison",
+                  "Campaign anomaly detection",
+                  "Real-time performance alerts"
                 ].map((item, index) => (
                   <li key={index} className="flex items-start">
                     <Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
@@ -253,36 +399,72 @@ const Marketing = () => {
               </ul>
             </div>
             
-            <div className="bg-white p-5 rounded-xl shadow-lg border border-gray-200">
-              <div className="bg-gray-100 rounded-lg p-4">
-                <div className="bg-white rounded p-3 shadow-sm mb-3">
-                  <p className="text-gray-700 text-sm font-medium">Adgentic Assistant:</p>
-                  <p className="text-gray-600 text-sm">I've analyzed your campaigns across Amazon, Walmart and Instacart. Your ACOS is 18% on Amazon, which is 3% higher than your target. Would you like me to suggest optimization strategies?</p>
-                </div>
-                <div className="bg-blue-50 rounded p-3 shadow-sm mb-3">
-                  <p className="text-gray-700 text-sm font-medium">You:</p>
-                  <p className="text-blue-600 text-sm">Yes, please optimize my Amazon campaigns to reduce ACOS</p>
-                </div>
-                <div className="bg-white rounded p-3 shadow-sm">
-                  <p className="text-gray-700 text-sm font-medium">Adgentic Assistant:</p>
-                  <p className="text-gray-600 text-sm">I'll optimize your Amazon campaigns to reduce ACOS. Here's my plan:</p>
-                  <ul className="text-xs text-gray-600 mt-2 space-y-1">
-                    <li>• Pause 5 underperforming keywords (high spend, low sales)</li>
-                    <li>• Reduce bids by 15% on 8 keywords with ACOS {'>'} 25%</li>
-                    <li>• Add 12 new keywords from top-performing products</li>
-                  </ul>
-                  <div className="mt-3 flex gap-2">
-                    <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">Review Changes</span>
-                    <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">Apply All Optimizations</span>
-                  </div>
-                </div>
-              </div>
+            <ExampleChat 
+              title="Performance Analysis" 
+              conversation={performanceAnalysisChat}
+              icon={BarChart2}
+              iconColor="bg-green-600"
+            />
+          </div>
+          
+          <div className="grid md:grid-cols-2 gap-16 items-center mb-24">
+            <ExampleChat 
+              title="Keyword Optimization" 
+              conversation={keywordOptimizationChat}
+              icon={Tag}
+              iconColor="bg-purple-600"
+            />
+            
+            <div>
+              <h3 className="text-2xl font-semibold mb-4">Keyword Intelligence</h3>
+              <p className="text-gray-600 mb-6">Discover high-performing keywords and automatically optimize your campaigns with AI-driven recommendations.</p>
+              
+              <ul className="space-y-3">
+                {[
+                  "Competitive keyword analysis",
+                  "Under-performing keyword detection",
+                  "Trending search term identification",
+                  "Automated bid optimization"
+                ].map((item, index) => (
+                  <li key={index} className="flex items-start">
+                    <Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
+                    <span className="text-gray-700">{item}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
+          </div>
+          
+          <div className="grid md:grid-cols-2 gap-16 items-center">
+            <div>
+              <h3 className="text-2xl font-semibold mb-4">Budget Allocation</h3>
+              <p className="text-gray-600 mb-6">Optimize your spending across multiple retail media platforms to maximize ROAS and market coverage.</p>
+              
+              <ul className="space-y-3">
+                {[
+                  "Cross-platform budget recommendations",
+                  "ROAS-driven allocation strategies",
+                  "Seasonal budget planning",
+                  "Spend pacing and forecasting"
+                ].map((item, index) => (
+                  <li key={index} className="flex items-start">
+                    <Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
+                    <span className="text-gray-700">{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            
+            <ExampleChat 
+              title="Budget Allocation" 
+              conversation={budgetAllocationChat}
+              icon={PieChart}
+              iconColor="bg-orange-600"
+            />
           </div>
         </div>
       </section>
 
-      {/* Integrated Pricing Section */}
       <section id="pricing" ref={pricingSectionRef} className="py-16 px-6 md:px-16">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
@@ -327,7 +509,6 @@ const Marketing = () => {
         </div>
       </section>
 
-      {/* Testimonials */}
       <section className="py-16 bg-gray-50">
         <div className="px-6 md:px-16 max-w-6xl mx-auto text-center">
           <h2 className="text-3xl md:text-4xl font-bold mb-16">Trusted by Growing Brands</h2>
@@ -363,7 +544,6 @@ const Marketing = () => {
         </div>
       </section>
 
-      {/* CTA */}
       <section className="py-20 px-6 md:px-16 max-w-6xl mx-auto text-center">
         <h2 className="text-3xl md:text-4xl font-bold mb-8">Ready to Transform Your Retail Media Strategy?</h2>
         <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-10">
@@ -377,7 +557,6 @@ const Marketing = () => {
         </Button>
       </section>
 
-      {/* Footer */}
       <footer className="bg-gray-900 text-gray-400 py-12 px-6 md:px-16">
         <div className="max-w-6xl mx-auto">
           <div className="flex flex-col md:flex-row justify-between mb-8">
