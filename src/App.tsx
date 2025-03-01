@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Index from "./pages/Index";
 import Campaign from "./pages/Campaign";
 import Chat from "./pages/Chat";
@@ -26,6 +26,8 @@ const App = () => (
           <Route path="/chat/:id" element={<Chat />} />
           <Route path="/account" element={<Account />} />
           <Route path="/pricing" element={<Pricing />} />
+          {/* Add a catch-all redirect to ensure users land on Marketing */}
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
     </TooltipProvider>

@@ -1,21 +1,80 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ChevronRight, Check, Globe, BarChart2, Zap, ArrowRight } from 'lucide-react';
 
+// Properly store logo URLs to avoid broken images
+const FEATURED_LOGOS = [
+  "https://upload.wikimedia.org/wikipedia/commons/b/b9/TechCrunch_logo.svg",
+  "https://upload.wikimedia.org/wikipedia/commons/0/0f/Forbes_logo.svg", 
+  "https://logos-download.com/wp-content/uploads/2019/01/Adweek_Logo-700x185.png",
+  "https://www.retaildive.com/static/img/header-logo.png"
+];
+
+const PLATFORM_LOGOS = [
+  {
+    name: "Amazon",
+    url: "https://upload.wikimedia.org/wikipedia/commons/a/a9/Amazon_logo.svg"
+  },
+  {
+    name: "Walmart",
+    url: "https://upload.wikimedia.org/wikipedia/commons/c/ca/Walmart_logo.svg"
+  },
+  {
+    name: "Instacart",
+    url: "https://upload.wikimedia.org/wikipedia/commons/9/9c/Instacart_logo_and_wordmark.svg"
+  },
+  {
+    name: "Target",
+    url: "https://upload.wikimedia.org/wikipedia/commons/9/9a/Target_logo.svg"
+  }
+];
+
 const Marketing = () => {
   const navigate = useNavigate();
-  const [scrollPosition, setScrollPosition] = useState(0);
+  const tickerRef = useRef<HTMLDivElement>(null);
+  const [tickerWidth, setTickerWidth] = useState(0);
 
-  // Create scrolling ticker effect
+  // Initialize ticker scrolling
   useEffect(() => {
-    const interval = setInterval(() => {
-      setScrollPosition((prevPosition) => prevPosition - 1);
-    }, 20);
-
-    return () => clearInterval(interval);
+    const tickerElement = tickerRef.current;
+    if (tickerElement) {
+      // Get the width of the first set of logos
+      const firstSetWidth = tickerElement.querySelector('.ticker-set')?.clientWidth || 0;
+      setTickerWidth(firstSetWidth);
+      
+      // Use CSS animation instead of manual animation
+      const tickerAnimation = `
+        @keyframes ticker {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-${firstSetWidth}px); }
+        }
+      `;
+      
+      // Create and append the animation style
+      const styleElement = document.createElement('style');
+      styleElement.innerHTML = tickerAnimation;
+      document.head.appendChild(styleElement);
+      
+      // Apply animation to ticker element
+      if (tickerElement) {
+        tickerElement.style.animation = 'ticker 30s linear infinite';
+      }
+      
+      return () => {
+        document.head.removeChild(styleElement);
+      };
+    }
   }, []);
+
+  const handleLoginClick = () => {
+    navigate('/app');
+  };
+
+  const handlePricingClick = () => {
+    navigate('/pricing');
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 text-slate-900">
@@ -30,11 +89,11 @@ const Marketing = () => {
         <div className="hidden md:flex items-center gap-8">
           <a href="#features" className="text-sm hover:text-blue-600 transition-colors">Features</a>
           <a href="#benefits" className="text-sm hover:text-blue-600 transition-colors">Benefits</a>
-          <a href="#pricing" className="text-sm hover:text-blue-600 transition-colors">Pricing</a>
+          <button onClick={handlePricingClick} className="text-sm hover:text-blue-600 transition-colors">Pricing</button>
           <a href="#contact" className="text-sm hover:text-blue-600 transition-colors">Contact</a>
         </div>
         <Button 
-          onClick={() => navigate('/')} 
+          onClick={handleLoginClick} 
           variant="default" 
           className="bg-gray-900 hover:bg-gray-800 text-white rounded-md px-4 py-2"
         >
@@ -51,7 +110,7 @@ const Marketing = () => {
           Crafting intelligent solutions that turn your retail media goals into reality.
         </p>
         <Button
-          onClick={() => navigate('/')}
+          onClick={handleLoginClick}
           className="bg-blue-600 hover:bg-blue-700 text-white text-lg px-8 py-6 rounded-md"
         >
           Get Started <ArrowRight className="ml-2 h-5 w-5" />
@@ -104,42 +163,23 @@ const Marketing = () => {
       <section className="py-12 px-6 md:px-16 max-w-6xl mx-auto text-center">
         <h3 className="text-sm uppercase tracking-wider text-gray-500 mb-8">As Featured In</h3>
         <div className="overflow-hidden relative">
-          <div 
-            className="flex space-x-16 whitespace-nowrap"
-            style={{ 
-              transform: `translateX(${scrollPosition % 800}px)`,
-              width: "200%" 
-            }}
-          >
-            {/* Original logos */}
-            <div className="flex space-x-16">
-              <div className="flex items-center">
-                <img src="https://upload.wikimedia.org/wikipedia/commons/b/b9/TechCrunch_logo.svg" alt="TechCrunch" className="h-8" />
-              </div>
-              <div className="flex items-center">
-                <img src="https://upload.wikimedia.org/wikipedia/commons/0/0f/Forbes_logo.svg" alt="Forbes" className="h-8" />
-              </div>
-              <div className="flex items-center">
-                <img src="https://logos-download.com/wp-content/uploads/2019/01/Adweek_Logo-700x185.png" alt="AdWeek" className="h-8" />
-              </div>
-              <div className="flex items-center">
-                <img src="https://www.retaildive.com/static/img/header-logo.png" alt="Retail Dive" className="h-8" />
-              </div>
+          <div ref={tickerRef} className="flex whitespace-nowrap" style={{ width: `${tickerWidth * 2}px` }}>
+            {/* First set of logos */}
+            <div className="ticker-set flex space-x-16">
+              {FEATURED_LOGOS.map((logo, index) => (
+                <div key={`logo-1-${index}`} className="flex items-center">
+                  <img src={logo} alt={`Featured logo ${index + 1}`} className="h-8" />
+                </div>
+              ))}
             </div>
-            {/* Duplicated logos for continuous scrolling */}
-            <div className="flex space-x-16">
-              <div className="flex items-center">
-                <img src="https://upload.wikimedia.org/wikipedia/commons/b/b9/TechCrunch_logo.svg" alt="TechCrunch" className="h-8" />
-              </div>
-              <div className="flex items-center">
-                <img src="https://upload.wikimedia.org/wikipedia/commons/0/0f/Forbes_logo.svg" alt="Forbes" className="h-8" />
-              </div>
-              <div className="flex items-center">
-                <img src="https://logos-download.com/wp-content/uploads/2019/01/Adweek_Logo-700x185.png" alt="AdWeek" className="h-8" />
-              </div>
-              <div className="flex items-center">
-                <img src="https://www.retaildive.com/static/img/header-logo.png" alt="Retail Dive" className="h-8" />
-              </div>
+            
+            {/* Duplicate set for continuous scrolling */}
+            <div className="ticker-set flex space-x-16">
+              {FEATURED_LOGOS.map((logo, index) => (
+                <div key={`logo-2-${index}`} className="flex items-center">
+                  <img src={logo} alt={`Featured logo ${index + 1}`} className="h-8" />
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -241,18 +281,11 @@ const Marketing = () => {
         <h2 className="text-3xl md:text-4xl font-bold mb-10">Seamlessly Integrated with Leading Retail Platforms</h2>
         
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 justify-items-center items-center">
-          <div className="p-4">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/a/a9/Amazon_logo.svg" alt="Amazon Ads" className="h-12" />
-          </div>
-          <div className="p-4">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/c/ca/Walmart_logo.svg" alt="Walmart Connect" className="h-12" />
-          </div>
-          <div className="p-4">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/9/9c/Instacart_logo_and_wordmark.svg" alt="Instacart Ads" className="h-12" />
-          </div>
-          <div className="p-4">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/9/9a/Target_logo.svg" alt="Target Roundel" className="h-12" />
-          </div>
+          {PLATFORM_LOGOS.map((platform, index) => (
+            <div key={index} className="p-4">
+              <img src={platform.url} alt={platform.name} className="h-12" />
+            </div>
+          ))}
         </div>
         
         <p className="text-gray-600 mt-8">Manage your retail media presence across all major retailers from a single platform.</p>
@@ -301,7 +334,7 @@ const Marketing = () => {
           Join forward-thinking brands already using Adgentic to simplify their retail media management and drive growth.
         </p>
         <Button
-          onClick={() => navigate('/')}
+          onClick={handleLoginClick}
           className="bg-blue-600 hover:bg-blue-700 text-white text-lg px-8 py-6 rounded-md"
         >
           Get Started <ArrowRight className="ml-2 h-5 w-5" />
