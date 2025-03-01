@@ -9,6 +9,7 @@ import Campaign from "./pages/Campaign";
 import Chat from "./pages/Chat";
 import Account from "./pages/Account";
 import Pricing from "./pages/Pricing";
+import Marketing from "./pages/Marketing";
 
 const queryClient = new QueryClient();
 
@@ -19,7 +20,8 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Index />} />
+          <Route path="/" element={<Marketing />} />
+          <Route path="/app" element={<Index />} />
           <Route path="/campaign/:id" element={<Campaign />} />
           <Route path="/chat/:id" element={<Chat />} />
           <Route path="/account" element={<Account />} />

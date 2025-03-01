@@ -1,9 +1,14 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 body {
   @apply bg-chatgpt-main text-white;
+}
+
+.marketing-page {
+  @apply bg-white text-gray-900;
 }
 
 .sidebar-item {
