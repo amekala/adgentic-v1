@@ -31,16 +31,64 @@ const PLATFORM_LOGOS = [
   }
 ];
 
+// Pricing tiers from PricingPlans.tsx
+const pricingTiers = [
+  {
+    name: "Standard",
+    description: "For advertisers spending up to $4M per year.",
+    price: "$95k",
+    benefits: [
+      "Access 100+ publishers",
+      "Access to best-in-class automation & optimization capabilities",
+      "Access to online training resources and help center"
+    ]
+  },
+  {
+    name: "Advanced",
+    description: "For advertisers spending up to $10M per year.",
+    price: "$230k",
+    benefits: [
+      "Competitive Insights",
+      "Search Term Analysis",
+      "Dedicated client success support"
+    ],
+    baseText: "All the benefits of Standard, plus:"
+  },
+  {
+    name: "Enterprise",
+    description: "For advertisers spending up to $20M per year.",
+    price: "$420k",
+    benefits: [
+      "Expanded set of read-only publishers",
+      "Customizable audits & QA capabilities",
+      "Expanded customer journey intelligence"
+    ],
+    baseText: "All the benefits of Advanced, plus:"
+  },
+  {
+    name: "Enterprise Premier",
+    description: "For advertisers spending up to $35M per year.",
+    price: "$630k",
+    benefits: [
+      "Incrementality testing",
+      "White glove onboarding and client success",
+      "Custom solution development"
+    ],
+    baseText: "All the benefits of Enterprise, plus:"
+  }
+];
+
 const Marketing = () => {
   const navigate = useNavigate();
-  const tickerRef = useRef<HTMLDivElement>(null);
+  const pricingSectionRef = useRef<HTMLDivElement>(null);
   
   const handleLoginClick = () => {
     navigate('/app');
   };
 
   const handlePricingClick = () => {
-    navigate('/pricing-plans');
+    // Scroll to pricing section instead of navigating to a different page
+    pricingSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   return (
@@ -126,48 +174,21 @@ const Marketing = () => {
         </div>
       </section>
 
-      {/* As Featured In - Fixed Scrolling Ticker */}
+      {/* Leading Retail Media Platforms - Replacing "As Featured In" */}
       <section className="py-12 px-6 md:px-16 max-w-6xl mx-auto">
-        <h3 className="text-sm uppercase tracking-wider text-gray-500 mb-8 text-center">As Featured In</h3>
-        <div className="overflow-hidden relative">
-          <style>
-            {`
-              @keyframes ticker {
-                0% { transform: translateX(0); }
-                100% { transform: translateX(calc(-250px * ${FEATURED_LOGOS.length})); }
-              }
-            `}
-          </style>
-          <div 
-            ref={tickerRef} 
-            className="flex items-center gap-16"
-            style={{
-              width: `calc(250px * ${FEATURED_LOGOS.length * 3})`,
-              animation: 'ticker 30s linear infinite'
-            }}
-          >
-            {/* First set of logos */}
-            {FEATURED_LOGOS.map((logo, index) => (
-              <div key={`logo-1-${index}`} className="flex items-center justify-center w-[200px]">
-                <img src={logo} alt={`Featured logo ${index + 1}`} className="h-8 max-w-full" />
-              </div>
-            ))}
-            
-            {/* Duplicate set for continuous scrolling */}
-            {FEATURED_LOGOS.map((logo, index) => (
-              <div key={`logo-2-${index}`} className="flex items-center justify-center w-[200px]">
-                <img src={logo} alt={`Featured logo ${index + 1}`} className="h-8 max-w-full" />
-              </div>
-            ))}
-            
-            {/* Third set to ensure continuous display */}
-            {FEATURED_LOGOS.map((logo, index) => (
-              <div key={`logo-3-${index}`} className="flex items-center justify-center w-[200px]">
-                <img src={logo} alt={`Featured logo ${index + 1}`} className="h-8 max-w-full" />
-              </div>
-            ))}
-          </div>
+        <h3 className="text-sm uppercase tracking-wider text-gray-500 mb-8 text-center">Leading Retail Media Platforms</h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 justify-items-center items-center">
+          {PLATFORM_LOGOS.map((platform, index) => (
+            <div key={index} className="p-4 flex items-center justify-center">
+              <img 
+                src={platform.url} 
+                alt={platform.name} 
+                className="h-12 max-w-full object-contain" 
+              />
+            </div>
+          ))}
         </div>
+        <p className="text-gray-600 mt-8 text-center">Manage your retail media presence across all major retailers from a single platform.</p>
       </section>
 
       {/* For Section */}
@@ -261,19 +282,49 @@ const Marketing = () => {
         </div>
       </section>
 
-      {/* Platform Integrations - With Brand Colors */}
-      <section className="py-16 px-6 md:px-16 max-w-6xl mx-auto text-center">
-        <h2 className="text-3xl md:text-4xl font-bold mb-10">Seamlessly Integrated with Leading Retail Platforms</h2>
-        
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 justify-items-center items-center">
-          {PLATFORM_LOGOS.map((platform, index) => (
-            <div key={index} className="p-4">
-              <img src={platform.url} alt={platform.name} className="h-12" />
-            </div>
-          ))}
+      {/* Integrated Pricing Section */}
+      <section id="pricing" ref={pricingSectionRef} className="py-16 px-6 md:px-16">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              Explore our simple, <span className="text-blue-500">straightforward pricing</span>
+            </h2>
+            <p className="text-gray-600 text-lg max-w-3xl mx-auto">
+              Choose any tier to begin with us and enjoy a flat annual fee, ensuring predictable tech costs even as you scale your program.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {pricingTiers.map((tier) => (
+              <div key={tier.name} className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm hover:shadow-md transition-shadow flex flex-col">
+                <h3 className="text-2xl font-bold text-blue-500 mb-2">{tier.name}</h3>
+                <p className="text-gray-600 mb-4">{tier.description}</p>
+                <div className="text-3xl font-bold text-gray-900 mb-6">{tier.price}<span className="text-lg text-gray-500"> per year</span></div>
+                
+                <Button 
+                  onClick={handleLoginClick} 
+                  className="w-full bg-blue-500 text-white rounded-lg py-2 px-4 hover:bg-blue-600 transition-colors mb-6"
+                >
+                  Get Started <ArrowRight className="h-4 w-4 ml-1" />
+                </Button>
+
+                <div className="mt-auto">
+                  {tier.baseText && (
+                    <p className="text-gray-500 mb-2 text-sm">{tier.baseText}</p>
+                  )}
+                  <ul className="space-y-3">
+                    {tier.benefits.map((benefit, index) => (
+                      <li key={index} className="flex items-start gap-2 text-gray-700">
+                        <Check className="h-5 w-5 text-blue-500 mt-0.5 flex-shrink-0" />
+                        <span>{benefit}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
-        
-        <p className="text-gray-600 mt-8">Manage your retail media presence across all major retailers from a single platform.</p>
       </section>
 
       {/* Testimonials */}
@@ -344,8 +395,8 @@ const Marketing = () => {
               <div>
                 <h4 className="text-white font-medium mb-4">Product</h4>
                 <ul className="space-y-2">
-                  <li><a href="#" className="hover:text-white transition-colors">Features</a></li>
-                  <li><a href="#" className="hover:text-white transition-colors">Pricing</a></li>
+                  <li><a href="#features" className="hover:text-white transition-colors">Features</a></li>
+                  <li><a href="#pricing" className="hover:text-white transition-colors">Pricing</a></li>
                   <li><a href="#" className="hover:text-white transition-colors">Integrations</a></li>
                 </ul>
               </div>

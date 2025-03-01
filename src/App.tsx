@@ -10,7 +10,6 @@ import Chat from "./pages/Chat";
 import Account from "./pages/Account";
 import Pricing from "./pages/Pricing";
 import Marketing from "./pages/Marketing";
-import PricingPlans from "./pages/PricingPlans";
 
 const queryClient = new QueryClient();
 
@@ -27,7 +26,6 @@ const App = () => (
           <Route path="/chat/:id" element={<Chat />} />
           <Route path="/account" element={<Account />} />
           <Route path="/pricing" element={<Pricing />} />
-          <Route path="/pricing-plans" element={<PricingPlans />} />
           {/* Add a catch-all redirect to ensure users land on Marketing */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
