@@ -186,7 +186,7 @@ const Marketing = () => {
                   <p className="text-gray-600 text-sm">I'll optimize your Amazon campaigns to reduce ACOS. Here's my plan:</p>
                   <ul className="text-xs text-gray-600 mt-2 space-y-1">
                     <li>• Pause 5 underperforming keywords (high spend, low sales)</li>
-                    <li>• Reduce bids by 15% on 8 keywords with ACOS > 25%</li>
+                    <li>• Reduce bids by 15% on 8 keywords with ACOS {'>'}  25%</li>
                     <li>• Add 12 new keywords from top-performing products</li>
                   </ul>
                   <div className="mt-3 flex gap-2">
