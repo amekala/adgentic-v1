@@ -1,15 +1,36 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+:root {
+  --primary: 252 87% 75%;
+  --primary-foreground: 0 0% 100%;
+}
 
 body {
   @apply bg-chatgpt-main text-white;
 }
 
+/* App-specific styles */
 .sidebar-item {
   @apply flex items-center gap-3 rounded-md px-3 py-3 text-sm transition-colors duration-200 hover:bg-chatgpt-hover cursor-pointer;
 }
 
 .action-button {
   @apply flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-chatgpt-hover/50 border border-transparent hover:border-chatgpt-border transition-all duration-200;
+}
+
+/* Marketing page styles */
+.marketing-page {
+  @apply bg-white text-gray-800;
+}
+
+.marketing-page h1, .marketing-page h2, .marketing-page h3 {
+  @apply font-semibold;
+}
+
+/* Add smooth scrolling */
+html {
+  scroll-behavior: smooth;
 }
