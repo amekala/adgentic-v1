@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -6,65 +5,41 @@ import { ChevronRight, Check, Globe, BarChart2, Zap, ArrowRight } from 'lucide-r
 
 // Properly store logo URLs to avoid broken images
 const FEATURED_LOGOS = [
-  "https://upload.wikimedia.org/wikipedia/commons/b/b9/TechCrunch_logo.svg",
-  "https://upload.wikimedia.org/wikipedia/commons/0/0f/Forbes_logo.svg", 
-  "https://logos-download.com/wp-content/uploads/2019/01/Adweek_Logo-700x185.png",
-  "https://www.retaildive.com/static/img/header-logo.png"
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b9/TechCrunch_logo.svg/512px-TechCrunch_logo.svg.png",
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0f/Forbes_logo.svg/512px-Forbes_logo.svg.png", 
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/Adweek.svg/512px-Adweek.svg.png",
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a4/Retail_Dive_logo.svg/512px-Retail_Dive_logo.svg.png"
 ];
 
 const PLATFORM_LOGOS = [
   {
     name: "Amazon",
-    url: "https://upload.wikimedia.org/wikipedia/commons/a/a9/Amazon_logo.svg"
+    url: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a9/Amazon_logo.svg/512px-Amazon_logo.svg.png"
   },
   {
     name: "Walmart",
-    url: "https://upload.wikimedia.org/wikipedia/commons/c/ca/Walmart_logo.svg"
+    url: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/ca/Walmart_logo.svg/512px-Walmart_logo.svg.png"
   },
   {
     name: "Instacart",
-    url: "https://upload.wikimedia.org/wikipedia/commons/9/9c/Instacart_logo_and_wordmark.svg"
+    url: "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9c/Instacart_logo_and_wordmark.svg/512px-Instacart_logo_and_wordmark.svg.png"
   },
   {
     name: "Target",
-    url: "https://upload.wikimedia.org/wikipedia/commons/9/9a/Target_logo.svg"
+    url: "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9a/Target_logo.svg/512px-Target_logo.svg.png"
   }
 ];
 
 const Marketing = () => {
   const navigate = useNavigate();
   const tickerRef = useRef<HTMLDivElement>(null);
-  const [tickerWidth, setTickerWidth] = useState(0);
 
-  // Initialize ticker scrolling
+  // Improved ticker scrolling with CSS animation
   useEffect(() => {
+    // No calculations needed, using CSS for continuous scrolling
     const tickerElement = tickerRef.current;
     if (tickerElement) {
-      // Get the width of the first set of logos
-      const firstSetWidth = tickerElement.querySelector('.ticker-set')?.clientWidth || 0;
-      setTickerWidth(firstSetWidth);
-      
-      // Use CSS animation instead of manual animation
-      const tickerAnimation = `
-        @keyframes ticker {
-          0% { transform: translateX(0); }
-          100% { transform: translateX(-${firstSetWidth}px); }
-        }
-      `;
-      
-      // Create and append the animation style
-      const styleElement = document.createElement('style');
-      styleElement.innerHTML = tickerAnimation;
-      document.head.appendChild(styleElement);
-      
-      // Apply animation to ticker element
-      if (tickerElement) {
-        tickerElement.style.animation = 'ticker 30s linear infinite';
-      }
-      
-      return () => {
-        document.head.removeChild(styleElement);
-      };
+      tickerElement.style.animation = 'ticker 30s linear infinite';
     }
   }, []);
 
@@ -73,7 +48,7 @@ const Marketing = () => {
   };
 
   const handlePricingClick = () => {
-    navigate('/pricing');
+    navigate('/pricing-plans');
   };
 
   return (
@@ -159,28 +134,31 @@ const Marketing = () => {
         </div>
       </section>
 
-      {/* As Featured In - Scrolling Ticker */}
+      {/* As Featured In - Fixed Scrolling Ticker */}
       <section className="py-12 px-6 md:px-16 max-w-6xl mx-auto text-center">
         <h3 className="text-sm uppercase tracking-wider text-gray-500 mb-8">As Featured In</h3>
         <div className="overflow-hidden relative">
-          <div ref={tickerRef} className="flex whitespace-nowrap" style={{ width: `${tickerWidth * 2}px` }}>
+          <div ref={tickerRef} className="flex whitespace-nowrap gap-16">
             {/* First set of logos */}
-            <div className="ticker-set flex space-x-16">
-              {FEATURED_LOGOS.map((logo, index) => (
-                <div key={`logo-1-${index}`} className="flex items-center">
-                  <img src={logo} alt={`Featured logo ${index + 1}`} className="h-8" />
-                </div>
-              ))}
-            </div>
+            {FEATURED_LOGOS.map((logo, index) => (
+              <div key={`logo-1-${index}`} className="flex items-center">
+                <img src={logo} alt={`Featured logo ${index + 1}`} className="h-8" />
+              </div>
+            ))}
             
             {/* Duplicate set for continuous scrolling */}
-            <div className="ticker-set flex space-x-16">
-              {FEATURED_LOGOS.map((logo, index) => (
-                <div key={`logo-2-${index}`} className="flex items-center">
-                  <img src={logo} alt={`Featured logo ${index + 1}`} className="h-8" />
-                </div>
-              ))}
-            </div>
+            {FEATURED_LOGOS.map((logo, index) => (
+              <div key={`logo-2-${index}`} className="flex items-center">
+                <img src={logo} alt={`Featured logo ${index + 1}`} className="h-8" />
+              </div>
+            ))}
+            
+            {/* Third set to ensure continuous display */}
+            {FEATURED_LOGOS.map((logo, index) => (
+              <div key={`logo-3-${index}`} className="flex items-center">
+                <img src={logo} alt={`Featured logo ${index + 1}`} className="h-8" />
+              </div>
+            ))}
           </div>
         </div>
       </section>
