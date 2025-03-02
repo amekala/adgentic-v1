@@ -20,68 +20,58 @@ const Campaign = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [campaignName, setCampaignName] = useState('New Campaign');
   const [campaignStatus, setCampaignStatus] = useState('draft');
-  const [campaignData, setCampaignData] = useState<any>(null);
   const [chats, setChats] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isNewCampaignModalOpen, setIsNewCampaignModalOpen] = useState(false);
 
-  // Fetch campaign data and chats in parallel
+  // Fetch campaign data
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchCampaign = async () => {
       if (campaignId === 'new') {
         setCampaignName('New Campaign');
         setCampaignStatus('draft');
         setLoading(false);
         return;
       }
-
-      setLoading(true);
       
       try {
-        // Use Promise.all to fetch campaign data and chats in parallel
-        const [campaignResponse, chatsResponse] = await Promise.all([
-          // Fetch campaign details
-          supabase
-            .from('campaigns')
-            .select('*')
-            .eq('id', campaignId)
-            .single(),
-            
-          // Fetch chats for this campaign
-          supabase
-            .from('chats')
-            .select('*')
-            .eq('campaign_id', campaignId)
-            .order('created_at', { ascending: false })
-        ]);
-        
-        // Handle campaign data
-        if (campaignResponse.error) {
-          throw campaignResponse.error;
+        const { data, error } = await supabase
+          .from('campaigns')
+          .select('*')
+          .eq('id', campaignId)
+          .single();
+          
+        if (error) {
+          console.error('Error fetching campaign:', error);
+          toast.error('Could not load campaign');
+          return;
         }
         
-        if (campaignResponse.data) {
-          setCampaignData(campaignResponse.data);
-          setCampaignName(campaignResponse.data.campaign_name);
-          setCampaignStatus(campaignResponse.data.campaign_status || 'draft');
-        }
+        setCampaignName(data.campaign_name);
+        setCampaignStatus(data.campaign_status);
         
-        // Handle chats data
-        if (chatsResponse.error) {
-          console.error('Error fetching chats:', chatsResponse.error);
-        } else if (chatsResponse.data) {
-          setChats(chatsResponse.data);
+        // Fetch chats associated with this campaign
+        const { data: chatData, error: chatError } = await supabase
+          .from('chats')
+          .select('*')
+          .eq('campaign_id', campaignId)
+          .order('created_at', { ascending: false });
+          
+        if (chatError) {
+          console.error('Error fetching chats:', chatError);
+        } else {
+          setChats(chatData);
         }
         
       } catch (err) {
-        console.error('Error fetching campaign data:', err);
-        toast.error('Could not load campaign');
+        console.error('Error in fetchCampaign:', err);
+        toast.error('An unexpected error occurred');
       } finally {
         setLoading(false);
       }
     };
     
-    fetchData();
+    fetchCampaign();
   }, [campaignId]);
 
   // Handle creating a new chat for this campaign
@@ -93,15 +83,10 @@ const Campaign = () => {
         return;
       }
       
-      // Create a new chat
-      const title = initialMessage ? 
-        (initialMessage.length > 30 ? initialMessage.substring(0, 30) + '...' : initialMessage) :
-        'New Chat';
-        
       const { data, error } = await supabase
         .from('chats')
         .insert({
-          title: title,
+          title: initialMessage || 'New Chat',
           chat_type: 'campaign',
           campaign_id: campaignId
         })
@@ -109,30 +94,16 @@ const Campaign = () => {
         .single();
         
       if (error) {
-        throw error;
-      }
-      
-      // If we have an initial message, also create that message
-      if (initialMessage && data) {
-        const { error: messageError } = await supabase
-          .from('chat_messages')
-          .insert({
-            chat_id: data.id,
-            role: 'user',
-            content: initialMessage
-          });
-          
-        if (messageError) {
-          console.error('Error creating initial message:', messageError);
-          // Continue anyway since the chat was created
-        }
+        console.error('Error creating chat:', error);
+        toast.error('Could not create new chat');
+        return;
       }
       
       toast.success('New chat created');
-      navigate(`/chat/${data.id}?campaign_id=${campaignId}`);
+      navigate(`/chat/${data.id}`);
     } catch (err) {
       console.error('Error in createNewChat:', err);
-      toast.error('Failed to create new chat');
+      toast.error('An unexpected error occurred');
     }
   };
 
@@ -220,60 +191,12 @@ const Campaign = () => {
           
           {loading ? (
             <div className="flex items-center justify-center h-full p-10">
-              <div className="animate-pulse flex flex-col items-center justify-center space-y-4">
-                <div className="h-8 w-64 bg-gray-200 rounded-md"></div>
-                <div className="h-4 w-32 bg-gray-200 rounded-md"></div>
-                <div className="mt-4 text-adgentic-text-secondary">Loading campaign data...</div>
-              </div>
+              <div className="text-adgentic-text-secondary">Loading campaign...</div>
             </div>
           ) : (
-            <div className="p-6 max-w-7xl mx-auto">
-              {/* Hero section with campaign overview */}
-              <div className="bg-white rounded-xl p-6 border border-adgentic-border shadow-sm mb-8">
-                <div className="flex justify-between items-start mb-6">
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className={`w-3 h-3 rounded-full ${
-                        campaignStatus === 'live' ? 'bg-green-500' : 
-                        campaignStatus === 'paused' ? 'bg-yellow-500' : 'bg-gray-400'
-                      }`}></div>
-                      <span className="text-sm font-medium text-adgentic-text-secondary">
-                        {campaignStatus === 'live' ? 'Active Campaign' : 
-                         campaignStatus === 'paused' ? 'Paused Campaign' : 'Draft Campaign'}
-                      </span>
-                    </div>
-                    <h1 className="text-2xl font-bold text-adgentic-text-primary">{campaignName}</h1>
-                    <p className="text-adgentic-text-secondary mt-1 max-w-xl">
-                      {campaignData?.goals_description || 'No campaign description provided. Add goals and notes in campaign settings.'}
-                    </p>
-                  </div>
-                  <div className="flex gap-3">
-                    <Button
-                      variant="outline"
-                      className="rounded-full border-adgentic-border text-adgentic-text-primary"
-                      onClick={handleCampaignSettings}
-                    >
-                      Edit Campaign
-                    </Button>
-                    <Button
-                      className="rounded-full bg-adgentic-accent text-white hover:bg-adgentic-accent/90"
-                      onClick={() => createNewChat()}
-                    >
-                      Start New Chat
-                    </Button>
-                  </div>
-                </div>
-              </div>
-              
+            <div className="p-6">
               {/* New Chat input section */}
-              <NewChatInput 
-                onCreateChat={createNewChat} 
-                campaignId={campaignId as string} 
-                campaignName={campaignName}
-              />
-              
-              {/* Campaign Performance */}
-              <MetricsSection metrics={metrics} />
+              <NewChatInput onCreateChat={createNewChat} />
               
               {/* Action Cards Grid */}
               <ActionsGrid
@@ -282,17 +205,16 @@ const Campaign = () => {
                 onSettingsClick={handleCampaignSettings}
                 onHistoryClick={() => navigate(`/campaign/${campaignId}/chats`)}
                 chatsCount={chats.length}
-                campaignStatus={campaignStatus}
               />
               
-              {/* Chats in this campaign */}
-              <ChatsList 
-                chats={chats} 
-                campaignId={campaignId as string}
-              />
+              {/* Campaign Performance */}
+              <MetricsSection metrics={metrics} />
               
               {/* Ad Creatives Section */}
               <CreativesSection />
+              
+              {/* Chats in this campaign */}
+              <ChatsList chats={chats} />
             </div>
           )}
         </div>

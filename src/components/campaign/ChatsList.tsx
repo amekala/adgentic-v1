@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { MessageSquare, ArrowRight, CalendarClock, Clock } from 'lucide-react';
+import { MessageSquare } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 interface Chat {
@@ -11,113 +11,40 @@ interface Chat {
 
 interface ChatsListProps {
   chats: Chat[];
-  campaignId: string;
 }
 
-const ChatsList = ({ chats, campaignId }: ChatsListProps) => {
-  // Group chats by date
-  const today = new Date().toDateString();
-  const yesterday = new Date(Date.now() - 86400000).toDateString();
-  
-  const groupedChats = chats.reduce((groups, chat) => {
-    const chatDate = new Date(chat.created_at).toDateString();
-    let groupName = chatDate;
-    
-    if (chatDate === today) {
-      groupName = 'Today';
-    } else if (chatDate === yesterday) {
-      groupName = 'Yesterday';
-    }
-    
-    if (!groups[groupName]) {
-      groups[groupName] = [];
-    }
-    
-    groups[groupName].push(chat);
-    return groups;
-  }, {} as Record<string, Chat[]>);
-  
-  // Sort group keys with Today and Yesterday first, then by date
-  const sortedGroups = Object.keys(groupedChats).sort((a, b) => {
-    if (a === 'Today') return -1;
-    if (b === 'Today') return 1;
-    if (a === 'Yesterday') return -1;
-    if (b === 'Yesterday') return 1;
-    
-    // Otherwise sort by date (newest first)
-    const dateA = a !== 'Today' && a !== 'Yesterday' ? new Date(a) : new Date();
-    const dateB = b !== 'Today' && b !== 'Yesterday' ? new Date(b) : new Date();
-    return dateB.getTime() - dateA.getTime();
-  });
-
+const ChatsList = ({ chats }: ChatsListProps) => {
   return (
     <div className="mb-8">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-semibold text-adgentic-text-primary flex items-center">
-          <MessageSquare className="h-5 w-5 mr-2 text-adgentic-accent" /> 
-          Conversation History <span className="ml-2 text-sm text-adgentic-text-secondary">({chats.length})</span>
-        </h2>
-        
-        {chats.length > 0 && (
-          <Link 
-            to={`/campaign/${campaignId}/chats`} 
-            className="text-sm text-adgentic-accent font-medium hover:underline flex items-center"
-          >
-            View All <ArrowRight className="h-3.5 w-3.5 ml-1" />
-          </Link>
+      <h2 className="text-xl font-semibold text-adgentic-text-primary mb-4">
+        Past Conversations <span className="text-sm text-adgentic-text-secondary">({chats.length})</span>
+      </h2>
+      <div className="space-y-2">
+        {chats.length === 0 ? (
+          <div className="text-adgentic-text-secondary p-4 bg-white border border-adgentic-border rounded-lg">
+            No chats yet. Start a new conversation!
+          </div>
+        ) : (
+          chats.map((chat: any) => (
+            <Link 
+              key={chat.id} 
+              to={`/chat/${chat.id}`}
+              className="flex items-center gap-3 p-3 bg-white border border-adgentic-border rounded-lg hover:bg-adgentic-lightGray"
+            >
+              <MessageSquare className="h-5 w-5 text-adgentic-text-secondary" />
+              <div className="flex-1">
+                <div className="font-medium text-adgentic-text-primary">{chat.title}</div>
+                <div className="text-sm text-adgentic-text-secondary">
+                  {new Date(chat.created_at).toLocaleDateString()} at {new Date(chat.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                </div>
+              </div>
+              <div className="text-xs text-adgentic-accent px-2 py-0.5 rounded-full border border-adgentic-accent">
+                Resume
+              </div>
+            </Link>
+          ))
         )}
       </div>
-
-      {chats.length === 0 ? (
-        <div className="bg-white border border-adgentic-border rounded-xl p-8 text-center">
-          <div className="bg-adgentic-lightGray p-4 rounded-full inline-flex items-center justify-center mb-4">
-            <MessageSquare className="h-6 w-6 text-adgentic-accent" />
-          </div>
-          <h3 className="text-lg font-medium text-adgentic-text-primary mb-2">No conversations yet</h3>
-          <p className="text-adgentic-text-secondary mb-4">
-            Start a new conversation to get insights about your campaign
-          </p>
-          <Link to={`/chat/new?campaign_id=${campaignId}`} className="text-adgentic-accent hover:underline font-medium">
-            Start a new conversation
-          </Link>
-        </div>
-      ) : (
-        <div className="bg-white border border-adgentic-border rounded-xl p-4 shadow-sm">
-          {sortedGroups.map(groupName => (
-            <div key={groupName} className="mb-4 last:mb-0">
-              <div className="flex items-center gap-2 mb-2 text-sm font-medium text-adgentic-text-secondary">
-                <CalendarClock className="h-4 w-4" />
-                {groupName}
-              </div>
-              <div className="space-y-2">
-                {groupedChats[groupName].map((chat: Chat) => (
-                  <Link 
-                    key={chat.id} 
-                    to={`/chat/${chat.id}?campaign_id=${campaignId}`}
-                    className="flex items-center gap-3 p-3 hover:bg-adgentic-lightGray rounded-lg transition-colors relative group border border-transparent hover:border-adgentic-border"
-                  >
-                    <div className="p-2 bg-adgentic-accent/5 rounded-lg">
-                      <MessageSquare className="h-5 w-5 text-adgentic-accent" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium text-adgentic-text-primary truncate pr-20">{chat.title}</div>
-                      <div className="text-xs text-adgentic-text-secondary flex items-center">
-                        <Clock className="h-3 w-3 mr-1" />
-                        {new Date(chat.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                      </div>
-                    </div>
-                    <div className="absolute right-3 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
-                      <span className="text-xs font-medium bg-adgentic-accent text-white px-3 py-1 rounded-full">
-                        Resume
-                      </span>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
     </div>
   );
 };
