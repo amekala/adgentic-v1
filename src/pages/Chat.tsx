@@ -16,8 +16,8 @@ type ChatMessageRow = {
   created_at: string;
   id: string;
   role: string;
-  metrics?: string; // Optional fields for metrics and actionButtons
-  actionButtons?: string;
+  metrics?: string | null; // Updated to handle database column
+  actionButtons?: string | null; // Updated to handle database column
 };
 
 const Chat = () => {
@@ -32,6 +32,7 @@ const Chat = () => {
     const fetchMessages = async () => {
       if (!chatId) {
         // For new chats, don't load any messages
+        console.log('No chatId provided, creating a new chat');
         setMessages([]);
         return;
       }
@@ -58,13 +59,15 @@ const Chat = () => {
 
         if (data && data.length > 0) {
           console.log('Fetched messages:', data);
-          // Safely convert data to MessageProps format
+          // Convert data to MessageProps format, properly handling metrics and actionButtons
           const validMessages = data.map((msg: ChatMessageRow) => ({
             role: msg.role as MessageProps['role'],
             content: msg.content,
-            metrics: msg.metrics ? JSON.parse(msg.metrics) : undefined,
-            actionButtons: msg.actionButtons ? JSON.parse(msg.actionButtons) : undefined
+            metrics: msg.metrics ? JSON.parse(msg.metrics as string) : undefined,
+            actionButtons: msg.actionButtons ? JSON.parse(msg.actionButtons as string) : undefined
           }));
+          
+          console.log('Processed messages:', validMessages);
           setMessages(validMessages);
         } else {
           console.log('No messages found for chat:', chatId);
@@ -174,6 +177,7 @@ const Chat = () => {
       let currentChatId = chatId;
       
       if (!currentChatId) {
+        console.log('Creating new chat with title:', content.substring(0, 50));
         const { data: chatData, error: chatError } = await supabase
           .from('chats')
           .insert({
@@ -183,10 +187,14 @@ const Chat = () => {
           .select()
           .single();
 
-        if (chatError) throw chatError;
+        if (chatError) {
+          console.error('Error creating chat:', chatError);
+          throw chatError;
+        }
 
         if (chatData) {
           currentChatId = chatData.id;
+          console.log('Created new chat with ID:', currentChatId);
           navigate(`/chat/${currentChatId}`);
         }
       }
@@ -198,6 +206,7 @@ const Chat = () => {
 
       // Add user message to local state immediately for UI feedback
       setMessages(prevMessages => [...prevMessages, userMessage]);
+      console.log('Added user message to local state:', userMessage);
 
       // Save user message to database
       const { error: insertError } = await supabase
@@ -208,13 +217,17 @@ const Chat = () => {
           content: content
         });
 
-      if (insertError) throw insertError;
+      if (insertError) {
+        console.error('Error saving user message:', insertError);
+        throw insertError;
+      }
 
       // Generate AI response
       setTimeout(async () => {
         const assistantResponse = generateResponse(content);
+        console.log('Generated assistant response:', assistantResponse);
 
-        // When inserting assistant response, include metrics and actionButtons as JSON strings
+        // Save assistant response to database with metrics and actionButtons as JSON strings
         const { error: aiInsertError } = await supabase
           .from('chat_messages')
           .insert({
@@ -225,7 +238,10 @@ const Chat = () => {
             actionButtons: assistantResponse.actionButtons ? JSON.stringify(assistantResponse.actionButtons) : null
           });
 
-        if (aiInsertError) throw aiInsertError;
+        if (aiInsertError) {
+          console.error('Error saving assistant message:', aiInsertError);
+          throw aiInsertError;
+        }
         
         setMessages(prevMessages => [...prevMessages, assistantResponse]);
         setIsLoading(false);

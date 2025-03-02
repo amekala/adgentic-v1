@@ -12,7 +12,7 @@ interface MessageListProps {
 const MessageList = ({ messages, onActionClick, onPillClick }: MessageListProps) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Add debug logging to see what messages are being passed
+  // Debug logs to track messages state
   useEffect(() => {
     console.log('MessageList received messages:', messages);
   }, [messages]);
