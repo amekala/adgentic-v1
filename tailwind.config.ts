@@ -38,10 +38,10 @@ export default {
           secondary: "#f1f5f9", // slate-100
           accent: "#2563eb", // blue-600
           hover: "#f1f5f9",
-          border: "#e2e8f0", // slate-200
+          border: "#e5e5e5", // Lighter border color
           text: {
-            primary: "#0f172a", // slate-900
-            secondary: "#64748b", // slate-500
+            primary: "#343541", // Main text color
+            secondary: "#6e6e80", // Secondary text color
             light: "#94a3b8", // slate-400
           }
         },
