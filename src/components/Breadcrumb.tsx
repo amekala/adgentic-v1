@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Home, ChevronRight } from 'lucide-react';
+import { Home, ChevronRight, FolderOpen, MessageSquare } from 'lucide-react';
 
 // Updated interface to include 'campaign' and 'chat' types
 export interface BreadcrumbItem {
@@ -21,6 +21,20 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({ items }) => {
   const handleClick = (href: string) => {
     navigate(href);
   };
+  
+  // Get the appropriate icon based on item type
+  const getItemIcon = (type: string) => {
+    switch (type) {
+      case 'home':
+        return <Home className="h-3.5 w-3.5 mr-1" />;
+      case 'campaign':
+        return <FolderOpen className="h-3.5 w-3.5 mr-1" />;
+      case 'chat':
+        return <MessageSquare className="h-3.5 w-3.5 mr-1" />;
+      default:
+        return <Home className="h-3.5 w-3.5 mr-1" />;
+    }
+  };
 
   return (
     <nav className="flex items-center px-6 py-3 text-sm text-adgentic-text-secondary">
@@ -36,7 +50,7 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({ items }) => {
                 index === items.length - 1 ? 'font-medium text-adgentic-text-primary' : ''
               }`}
             >
-              {item.type === 'home' && <Home className="h-3.5 w-3.5 mr-1" />}
+              {getItemIcon(item.type)}
               <span>{item.label}</span>
             </button>
           </React.Fragment>

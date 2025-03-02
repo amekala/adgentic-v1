@@ -46,6 +46,20 @@ export const useCurrentChat = () => {
   const [isSending, setIsSending] = useState(false);
   const [chatData, setChatData] = useState<ChatData | null>(null);
   const [campaign, setCampaign] = useState<Campaign | null>(null);
+  
+  // Check if Supabase configuration is available
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+  
+  useEffect(() => {
+    const isSupabaseConfigured = !!supabaseUrl && !!supabaseAnonKey;
+    if (!isSupabaseConfigured) {
+      console.error('Supabase configuration is missing. Check environment variables.');
+      toast.error('API configuration missing. Contact administrator.');
+    } else {
+      console.log('Supabase is configured with URL:', supabaseUrl);
+    }
+  }, []);
 
   // Fetch chat data and messages
   useEffect(() => {
@@ -234,37 +248,74 @@ export const useCurrentChat = () => {
   };
 
   const sendToAI = async (chatId: string, messageHistory: Message[]) => {
+    // Add thinking message
+    const thinkingMessage: Message = { role: 'assistant', content: '...' };
+    setMessages(prev => [...prev, thinkingMessage]);
+    
     try {
-      // Add thinking message
-      const thinkingMessage: Message = { role: 'assistant', content: '...' };
-      setMessages(prev => [...prev, thinkingMessage]);
-      
       // Format messages for the AI
       const formattedMessages = messageHistory.map(msg => ({
         role: msg.role,
         content: msg.content
       }));
       
+      // Extract Supabase URL and key for clarity
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      
+      // Sanity check configuration
+      if (!supabaseUrl || !supabaseKey) {
+        throw new Error('Missing Supabase configuration. Check environment variables.');
+      }
+      
+      // Log details about the request
+      console.log(`Calling Supabase Edge Function at: ${supabaseUrl}/functions/v1/chat`);
+      console.log('Message history length:', messageHistory.length);
       console.log("Calling AI with messages:", formattedMessages);
-      console.log("Using Supabase URL:", import.meta.env.VITE_SUPABASE_URL);
       
       // Call the Supabase Edge Function
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`, {
+      const response = await fetch(`${supabaseUrl}/functions/v1/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
+          'Authorization': `Bearer ${supabaseKey}`
         },
         body: JSON.stringify({ messages: formattedMessages })
       });
       
-      if (!response.ok) {
-        console.error("API response error:", response.status, await response.text());
-        throw new Error(`API responded with status ${response.status}`);
+      // Check if we received a response at all
+      if (!response) {
+        throw new Error('No response received from API');
       }
       
-      const aiResponse = await response.json();
-      console.log("Received AI response:", aiResponse);
+      console.log('API Response Status:', response.status, response.statusText);
+      
+      // Get response as text first for debugging
+      const responseText = await response.text();
+      console.log('Raw API response (first 100 chars):', responseText.substring(0, 100) + '...');
+      
+      // Handle non-success HTTP status codes
+      if (!response.ok) {
+        console.error("API response error:", response.status, responseText);
+        throw new Error(`API responded with status ${response.status}: ${responseText.substring(0, 100)}...`);
+      }
+      
+      // Try to parse the response as JSON
+      let aiResponse;
+      try {
+        aiResponse = JSON.parse(responseText);
+        console.log("Received AI response:", aiResponse);
+      } catch (parseError) {
+        console.error('Failed to parse JSON response:', parseError);
+        console.error('Response text (first 200 chars):', responseText.substring(0, 200));
+        throw new Error('Invalid JSON response from API');
+      }
+      
+      // Validate the response structure
+      if (!aiResponse || !aiResponse.content) {
+        console.error('Invalid AI response structure:', aiResponse);
+        throw new Error('AI response missing required content');
+      }
       
       // Replace thinking message with actual response
       setMessages(prev => 
@@ -288,7 +339,18 @@ export const useCurrentChat = () => {
       if (error) throw error;
     } catch (error) {
       console.error('Error getting AI response:', error);
-      toast.error('Failed to get AI response');
+      
+      // Provide more detailed error message to the user
+      const errorMessage = error.message || 'Unknown error';
+      const detailMessage = errorMessage.includes('Invalid JSON') 
+        ? 'API returned invalid data format. Check Edge Function deployment.'
+        : errorMessage.includes('404') 
+          ? 'Edge Function not found. Check function deployment.'
+          : errorMessage.includes('Missing Supabase configuration')
+            ? 'API configuration missing. Check environment variables.'
+            : 'API connection failed. Check Supabase configuration.';
+      
+      toast.error(`Failed to get AI response: ${detailMessage}`);
       
       // Remove thinking message on error
       setMessages(prev => prev.filter(msg => msg.content !== '...'));
@@ -360,8 +422,7 @@ export const useCurrentChat = () => {
       items.push({ 
         label: campaign.campaign_name, 
         href: `/campaign/${campaignId}`,
-        // Fix the type error by using "home" type
-        type: "home" as const, 
+        type: "campaign" as const, 
         id: campaignId as string 
       });
       
@@ -370,8 +431,7 @@ export const useCurrentChat = () => {
       items.push({ 
         label: chatData?.title || 'New Chat', 
         href: `/chat/${chatId}${campaignId ? `?campaign_id=${campaignId}` : ''}`,
-        // Fix the type error by using "home" type
-        type: "home" as const,
+        type: "chat" as const,
         id: chatId || 'new'
       });
     } else {
@@ -379,8 +439,7 @@ export const useCurrentChat = () => {
       items.push({ 
         label: chatData?.title || 'New Chat', 
         href: `/chat/${chatId}`,
-        // Fix the type error by using "home" type 
-        type: "home" as const,
+        type: "chat" as const,
         id: chatId || 'new'
       });
     }
