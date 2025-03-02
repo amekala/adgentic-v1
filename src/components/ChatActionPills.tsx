@@ -14,7 +14,7 @@ const ChatActionPills = ({ onPillClick, className = '' }: ChatActionPillsProps) 
       label: 'Campaign Analysis',
       icon: <BarChart3 className="h-4 w-4" />,
       message: "Let's analyze your campaign performance and find opportunities for improvement.",
-      color: "bg-blue-50 text-blue-900",
+      color: "bg-blue-50 text-blue-900 border-blue-200",
       iconBg: "bg-blue-100",
       iconColor: "text-blue-500"
     },
@@ -23,7 +23,7 @@ const ChatActionPills = ({ onPillClick, className = '' }: ChatActionPillsProps) 
       label: 'Get Ideas',
       icon: <Lightbulb className="h-4 w-4" />,
       message: "I'll help you brainstorm creative ideas to enhance your campaign.",
-      color: "bg-amber-50 text-amber-900",
+      color: "bg-amber-50 text-amber-900 border-amber-200",
       iconBg: "bg-amber-100",
       iconColor: "text-amber-500"
     },
@@ -32,7 +32,7 @@ const ChatActionPills = ({ onPillClick, className = '' }: ChatActionPillsProps) 
       label: 'Targeting Strategy',
       icon: <Target className="h-4 w-4" />,
       message: "Let's optimize your campaign targeting strategy.",
-      color: "bg-green-50 text-green-900",
+      color: "bg-green-50 text-green-900 border-green-200",
       iconBg: "bg-green-100",
       iconColor: "text-green-500"
     },
@@ -41,7 +41,7 @@ const ChatActionPills = ({ onPillClick, className = '' }: ChatActionPillsProps) 
       label: 'Campaign Goals',
       icon: <PenSquare className="h-4 w-4" />,
       message: "Let's define clear goals and KPIs for your campaign.",
-      color: "bg-purple-50 text-purple-900",
+      color: "bg-purple-50 text-purple-900 border-purple-200",
       iconBg: "bg-purple-100",
       iconColor: "text-purple-500"
     }
@@ -58,7 +58,7 @@ const ChatActionPills = ({ onPillClick, className = '' }: ChatActionPillsProps) 
             <button
               key={suggestion.id}
               onClick={() => onPillClick?.(suggestion.message)}
-              className={`flex items-center gap-3 px-4 py-3 rounded-lg ${suggestion.color || 'bg-white'} border border-transparent hover:border-adgentic-border shadow-sm transition-all text-sm`}
+              className={`flex items-center gap-3 px-4 py-3 rounded-lg ${suggestion.color || 'bg-white text-adgentic-text-primary'} border border-current hover:border-adgentic-border shadow-sm transition-all text-sm`}
             >
               <div className={`p-2 rounded-md ${suggestion.iconBg || 'bg-white'} ${suggestion.iconColor || 'text-adgentic-accent'}`}>
                 {suggestion.icon}

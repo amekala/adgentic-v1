@@ -21,6 +21,7 @@ export const useChat = (chatId: string | undefined, campaignId: string | null) =
   const [isLoading, setIsLoading] = useState(false);
   const [chatTitle, setChatTitle] = useState<string>('New Chat');
   const [campaignName, setCampaignName] = useState<string | null>(null);
+  const [chatType, setChatType] = useState<'general' | 'campaign'>('general');
   const { toast: useToastFn } = useToast();
   
   // Track conversation context for better follow-up handling
@@ -47,6 +48,7 @@ export const useChat = (chatId: string | undefined, campaignId: string | null) =
           } else if (campaignData) {
             console.log('Found campaign name for new chat:', campaignData.campaign_name);
             setCampaignName(campaignData.campaign_name);
+            setChatType('campaign');
           }
         } catch (error) {
           console.error('Exception fetching campaign data:', error);
@@ -54,6 +56,7 @@ export const useChat = (chatId: string | undefined, campaignId: string | null) =
       } else {
         // Make sure we clear campaign name if no campaign ID
         setCampaignName(null);
+        setChatType('general');
       }
       return;
     }
@@ -65,7 +68,7 @@ export const useChat = (chatId: string | undefined, campaignId: string | null) =
       // Fetch chat details to get title and campaign association
       const { data: chatData, error: chatError } = await supabase
         .from('chats')
-        .select('title, campaign_id')
+        .select('title, campaign_id, chat_type')
         .eq('id', chatId)
         .single();
         
@@ -82,9 +85,11 @@ export const useChat = (chatId: string | undefined, campaignId: string | null) =
             
           if (campaignData) {
             setCampaignName(campaignData.campaign_name);
+            setChatType('campaign');
           }
         } else {
           setCampaignName(null);
+          setChatType('general');
         }
       }
       
@@ -165,6 +170,8 @@ export const useChat = (chatId: string | undefined, campaignId: string | null) =
     setChatTitle,
     campaignName,
     setCampaignName,
+    chatType,
+    setChatType,
     fetchMessages,
     conversationContext,
     setConversationContext

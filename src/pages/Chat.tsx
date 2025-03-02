@@ -29,6 +29,8 @@ const Chat = () => {
     setChatTitle,
     campaignName,
     setCampaignName,
+    chatType,
+    setChatType,
     fetchMessages
   } = useChat(chatId, queryCampaignId);
 
@@ -86,7 +88,7 @@ const Chat = () => {
     ];
     
     // For campaign chats, ensure we show Home > Campaign > Chat
-    if (effectiveCampaignId && campaignName) {
+    if (chatType === 'campaign' && effectiveCampaignId && campaignName) {
       items.push({ 
         label: campaignName, 
         href: `/campaign/${effectiveCampaignId}`,
@@ -97,13 +99,13 @@ const Chat = () => {
       if (chatTitle) {
         items.push({ 
           label: chatTitle, 
-          href: `/chat/${chatId}`,
+          href: `/chat/${chatId}${effectiveCampaignId ? `?campaign_id=${effectiveCampaignId}` : ''}`,
           type: "chat" as const,
           id: chatId as string
         });
       }
     } else {
-      // For direct chats (not connected to campaigns)
+      // For general chats (not connected to campaigns)
       // Show just Home > Chat
       if (chatTitle) {
         items.push({ 
