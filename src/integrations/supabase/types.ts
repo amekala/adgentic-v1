@@ -109,24 +109,35 @@ export type Database = {
       }
       chats: {
         Row: {
+          campaign_id: string | null
           chat_type: string
           created_at: string | null
           id: string
           title: string
         }
         Insert: {
+          campaign_id?: string | null
           chat_type: string
           created_at?: string | null
           id?: string
           title: string
         }
         Update: {
+          campaign_id?: string | null
           chat_type?: string
           created_at?: string | null
           id?: string
           title?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "chats_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       contact_submissions: {
         Row: {

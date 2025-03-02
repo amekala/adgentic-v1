@@ -1,7 +1,7 @@
 
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { Plus, PenIcon, PlayCircle, BarChart3 } from 'lucide-react';
+import { Plus, PenIcon, PlayCircle, BarChart3, MessageSquare } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import Sidebar from '@/components/Sidebar';
@@ -10,13 +10,47 @@ import MessageList from '@/components/MessageList';
 import ChatInput from '@/components/ChatInput';
 import ChatActionPills from '@/components/ChatActionPills';
 import { AdCreativesSection } from '@/components/AdCreativesSection';
+import { Button } from '@/components/ui/button';
 
 const Campaign = () => {
+  const { id: campaignId } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [messages, setMessages] = useState<Array<{ role: 'assistant' | 'user' | 'system'; content: string }>>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [campaignName, setCampaignName] = useState('New Campaign');
+  const [campaignStatus, setCampaignStatus] = useState<'draft' | 'live' | 'paused'>('draft');
+
+  // Fetch campaign details
+  useEffect(() => {
+    if (campaignId && campaignId !== 'new') {
+      const fetchCampaign = async () => {
+        const { data, error } = await supabase
+          .from('campaigns')
+          .select('*')
+          .eq('id', campaignId)
+          .single();
+        
+        if (error) {
+          console.error('Error fetching campaign:', error);
+          toast({
+            title: "Error",
+            description: "Failed to load campaign details",
+            variant: "destructive"
+          });
+          return;
+        }
+        
+        if (data) {
+          setCampaignName(data.campaign_name);
+          setCampaignStatus(data.campaign_status);
+        }
+      };
+      
+      fetchCampaign();
+    }
+  }, [campaignId, toast]);
 
   const metrics = [
     {
@@ -102,6 +136,36 @@ const Campaign = () => {
     handleSendMessage(message);
   };
 
+  const createNewChat = async () => {
+    // Check if campaign exists, if not create it
+    if (campaignId === 'new') {
+      const { data, error } = await supabase
+        .from('campaigns')
+        .insert({
+          campaign_name: campaignName,
+          campaign_status: campaignStatus
+        })
+        .select()
+        .single();
+        
+      if (error) {
+        console.error('Error creating campaign:', error);
+        toast({
+          title: "Error",
+          description: "Failed to create campaign",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      // Navigate to new chat with campaign_id in query
+      navigate(`/chat/new?campaign_id=${data.id}`);
+    } else {
+      // Navigate to new chat with campaign_id in query
+      navigate(`/chat/new?campaign_id=${campaignId}`);
+    }
+  };
+
   // Add initial system message when component mounts
   useEffect(() => {
     setMessages([{
@@ -116,21 +180,35 @@ const Campaign = () => {
         isOpen={isSidebarOpen} 
         onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
         onApiKeyChange={() => {}} 
-        onNewCampaign={() => {}}
+        onNewCampaign={() => { navigate('/campaign/new'); }}
       />
       
       <main className={`flex-1 transition-all duration-300 ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}>
-        <ChatHeader isSidebarOpen={isSidebarOpen} />
+        <ChatHeader isSidebarOpen={isSidebarOpen} title={campaignName} />
         
         <div className="flex flex-col h-full pt-[60px]">
-          <div className="flex items-center px-4 py-3 border-b border-[#383737]">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-[#383737]">
             <h1 className="text-xl font-semibold text-white flex items-center gap-2">
-              New Product Launch Campaign
-              <span className="flex items-center gap-1 text-sm font-normal text-green-500">
-                <PlayCircle className="h-4 w-4" />
-                Live
+              {campaignName}
+              <span className={`flex items-center gap-1 text-sm font-normal ${
+                campaignStatus === 'live' ? 'text-green-500' : 
+                campaignStatus === 'paused' ? 'text-yellow-500' : 'text-gray-400'
+              }`}>
+                {campaignStatus === 'live' ? <PlayCircle className="h-4 w-4" /> : null}
+                {campaignStatus === 'paused' ? <PlayCircle className="h-4 w-4" /> : null}
+                {campaignStatus === 'draft' ? <PenIcon className="h-4 w-4" /> : null}
+                {campaignStatus.charAt(0).toUpperCase() + campaignStatus.slice(1)}
               </span>
             </h1>
+            
+            <Button 
+              variant="outline" 
+              onClick={createNewChat}
+              className="flex items-center gap-2 text-sm"
+            >
+              <MessageSquare className="h-4 w-4" />
+              New Chat
+            </Button>
           </div>
 
           <div className="flex-1 overflow-y-auto">

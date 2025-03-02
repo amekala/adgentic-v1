@@ -1,6 +1,6 @@
 
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from "@/integrations/supabase/client";
 import Sidebar from '@/components/Sidebar';
 import ChatHeader from '@/components/ChatHeader';
@@ -23,14 +23,20 @@ type ChatMessageRow = {
 const Chat = () => {
   const { id: chatId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [messages, setMessages] = useState<MessageProps[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [chatTitle, setChatTitle] = useState<string>('New Chat');
   const { toast } = useToast();
+  
+  // Extract campaign_id from URL query params if present
+  const searchParams = new URLSearchParams(location.search);
+  const campaignId = searchParams.get('campaign_id');
 
   useEffect(() => {
     const fetchMessages = async () => {
-      if (!chatId) {
+      if (!chatId || chatId === 'new') {
         // For new chats, don't load any messages
         console.log('No chatId provided, creating a new chat');
         setMessages([]);
@@ -41,6 +47,18 @@ const Chat = () => {
       setIsLoading(true);
       
       try {
+        // Fetch chat details to get title
+        const { data: chatData, error: chatError } = await supabase
+          .from('chats')
+          .select('title')
+          .eq('id', chatId)
+          .single();
+          
+        if (chatData) {
+          setChatTitle(chatData.title);
+        }
+        
+        // Fetch messages
         const { data, error } = await supabase
           .from('chat_messages')
           .select('*')
@@ -183,16 +201,21 @@ const Chat = () => {
 
     try {
       // If there's no chatId, create a new chat
-      let currentChatId = chatId;
+      let currentChatId = chatId !== 'new' ? chatId : null;
       
       if (!currentChatId) {
         console.log('Creating new chat with title:', content.substring(0, 50));
-        const { data: chatData, error: chatError } = await supabase
+        console.log('Campaign ID:', campaignId);
+        
+        const chatData = {
+          title: content.substring(0, 50),
+          chat_type: 'campaign',
+          ...(campaignId ? { campaign_id: campaignId } : {})
+        };
+        
+        const { data: newChatData, error: chatError } = await supabase
           .from('chats')
-          .insert({
-            title: content.substring(0, 50),
-            chat_type: 'campaign'
-          })
+          .insert(chatData)
           .select()
           .single();
 
@@ -201,8 +224,9 @@ const Chat = () => {
           throw chatError;
         }
 
-        if (chatData) {
-          currentChatId = chatData.id;
+        if (newChatData) {
+          currentChatId = newChatData.id;
+          setChatTitle(newChatData.title);
           console.log('Created new chat with ID:', currentChatId);
           navigate(`/chat/${currentChatId}`);
         }
@@ -274,7 +298,7 @@ const Chat = () => {
         description: "Recommendations applied successfully!",
       });
     } else if (action === "View Detailed Report") {
-      navigate(`/campaign/${chatId || 'new'}`);
+      navigate(`/campaign/${campaignId || 'new'}`);
     } else {
       handleSendMessage(`Tell me more about ${action}`);
     }
@@ -284,17 +308,22 @@ const Chat = () => {
     handleSendMessage(message);
   };
 
+  // Updated Sidebar with navigation for new campaign chats
+  const handleNewCampaign = () => {
+    navigate('/campaign/new');
+  };
+
   return (
     <div className="flex h-screen bg-[#111]">
       <Sidebar 
         isOpen={isSidebarOpen} 
         onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
         onApiKeyChange={() => {}} 
-        onNewCampaign={() => {}}
+        onNewCampaign={handleNewCampaign}
       />
       
       <main className={`flex-1 transition-all duration-300 ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}>
-        <ChatHeader isSidebarOpen={isSidebarOpen} />
+        <ChatHeader isSidebarOpen={isSidebarOpen} title={chatTitle} />
         
         <div className="flex h-full flex-col justify-between pt-[60px] pb-4">
           <MessageList 

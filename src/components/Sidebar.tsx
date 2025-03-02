@@ -1,4 +1,5 @@
-import { Menu, Play, Pause, FilePen, Plus, UserCircle2, DollarSign, Search, MessageSquare } from "lucide-react";
+
+import { Menu, Play, Pause, FilePen, Plus, UserCircle2, DollarSign, Search, MessageSquare, ChevronDown, ChevronRight, FolderOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
@@ -16,6 +17,7 @@ interface Chat {
   title: string;
   chat_type: string;
   created_at: string;
+  campaign_id: string | null;
 }
 
 interface SidebarProps {
@@ -26,6 +28,7 @@ interface SidebarProps {
 }
 
 const Sidebar = ({ isOpen, onToggle, onApiKeyChange, onNewCampaign }: SidebarProps) => {
+  const [expandedCampaigns, setExpandedCampaigns] = useState<Record<string, boolean>>({});
   const [expandedSection, setExpandedSection] = useState<string>("live");
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
@@ -39,6 +42,7 @@ const Sidebar = ({ isOpen, onToggle, onApiKeyChange, onNewCampaign }: SidebarPro
     draft: []
   });
   const [chats, setChats] = useState<Chat[]>([]);
+  const [campaignChats, setCampaignChats] = useState<Record<string, Chat[]>>({});
 
   useEffect(() => {
     const fetchCampaigns = async () => {
@@ -71,7 +75,20 @@ const Sidebar = ({ isOpen, onToggle, onApiKeyChange, onNewCampaign }: SidebarPro
         return;
       }
 
-      setChats(data);
+      setChats(data.filter(chat => !chat.campaign_id));
+      
+      // Group chats by campaign
+      const chatsByCampaign: Record<string, Chat[]> = {};
+      data.forEach(chat => {
+        if (chat.campaign_id) {
+          if (!chatsByCampaign[chat.campaign_id]) {
+            chatsByCampaign[chat.campaign_id] = [];
+          }
+          chatsByCampaign[chat.campaign_id].push(chat);
+        }
+      });
+      
+      setCampaignChats(chatsByCampaign);
     };
 
     fetchCampaigns();
@@ -92,6 +109,13 @@ const Sidebar = ({ isOpen, onToggle, onApiKeyChange, onNewCampaign }: SidebarPro
       supabase.removeChannel(chatsChannel);
     };
   }, []);
+
+  const toggleCampaignExpansion = (campaignId: string) => {
+    setExpandedCampaigns(prev => ({
+      ...prev,
+      [campaignId]: !prev[campaignId]
+    }));
+  };
 
   const hasMatchingCampaigns = (items: Campaign[]) => {
     if (!searchQuery) return false;
@@ -119,15 +143,63 @@ const Sidebar = ({ isOpen, onToggle, onApiKeyChange, onNewCampaign }: SidebarPro
     }
   }, [searchQuery, campaigns]);
 
+  const createNewChatForCampaign = async (campaignId: string) => {
+    // Create new chat for campaign
+    const { data, error } = await supabase
+      .from('chats')
+      .insert({
+        title: 'New Chat',
+        chat_type: 'campaign',
+        campaign_id: campaignId
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating new chat:', error);
+      return;
+    }
+
+    navigate(`/chat/${data.id}`);
+  };
+
   const renderCampaignList = (items: Campaign[], sectionKey: string) => (
     <div className={cn("space-y-1", expandedSection === sectionKey ? "block" : "hidden")}>
       {filterCampaigns(items).map(campaign => (
-        <div
-          key={campaign.id}
-          onClick={() => navigate(`/campaign/${campaign.id}`)}
-          className="group flex h-9 items-center gap-2.5 rounded-lg px-2 hover:bg-[#383737] cursor-pointer text-sm text-gray-400 hover:text-white ml-8"
-        >
-          {campaign.campaign_name}
+        <div key={campaign.id} className="mb-1">
+          <div 
+            className="group flex h-9 items-center gap-2 rounded-lg px-2 hover:bg-[#383737] cursor-pointer text-sm text-gray-400 hover:text-white ml-4"
+            onClick={() => toggleCampaignExpansion(campaign.id)}
+          >
+            {expandedCampaigns[campaign.id] ? 
+              <ChevronDown className="h-4 w-4 min-w-4" /> : 
+              <ChevronRight className="h-4 w-4 min-w-4" />
+            }
+            <FolderOpen className="h-4 w-4 min-w-4" />
+            <span className="truncate flex-1">{campaign.campaign_name}</span>
+          </div>
+          
+          {expandedCampaigns[campaign.id] && (
+            <div className="ml-10 space-y-1 mt-1">
+              {campaignChats[campaign.id]?.map(chat => (
+                <div
+                  key={chat.id}
+                  onClick={() => navigate(`/chat/${chat.id}`)}
+                  className="flex items-center gap-2 pl-2 py-2 rounded-lg hover:bg-[#383737] cursor-pointer text-xs text-gray-400 hover:text-white"
+                >
+                  <MessageSquare className="h-3.5 w-3.5 min-w-3.5" />
+                  <span className="truncate">{chat.title}</span>
+                </div>
+              ))}
+              <div
+                onClick={() => createNewChatForCampaign(campaign.id)}
+                className="flex items-center gap-2 pl-2 py-2 rounded-lg hover:bg-[#383737] cursor-pointer text-xs text-indigo-500 hover:text-indigo-400"
+              >
+                <Plus className="h-3.5 w-3.5 min-w-3.5" />
+                <span>New chat</span>
+              </div>
+            </div>
+          )}
         </div>
       ))}
     </div>
@@ -229,7 +301,7 @@ const Sidebar = ({ isOpen, onToggle, onApiKeyChange, onNewCampaign }: SidebarPro
               )}
             >
               <MessageSquare className="h-5 w-5" />
-              {isOpen && <span>Chats</span>}
+              {isOpen && <span>General Chats</span>}
             </button>
             {isOpen && expandedSection === "chats" && (
               <div className="space-y-1">
@@ -239,9 +311,17 @@ const Sidebar = ({ isOpen, onToggle, onApiKeyChange, onNewCampaign }: SidebarPro
                     onClick={() => navigate(`/chat/${chat.id}`)}
                     className="group flex h-9 items-center gap-2.5 rounded-lg px-2 hover:bg-[#383737] cursor-pointer text-sm text-gray-400 hover:text-white ml-8"
                   >
-                    {chat.title}
+                    <MessageSquare className="h-4 w-4" />
+                    <span className="truncate">{chat.title}</span>
                   </div>
                 ))}
+                <div
+                  onClick={() => navigate('/chat/new')}
+                  className="group flex h-9 items-center gap-2.5 rounded-lg px-2 hover:bg-[#383737] cursor-pointer text-sm text-indigo-500 hover:text-indigo-400 ml-8"
+                >
+                  <Plus className="h-4 w-4" />
+                  <span>New chat</span>
+                </div>
               </div>
             )}
           </div>
