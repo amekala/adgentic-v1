@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -14,6 +15,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import ChatMessage from '@/components/ChatMessage';
+import { Json } from '@/integrations/supabase/types';
 
 interface Message {
   id?: string;
@@ -35,6 +37,15 @@ interface Campaign {
   campaign_name: string;
   campaign_status: string;
 }
+
+// Helper function to ensure role is valid
+const ensureValidRole = (role: string): 'user' | 'assistant' | 'system' => {
+  if (role === 'user' || role === 'assistant' || role === 'system') {
+    return role;
+  }
+  console.warn(`Invalid role: ${role}, defaulting to 'assistant'`);
+  return 'assistant';
+};
 
 const Chat = () => {
   const { id: chatId } = useParams();
@@ -103,7 +114,15 @@ const Chat = () => {
         if (messagesError) throw messagesError;
         
         if (messagesData && messagesData.length > 0) {
-          setMessages(messagesData);
+          // Convert DB messages to valid Message objects with type assertion
+          const validMessages: Message[] = messagesData.map(msg => ({
+            id: msg.id,
+            role: ensureValidRole(msg.role),
+            content: msg.content,
+            created_at: msg.created_at
+          }));
+          
+          setMessages(validMessages);
         }
       } catch (error) {
         console.error('Error fetching chat data:', error);
@@ -126,7 +145,7 @@ const Chat = () => {
     { 
       label: "Home", 
       href: "/app",
-      type: "home" as const,
+      type: "home",
       id: "home"
     },
   ];
@@ -136,7 +155,7 @@ const Chat = () => {
     breadcrumbItems.push({ 
       label: campaign.campaign_name, 
       href: `/campaign/${campaignId}`,
-      type: "campaign" as const,
+      type: "campaign",
       id: campaignId as string 
     });
   }
@@ -145,7 +164,7 @@ const Chat = () => {
   breadcrumbItems.push({ 
     label: chatData?.title || 'New Chat', 
     href: `/chat/${chatId}`,
-    type: "chat" as const,
+    type: "chat",
     id: chatId || 'new'
   });
 
@@ -169,8 +188,8 @@ const Chat = () => {
   const handleSendMessage = async () => {
     if (!inputValue.trim() || isSending) return;
     
-    const userMessage = {
-      role: 'user' as const,
+    const userMessage: Message = {
+      role: 'user',
       content: inputValue.trim()
     };
     
@@ -217,10 +236,20 @@ const Chat = () => {
         
         // Update local state
         setChatData(newChat);
-        setMessages([newMessage]);
+        setMessages([{
+          id: newMessage.id,
+          role: ensureValidRole(newMessage.role),
+          content: newMessage.content,
+          created_at: newMessage.created_at
+        }]);
         
         // Send to AI
-        await sendToAI(newChat.id, [newMessage]);
+        await sendToAI(newChat.id, [{
+          id: newMessage.id,
+          role: ensureValidRole(newMessage.role),
+          content: newMessage.content,
+          created_at: newMessage.created_at
+        }]);
       } catch (error) {
         console.error('Error creating chat:', error);
         toast.error('Failed to create chat');
@@ -245,15 +274,23 @@ const Chat = () => {
           
         if (error) throw error;
         
+        // Convert DB message to valid Message object
+        const validMessage: Message = {
+          id: newMessage.id,
+          role: ensureValidRole(newMessage.role),
+          content: newMessage.content,
+          created_at: newMessage.created_at
+        };
+        
         // Update messages with the saved message
         setMessages(prev => 
           prev.map(msg => 
-            msg === userMessage ? newMessage : msg
+            msg === userMessage ? validMessage : msg
           )
         );
         
         // Send to AI
-        await sendToAI(chatId as string, [...messages, newMessage]);
+        await sendToAI(chatId as string, [...messages, validMessage]);
       } catch (error) {
         console.error('Error sending message:', error);
         toast.error('Failed to send message');
@@ -265,7 +302,7 @@ const Chat = () => {
   const sendToAI = async (chatId: string, messageHistory: Message[]) => {
     try {
       // Add thinking message
-      const thinkingMessage = { role: 'assistant' as const, content: '...' };
+      const thinkingMessage: Message = { role: 'assistant', content: '...' };
       setMessages(prev => [...prev, thinkingMessage]);
       
       // Format messages for the AI
