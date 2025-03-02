@@ -1,164 +1,168 @@
 
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import { Configuration, OpenAIApi } from 'https://esm.sh/openai@3.2.1'
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
+// Follow this setup guide to integrate the Deno runtime into your application:
+// https://deno.land/manual/examples/deploy_deno
+// Learn more about Deno: https://deno.land/
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
+import { corsHeaders } from "../_shared/cors.ts";
 
-interface Message {
-  role: 'user' | 'assistant' | 'system';
+// OpenAI integration
+const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
+
+interface ChatMessage {
+  role: "system" | "user" | "assistant";
   content: string;
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
+  // CORS handling
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const apiKey = Deno.env.get('OPENAI_API_KEY')
-    if (!apiKey) {
-      console.error('OpenAI API key not configured');
-      return new Response(
-        JSON.stringify({ 
-          error: 'OpenAI API key not configured',
-          content: 'The server is missing its OpenAI API key configuration.'
-        }),
-        { 
-          status: 500,
-          headers: { 
-            ...corsHeaders,
-            'Content-Type': 'application/json'
-          }
-        }
-      )
-    }
-
-    // Log the request for debugging
-    console.log('Request received:', req.method, req.url);
+    // Log request details for debugging
+    console.log(`Processing chat request from ${req.headers.get("origin") || "unknown origin"}`);
     
-    const requestData = await req.json();
-    console.log('Request body:', JSON.stringify(requestData).substring(0, 500) + '...');
+    // Check if API keys are available
+    if (!OPENAI_API_KEY && !ANTHROPIC_API_KEY) {
+      console.error("Missing API keys: Both OpenAI and Anthropic API keys are missing");
+      throw new Error("API configuration missing. Contact administrator.");
+    }
+
+    // Parse request body
+    const requestData = await req.json().catch(err => {
+      console.error("Failed to parse request JSON:", err);
+      throw new Error("Invalid request format: Could not parse JSON");
+    });
+
+    // Validate request structure
+    if (!requestData || !requestData.messages || !Array.isArray(requestData.messages)) {
+      console.error("Invalid request structure:", JSON.stringify(requestData).substring(0, 200));
+      throw new Error("Invalid request format: Missing messages array");
+    }
+
+    // Log messages for debugging
+    console.log(`Received ${requestData.messages.length} messages for processing`);
     
-    const { messages } = requestData;
-
-    if (!messages || !Array.isArray(messages)) {
-      return new Response(
-        JSON.stringify({ 
-          error: 'Invalid request format',
-          content: 'Messages array is required'
-        }),
-        { 
-          status: 400,
-          headers: { 
-            ...corsHeaders,
-            'Content-Type': 'application/json'
-          }
-        }
-      )
+    // Decide which API to use - prefer OpenAI if available
+    let response;
+    
+    if (OPENAI_API_KEY) {
+      console.log("Using OpenAI for response generation");
+      response = await generateOpenAIResponse(requestData.messages);
+    } else if (ANTHROPIC_API_KEY) {
+      console.log("Using Anthropic for response generation");
+      response = await generateAnthropicResponse(requestData.messages);
     }
 
-    console.log('Processing chat request with messages count:', messages.length);
+    // Format and return the response
+    return new Response(JSON.stringify(response), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 200,
+    });
+  } catch (error) {
+    // Properly handle and log errors
+    console.error("Chat function error:", error.message || "Unknown error");
+    
+    return new Response(
+      JSON.stringify({
+        error: error.message || "Unknown error occurred",
+        status: "error",
+      }),
+      {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500,
+      }
+    );
+  }
+});
 
-    // Add system message if not present
-    const systemMessage: Message = {
-      role: 'system',
-      content: `You are Adgentic, an AI assistant specialized in advertising and marketing campaigns. You help users optimize their ad campaigns and provide insights on marketing strategies.`
-    }
+// Function to generate responses with OpenAI
+async function generateOpenAIResponse(messages: ChatMessage[]) {
+  console.log("Generating OpenAI response");
+  
+  try {
+    const sanitizedMessages = messages.map(msg => ({
+      role: msg.role,
+      content: msg.content
+    }));
 
-    const allMessages = messages[0]?.role === 'system' ? messages : [systemMessage, ...messages];
-
-    console.log('Sending request to OpenAI with messages count:', allMessages.length);
-
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
+        "Authorization": `Bearer ${OPENAI_API_KEY}`,
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: allMessages,
+        model: "gpt-4o-mini",
+        messages: sanitizedMessages,
         temperature: 0.7,
-        max_tokens: 1500,
+        max_tokens: 800,
       }),
     });
 
-    const responseStatus = response.status;
-    console.log('OpenAI API response status:', responseStatus);
-
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('OpenAI API error:', responseStatus, errorText);
-      
-      return new Response(
-        JSON.stringify({ 
-          error: `OpenAI API returned status ${responseStatus}`,
-          content: 'The AI service encountered an error. Please try again later.'
-        }),
-        { 
-          status: 502,
-          headers: { 
-            ...corsHeaders,
-            'Content-Type': 'application/json'
-          }
-        }
-      )
+      console.error(`OpenAI API error (${response.status}):`, errorText);
+      throw new Error(`OpenAI API error: ${response.status} ${errorText.substring(0, 100)}...`);
     }
 
     const data = await response.json();
-    console.log('OpenAI API response type:', typeof data);
-    console.log('OpenAI API response has choices:', Boolean(data.choices));
+    console.log("OpenAI response received successfully");
+    
+    return {
+      content: data.choices[0].message.content,
+      model: data.model,
+      usage: data.usage,
+    };
+  } catch (error) {
+    console.error("Error calling OpenAI:", error);
+    throw new Error(`OpenAI processing error: ${error.message}`);
+  }
+}
 
-    if (!data.choices?.[0]?.message) {
-      console.error('Invalid OpenAI response format:', JSON.stringify(data).substring(0, 500));
-      
-      return new Response(
-        JSON.stringify({ 
-          error: 'Invalid response from OpenAI',
-          content: 'The AI service returned an unexpected format. Please try again later.'
-        }),
-        { 
-          status: 502,
-          headers: { 
-            ...corsHeaders,
-            'Content-Type': 'application/json'
-          }
-        }
-      )
+// Function to generate responses with Anthropic (fallback)
+async function generateAnthropicResponse(messages: ChatMessage[]) {
+  console.log("Generating Anthropic response");
+  
+  try {
+    // Format messages for Anthropic API
+    const anthropicMessages = messages.map(msg => ({
+      role: msg.role === "assistant" ? "assistant" : "user",
+      content: msg.content
+    }));
+
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "x-api-key": `${ANTHROPIC_API_KEY}`,
+        "anthropic-version": "2023-06-01",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "claude-3-sonnet-20240229",
+        messages: anthropicMessages,
+        max_tokens: 800,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`Anthropic API error (${response.status}):`, errorText);
+      throw new Error(`Anthropic API error: ${response.status} ${errorText.substring(0, 100)}...`);
     }
 
-    console.log('Returning AI response to client');
-    return new Response(
-      JSON.stringify(data.choices[0].message),
-      { 
-        headers: { 
-          ...corsHeaders,
-          'Content-Type': 'application/json'
-        },
-        status: 200
-      }
-    )
-
-  } catch (error) {
-    console.error('Chat function error:', error.message || error);
+    const data = await response.json();
+    console.log("Anthropic response received successfully");
     
-    return new Response(
-      JSON.stringify({ 
-        error: error.message || 'An error occurred processing your request',
-        content: 'There was an unexpected error processing your request. Please try again later.'
-      }),
-      { 
-        status: 500,
-        headers: { 
-          ...corsHeaders,
-          'Content-Type': 'application/json'
-        }
-      }
-    )
+    return {
+      content: data.content[0].text,
+      model: data.model,
+    };
+  } catch (error) {
+    console.error("Error calling Anthropic:", error);
+    throw new Error(`Anthropic processing error: ${error.message}`);
   }
-})
+}
