@@ -51,34 +51,59 @@ export const saveAssistantMessage = async (
   assistantResponse: MessageProps
 ) => {
   try {
-    // Create a database-safe version of the response
-    // Remove any functions or circular references that can't be stored in JSONB
-    const sanitizedMetrics = assistantResponse.metrics 
-      ? JSON.parse(JSON.stringify(assistantResponse.metrics))
-      : null;
+    // Extreme defensive coding to ensure we only save what the database can handle
+    // First, create a clean object with only the properties we need
+    const messageToSave = {
+      chat_id: chatId,
+      role: 'assistant',
+      content: assistantResponse.content || '',
+      title: assistantResponse.title || null,
+      metrics: null,
+      actionbuttons: null
+    };
     
-    // For action buttons, only save properties that can be stored in the database
-    // Remove any functions like onClick handlers
-    const sanitizedActionButtons = assistantResponse.actionButtons 
-      ? assistantResponse.actionButtons.map(btn => ({
-          label: btn.label,
-          primary: btn.primary || false
-        }))
-      : null;
+    // Then carefully process metrics if they exist
+    if (assistantResponse.metrics && Array.isArray(assistantResponse.metrics)) {
+      try {
+        // Create a minimal version with only required properties
+        const cleanMetrics = assistantResponse.metrics.map(metric => ({
+          label: String(metric.label || ''),
+          value: String(metric.value || ''),
+          improvement: typeof metric.improvement === 'boolean' ? metric.improvement : null
+        }));
+        
+        // Serialize and then deserialize to remove any circular references
+        messageToSave.metrics = JSON.parse(JSON.stringify(cleanMetrics));
+        console.log('Sanitized metrics to save:', messageToSave.metrics);
+      } catch (metricError) {
+        console.error('Error processing metrics:', metricError);
+        // If there's any error, just don't save the metrics
+      }
+    }
     
-    console.log('Sanitized metrics:', sanitizedMetrics);
-    console.log('Sanitized action buttons:', sanitizedActionButtons);
+    // Similarly process action buttons if they exist
+    if (assistantResponse.actionButtons && Array.isArray(assistantResponse.actionButtons)) {
+      try {
+        // Create a minimal version with only required properties
+        const cleanButtons = assistantResponse.actionButtons.map(btn => ({
+          label: String(btn.label || ''),
+          primary: typeof btn.primary === 'boolean' ? btn.primary : false
+        }));
+        
+        // Serialize and then deserialize to remove any circular references
+        messageToSave.actionbuttons = JSON.parse(JSON.stringify(cleanButtons));
+        console.log('Sanitized action buttons to save:', messageToSave.actionbuttons);
+      } catch (buttonError) {
+        console.error('Error processing action buttons:', buttonError);
+        // If there's any error, just don't save the action buttons
+      }
+    }
+    
+    console.log('Final message object to save:', messageToSave);
     
     const { error } = await supabase
       .from('chat_messages')
-      .insert({
-        chat_id: chatId,
-        role: 'assistant',
-        content: assistantResponse.content,
-        title: assistantResponse.title || null,
-        metrics: sanitizedMetrics,
-        actionbuttons: sanitizedActionButtons
-      });
+      .insert(messageToSave);
 
     if (error) {
       console.error('Error saving assistant message:', error);

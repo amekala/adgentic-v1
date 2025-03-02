@@ -80,13 +80,24 @@ export const callLLMAPI = async (
       // Extract structured data if present
       const structuredData = extractStructuredData(data.content);
       
+      // Make sure we construct a valid MessageProps object
       assistantMessage = {
         role: 'assistant',
-        content: structuredData.content,
-        title: structuredData.title || undefined,
-        metrics: structuredData.metrics || undefined,
-        actionButtons: structuredData.actionButtons || undefined
+        content: structuredData.content || '',
       };
+      
+      // Only add optional properties if they exist and are valid
+      if (structuredData.title) {
+        assistantMessage.title = structuredData.title;
+      }
+      
+      if (Array.isArray(structuredData.metrics) && structuredData.metrics.length > 0) {
+        assistantMessage.metrics = structuredData.metrics;
+      }
+      
+      if (Array.isArray(structuredData.actionButtons) && structuredData.actionButtons.length > 0) {
+        assistantMessage.actionButtons = structuredData.actionButtons;
+      }
       
       // Clean up any leftover formatting issues
       assistantMessage.content = assistantMessage.content.trim();
@@ -113,20 +124,25 @@ function extractStructuredData(content: string) {
   if (jsonMatch && jsonMatch[1]) {
     try {
       // Parse the JSON
-      const structuredData = JSON.parse(jsonMatch[1]);
+      const jsonString = jsonMatch[1].trim();
+      console.log('Attempting to parse JSON:', jsonString);
+      
+      const structuredData = JSON.parse(jsonString);
       console.log('Found structured data in response:', structuredData);
       
       // Remove the JSON block from the content
       const cleanedContent = content.replace(/```json\n[\s\S]*?\n```/, '').trim();
       
+      // Return a safe object with default values for missing properties
       return {
-        title: structuredData.title,
+        title: structuredData.title || '',
         content: structuredData.content || cleanedContent,
         metrics: Array.isArray(structuredData.metrics) ? structuredData.metrics : [],
         actionButtons: Array.isArray(structuredData.actionButtons) ? structuredData.actionButtons : []
       };
     } catch (e) {
       console.error("Error parsing JSON from LLM:", e);
+      console.log("Problematic JSON string:", jsonMatch[1]);
     }
   }
   
