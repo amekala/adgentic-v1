@@ -53,7 +53,7 @@ serve(async (req) => {
         model: 'gpt-4o-mini',
         messages: allMessages,
         temperature: 0.7,
-        max_tokens: 1000,
+        max_tokens: 1500, // Increased token limit for structured responses
       }),
     });
 

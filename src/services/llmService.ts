@@ -28,9 +28,24 @@ export const callLLMAPI = async (
       content: `You are Adgentic, an AI assistant specialized in advertising and marketing campaigns. 
                ${campaignContext}
                You help users optimize their ad campaigns and provide insights on marketing strategies.
-               When appropriate, you may include metrics and action buttons in your response.
-               For metrics, use the format: [{"label": "Metric Name", "value": "Metric Value", "improvement": true/false}]
-               For action buttons, use: [{"label": "Button Text", "primary": true/false}]`
+
+               When providing data-rich responses, use this JSON format inside your response:
+               \`\`\`json
+               {
+                 "title": "Your Response Title",
+                 "content": "Your detailed explanation here...",
+                 "metrics": [
+                   {"label": "Metric Name", "value": "Metric Value", "improvement": true/false},
+                   ...
+                 ],
+                 "actionButtons": [
+                   {"label": "Button Text", "primary": true/false},
+                   ...
+                 ]
+               }
+               \`\`\`
+               
+               For non-data responses, just respond normally. Use markdown formatting for better readability.`
     };
     
     // Add the new user message
@@ -62,41 +77,15 @@ export const callLLMAPI = async (
     };
     
     if (data && data.content) {
+      // Extract structured data if present
+      const structuredData = extractStructuredData(data.content);
+      
       assistantMessage = {
         role: 'assistant',
-        content: data.content
+        content: structuredData.content,
+        metrics: structuredData.metrics.length > 0 ? structuredData.metrics : undefined,
+        actionButtons: structuredData.actionButtons.length > 0 ? structuredData.actionButtons : undefined
       };
-      
-      // Try to extract metrics and action buttons from the response if they exist
-      try {
-        // Look for metrics in the format [{"label": "Metric Name", "value": "Metric Value", "improvement": true/false}]
-        const metricsMatch = data.content.match(/\[\s*\{\s*"label":\s*".*?"\s*,\s*"value":\s*".*?"\s*,\s*"improvement":\s*(true|false)\s*\}.*?\]/);
-        if (metricsMatch) {
-          try {
-            const metricsJson = JSON.parse(metricsMatch[0]);
-            assistantMessage.metrics = metricsJson;
-            // Remove the metrics JSON from the content
-            assistantMessage.content = assistantMessage.content.replace(metricsMatch[0], '');
-          } catch (e) {
-            console.error('Failed to parse metrics JSON:', e);
-          }
-        }
-        
-        // Look for action buttons in the format [{"label": "Button Text", "primary": true/false}]
-        const buttonsMatch = data.content.match(/\[\s*\{\s*"label":\s*".*?"\s*,\s*"primary":\s*(true|false)\s*\}.*?\]/);
-        if (buttonsMatch) {
-          try {
-            const buttonsJson = JSON.parse(buttonsMatch[0]);
-            assistantMessage.actionButtons = buttonsJson;
-            // Remove the buttons JSON from the content
-            assistantMessage.content = assistantMessage.content.replace(buttonsMatch[0], '');
-          } catch (e) {
-            console.error('Failed to parse action buttons JSON:', e);
-          }
-        }
-      } catch (e) {
-        console.error('Error processing response extras:', e);
-      }
       
       // Clean up any leftover formatting issues
       assistantMessage.content = assistantMessage.content.trim();
@@ -112,3 +101,35 @@ export const callLLMAPI = async (
     };
   }
 };
+
+// Function to extract structured data from LLM response
+function extractStructuredData(content: string) {
+  // Look for JSON blocks in the response
+  const jsonMatch = content.match(/```json\n([\s\S]*?)\n```/);
+  
+  if (jsonMatch && jsonMatch[1]) {
+    try {
+      // Parse the JSON
+      const structuredData = JSON.parse(jsonMatch[1]);
+      
+      // Remove the JSON block from the content
+      const cleanedContent = content.replace(/```json\n[\s\S]*?\n```/, '').trim();
+      
+      return {
+        title: structuredData.title,
+        content: structuredData.content || cleanedContent,
+        metrics: structuredData.metrics || [],
+        actionButtons: structuredData.actionButtons || []
+      };
+    } catch (e) {
+      console.error("Error parsing JSON from LLM:", e);
+    }
+  }
+  
+  // Return original content if no valid JSON found
+  return {
+    content,
+    metrics: [],
+    actionButtons: []
+  };
+}

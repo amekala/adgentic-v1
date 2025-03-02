@@ -12,6 +12,7 @@ export type ChatMessageRow = {
   created_at: string;
   id: string;
   role: string;
+  title?: string;
   metrics?: any; // Changed to 'any' to handle JSONB from database
   actionbuttons?: any; // Changed to 'any' to handle JSONB from database
 };
@@ -111,6 +112,7 @@ export const useChat = (chatId: string | undefined, campaignId: string | null) =
           return {
             role: msg.role as MessageProps['role'],
             content: msg.content,
+            title: msg.title || undefined,
             // Since we're using JSONB in the database, no need to parse
             metrics: msg.metrics || undefined,
             actionButtons: msg.actionbuttons || undefined

@@ -20,12 +20,13 @@ type ActionButton = {
 export type MessageProps = {
   role: 'user' | 'assistant' | 'system';
   content: string;
+  title?: string;
   metrics?: MetricItem[];
   actionButtons?: ActionButton[];
   onActionClick?: (action: string) => void;
 };
 
-const Message = ({ role, content, metrics, actionButtons, onActionClick }: MessageProps) => {
+const Message = ({ role, content, title, metrics, actionButtons, onActionClick }: MessageProps) => {
   const [expanded, setExpanded] = useState(true);
   const isAssistantMessage = role === 'assistant';
 
@@ -35,14 +36,18 @@ const Message = ({ role, content, metrics, actionButtons, onActionClick }: Messa
     }
   };
 
-  // Format content with proper line breaks
+  // Format content with proper line breaks and markdown
   const formattedContent = content.split('\n').map((line, index) => (
     <p key={index} className={cn(
       "mb-2",
       line.startsWith('#') && "font-bold text-lg",
-      line.startsWith('##') && "font-bold text-base"
+      line.startsWith('##') && "font-bold text-base",
+      line.startsWith('*') && line.endsWith('*') && "italic",
+      line.startsWith('**') && line.endsWith('**') && "font-bold"
     )}>
-      {line.replace(/^#+ /, '')}
+      {line.replace(/^#+ /, '')
+           .replace(/^\*\*(.*)\*\*$/, "$1")
+           .replace(/^\*(.*)\*$/, "$1")}
     </p>
   ));
 
@@ -67,6 +72,11 @@ const Message = ({ role, content, metrics, actionButtons, onActionClick }: Messa
               {role === 'user' && 
                 <p className="text-sm font-medium text-gray-400 mb-1">You:</p>
               }
+
+              {/* Title when available */}
+              {title && isAssistantMessage && (
+                <h2 className="text-xl font-bold mb-3 text-white">{title}</h2>
+              )}
 
               {/* Collapsible content section */}
               <div className={cn(

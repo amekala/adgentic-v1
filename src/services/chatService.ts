@@ -65,6 +65,7 @@ export const saveAssistantMessage = async (
       chat_id: chatId,
       role: 'assistant',
       content: assistantResponse.content,
+      title: assistantResponse.title || null,
       metrics: assistantResponse.metrics || null,
       actionbuttons: dbSafeActionButtons
     });
