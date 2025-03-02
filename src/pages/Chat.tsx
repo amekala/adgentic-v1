@@ -16,8 +16,8 @@ type ChatMessageRow = {
   created_at: string;
   id: string;
   role: string;
-  metrics?: string | null; // Updated to handle database column
-  actionButtons?: string | null; // Updated to handle database column
+  metrics?: any; // Changed to 'any' to handle JSONB from database
+  actionButtons?: any; // Changed to 'any' to handle JSONB from database
 };
 
 const Chat = () => {
@@ -57,15 +57,24 @@ const Chat = () => {
           return;
         }
 
+        console.log('Raw data from database:', data);
+
         if (data && data.length > 0) {
-          console.log('Fetched messages:', data);
           // Convert data to MessageProps format, properly handling metrics and actionButtons
-          const validMessages = data.map((msg: ChatMessageRow) => ({
-            role: msg.role as MessageProps['role'],
-            content: msg.content,
-            metrics: msg.metrics ? JSON.parse(msg.metrics as string) : undefined,
-            actionButtons: msg.actionButtons ? JSON.parse(msg.actionButtons as string) : undefined
-          }));
+          const validMessages = data.map((msg: ChatMessageRow) => {
+            // Debug each message conversion
+            console.log('Processing message:', msg.id, 'role:', msg.role);
+            console.log('metrics type:', typeof msg.metrics, 'value:', msg.metrics);
+            console.log('actionButtons type:', typeof msg.actionButtons, 'value:', msg.actionButtons);
+            
+            return {
+              role: msg.role as MessageProps['role'],
+              content: msg.content,
+              // Since we're using JSONB in the database, no need to parse
+              metrics: msg.metrics || undefined,
+              actionButtons: msg.actionButtons || undefined
+            };
+          });
           
           console.log('Processed messages:', validMessages);
           setMessages(validMessages);
@@ -227,15 +236,15 @@ const Chat = () => {
         const assistantResponse = generateResponse(content);
         console.log('Generated assistant response:', assistantResponse);
 
-        // Save assistant response to database with metrics and actionButtons as JSON strings
+        // Direct insertion of metrics and actionButtons as JSONB
         const { error: aiInsertError } = await supabase
           .from('chat_messages')
           .insert({
             chat_id: currentChatId,
             role: 'assistant',
             content: assistantResponse.content,
-            metrics: assistantResponse.metrics ? JSON.stringify(assistantResponse.metrics) : null,
-            actionButtons: assistantResponse.actionButtons ? JSON.stringify(assistantResponse.actionButtons) : null
+            metrics: assistantResponse.metrics || null,
+            actionButtons: assistantResponse.actionButtons || null
           });
 
         if (aiInsertError) {

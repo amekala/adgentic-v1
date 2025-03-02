@@ -12,9 +12,15 @@ interface MessageListProps {
 const MessageList = ({ messages, onActionClick, onPillClick }: MessageListProps) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Debug logs to track messages state
+  // Enhanced debug logs to track messages state
   useEffect(() => {
     console.log('MessageList received messages:', messages);
+    if (messages.length === 0) {
+      console.log('No messages to display');
+    } else {
+      console.log('First message:', messages[0]);
+      console.log('Last message:', messages[messages.length - 1]);
+    }
   }, [messages]);
 
   // Auto-scroll to bottom when messages change

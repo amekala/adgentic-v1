@@ -71,24 +71,30 @@ export type Database = {
       }
       chat_messages: {
         Row: {
+          actionbuttons: Json | null
           chat_id: string | null
           content: string
           created_at: string | null
           id: string
+          metrics: Json | null
           role: string
         }
         Insert: {
+          actionbuttons?: Json | null
           chat_id?: string | null
           content: string
           created_at?: string | null
           id?: string
+          metrics?: Json | null
           role: string
         }
         Update: {
+          actionbuttons?: Json | null
           chat_id?: string | null
           content?: string
           created_at?: string | null
           id?: string
+          metrics?: Json | null
           role?: string
         }
         Relationships: [
