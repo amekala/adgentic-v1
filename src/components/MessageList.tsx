@@ -29,13 +29,13 @@ const MessageList = ({ messages, onActionClick, onPillClick }: MessageListProps)
   }, [messages]);
 
   return (
-    <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent">
+    <div className="flex-1 overflow-y-auto bg-white">
       <div className="w-full">
         {messages.length === 0 ? (
           <div className="pt-8 px-4">
             <div className="text-center mb-8">
-              <h2 className="text-xl font-semibold text-white mb-2">Welcome to Adgentic Assistant</h2>
-              <p className="text-gray-400">Your AI-powered advertising campaign assistant</p>
+              <h2 className="text-xl font-semibold text-adgentic-text-primary mb-2">Welcome to Adgentic Assistant</h2>
+              <p className="text-adgentic-text-secondary">Your AI-powered advertising campaign assistant</p>
             </div>
             <ChatActionPills onPillClick={onPillClick} className="mb-8" />
           </div>

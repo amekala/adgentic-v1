@@ -54,7 +54,7 @@ const Message = ({ role, content, title, metrics, actionButtons, onActionClick }
   return (
     <div className={cn(
       "py-6 border-b border-adgentic-border",
-      role === 'assistant' && "bg-adgentic-secondary"
+      role === 'assistant' ? "bg-adgentic-secondary" : "bg-white"
     )}>
       <div className="w-full max-w-3xl mx-auto">
         <div className={`flex gap-4 ${role === 'user' ? 'flex-row-reverse' : ''}`}>
@@ -147,7 +147,11 @@ const Message = ({ role, content, title, metrics, actionButtons, onActionClick }
                 </button>
               )}
             </div>
-            {role === 'assistant' && <MessageActions />}
+            {role === 'assistant' && (
+              <div className="flex items-center gap-2 text-adgentic-text-secondary">
+                <MessageActions />
+              </div>
+            )}
           </div>
         </div>
       </div>

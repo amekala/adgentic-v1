@@ -51,18 +51,18 @@ const ChatInput = ({ onSend, isLoading = false, placeholder = "Message Adgentic.
             onChange={(e) => setMessage(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={placeholder}
-            className="w-full resize-none rounded-xl bg-transparent px-4 py-3 pr-12 focus:outline-none text-adgentic-text-primary placeholder-adgentic-text-light max-h-[200px] min-h-[56px]"
+            className="w-full resize-none rounded-xl bg-transparent px-4 py-3 pr-12 focus:outline-none text-adgentic-text-primary placeholder:text-adgentic-text-light max-h-[200px] min-h-[56px]"
             disabled={isLoading}
           />
           <div className="flex items-center p-2">
             <button 
-              className="text-adgentic-text-light hover:text-adgentic-text-primary p-2 rounded-full"
+              className="text-adgentic-text-secondary hover:text-adgentic-text-primary p-2 rounded-full"
               type="button"
             >
               <Paperclip className="h-5 w-5" />
             </button>
             <button 
-              className="text-adgentic-text-light hover:text-adgentic-text-primary p-2 rounded-full"
+              className="text-adgentic-text-secondary hover:text-adgentic-text-primary p-2 rounded-full"
               type="button"
             >
               <Smile className="h-5 w-5" />
