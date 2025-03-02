@@ -2,7 +2,6 @@
 import React from 'react';
 import { ChevronRight, Home, FolderOpen, MessageSquare } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
-import { useNavigate } from 'react-router-dom';
 
 interface BreadcrumbItem {
   label: string;
@@ -13,7 +12,6 @@ interface BreadcrumbItem {
 
 export const Breadcrumb = ({ items }: { items: BreadcrumbItem[] }) => {
   const location = useLocation();
-  const navigate = useNavigate();
   
   // Helper to determine if an item is the current page
   const isCurrentPage = (href: string) => {
