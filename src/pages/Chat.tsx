@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from "@/integrations/supabase/client";
@@ -37,6 +36,9 @@ const Chat = () => {
   // Extract campaign_id from URL query params if present
   const searchParams = new URLSearchParams(location.search);
   const queryCampaignId = searchParams.get('campaign_id');
+
+  // Track conversation context for better follow-up handling
+  const [conversationContext, setConversationContext] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchMessages = async () => {
@@ -154,10 +156,92 @@ const Chat = () => {
     fetchMessages();
   }, [chatId, useToastFn, queryCampaignId]);
 
-  const generateResponse = (userMessage: string) => {
+  const generateResponse = (userMessage: string, previousMessages: MessageProps[]) => {
+    // Extract the last few messages to establish context
+    const recentMessages = previousMessages.slice(-3);
     const messageLower = userMessage.toLowerCase();
     
+    // Determine if this is a follow-up question
+    const isFollowUp = previousMessages.length > 0;
+    
+    // Set conversation context based on the current topic if it's not already set
+    if (!conversationContext) {
+      if (messageLower.includes('performance') || messageLower.includes('analytics') || messageLower.includes('report')) {
+        setConversationContext('performance');
+      } else if (messageLower.includes('keyword') || messageLower.includes('search terms')) {
+        setConversationContext('keywords');
+      } else if (messageLower.includes('budget') || messageLower.includes('spend') || messageLower.includes('allocation')) {
+        setConversationContext('budget');
+      }
+    }
+    
+    // Handle follow-up questions based on established context
+    if (isFollowUp) {
+      // Context-aware responses for follow-up questions
+      if (conversationContext === 'performance') {
+        // Handle follow-up questions about performance
+        if (messageLower.includes('why') || messageLower.includes('how') || messageLower.includes('what')) {
+          return {
+            role: 'assistant' as const,
+            content: "Based on your previous question about performance, I can provide more details. Your campaigns are showing an overall strong performance, particularly on Walmart and Instacart because these platforms have lower CPC (Cost Per Click) while maintaining similar conversion rates compared to Amazon. This results in a better ROAS (Return on Ad Spend) on these platforms, which is why I recommend shifting some budget from Amazon to these better-performing channels.",
+            metrics: [
+              { label: 'Amazon ROAS', value: '3.2x', improvement: false },
+              { label: 'Walmart ROAS', value: '4.5x', improvement: true },
+              { label: 'Instacart ROAS', value: '5.1x', improvement: true }
+            ],
+            actionButtons: [
+              { label: 'View Platform Comparison', primary: false },
+              { label: 'Optimize Budget Now', primary: true }
+            ]
+          };
+        }
+      } else if (conversationContext === 'keywords') {
+        // Handle follow-up questions about keywords
+        if (messageLower.includes('data') || messageLower.includes('give me') || messageLower.includes('show')) {
+          return {
+            role: 'assistant' as const,
+            content: "Here's the keyword performance data you requested for your campaigns:",
+            metrics: [
+              { label: 'Top Keyword', value: 'organic supplements', improvement: true },
+              { label: 'Highest CTR', value: 'vegan protein', improvement: true },
+              { label: 'Lowest ACOS', value: 'plant protein', improvement: true },
+              { label: 'Most Conversions', value: 'protein powder', improvement: true },
+              { label: 'Worst Performer', value: 'discount supplements', improvement: false }
+            ],
+            actionButtons: [
+              { label: 'Download Full Report', primary: false },
+              { label: 'Optimize Keywords', primary: true }
+            ]
+          };
+        }
+      } else if (conversationContext === 'budget') {
+        // Handle follow-up questions about budget allocation
+        if (messageLower.includes('increase') || messageLower.includes('amazon') || messageLower.includes('why')) {
+          return {
+            role: 'assistant' as const,
+            content: "You asked why I recommend decreasing Amazon's budget rather than increasing it. Amazon currently has the highest CPC among your channels but shows lower conversion rates compared to Walmart and Instacart. Our data indicates you're paying 23% more per click on Amazon while getting 15% fewer conversions. By shifting budget to the other platforms, you'll likely achieve better overall ROAS and more efficient ad spend.",
+            metrics: [
+              { label: 'Amazon CPC', value: '$1.27', improvement: false },
+              { label: 'Walmart CPC', value: '$0.92', improvement: true },
+              { label: 'Instacart CPC', value: '$0.84', improvement: true },
+              { label: 'Amazon Conv. Rate', value: '3.1%', improvement: false },
+              { label: 'Other Platforms Avg', value: '4.2%', improvement: true }
+            ],
+            actionButtons: [
+              { label: 'View Detailed Analysis', primary: false },
+              { label: 'Maintain Amazon Budget', primary: false },
+              { label: 'Apply Recommendations', primary: true }
+            ]
+          };
+        }
+      }
+    }
+    
+    // If no specific context is set or the follow-up doesn't match contextual patterns,
+    // fall back to the original keyword-based responses
+    
     if (messageLower.includes('performance') || messageLower.includes('analytics') || messageLower.includes('report')) {
+      setConversationContext('performance');
       return {
         role: 'assistant' as const,
         content: "# Performance Report\n\nHere's the performance data for your campaigns over the past 7 days:\n\nYour campaigns are showing strong overall performance with improvements in most key metrics. CTR has increased by 0.3% and ACOS has decreased by 1.2% compared to the previous period.",
@@ -177,6 +261,7 @@ const Chat = () => {
     }
     
     else if (messageLower.includes('keyword') || messageLower.includes('search terms')) {
+      setConversationContext('keywords');
       return {
         role: 'assistant' as const,
         content: "# Keyword Recommendations\n\nBased on your campaign performance, I recommend the following keyword changes:\n\n- Add \"organic protein powder\" as a broad match\n- Increase bid on \"vegan supplements\" by 15%\n- Pause \"discount protein\" due to low conversion\n- Add negative keyword \"sample\" to reduce irrelevant clicks",
@@ -194,6 +279,7 @@ const Chat = () => {
     }
     
     else if (messageLower.includes('budget') || messageLower.includes('spend') || messageLower.includes('allocation')) {
+      setConversationContext('budget');
       return {
         role: 'assistant' as const,
         content: "# Budget Allocation Recommendations\n\nBased on ROAS analysis, I recommend the following budget allocation:\n\nYour current budget allocation is showing strong performance on Walmart and Instacart. I recommend shifting 15% of your Amazon budget to these channels to maximize overall ROAS.",
@@ -213,6 +299,8 @@ const Chat = () => {
     }
     
     else {
+      // Reset context if user asks something unrelated to previous topics
+      setConversationContext(null);
       return {
         role: 'assistant' as const,
         content: "# Adgentic Assistant\n\nI'm here to help optimize your retail media campaigns. You can ask me about:\n\n- Performance analytics and insights\n- Keyword optimization and recommendations\n- Budget allocation across channels\n- Campaign creation and management\n\nWhat would you like help with today?",
@@ -292,9 +380,10 @@ const Chat = () => {
         throw insertError;
       }
 
-      // Generate AI response
+      // Generate AI response with context from previous messages
       setTimeout(async () => {
-        const assistantResponse = generateResponse(content);
+        // Pass the current messages array to provide context
+        const assistantResponse = generateResponse(content, messages);
         console.log('Generated assistant response:', assistantResponse);
 
         // Direct insertion of metrics and actionButtons as JSONB
