@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import Sidebar from '@/components/Sidebar';
 import Breadcrumb from '@/components/Breadcrumb';
 import NewCampaignModal from '@/components/NewCampaignModal';
+import { Button } from '@/components/ui/button';
 
 // Import the new components
 import NewChatInput from '@/components/campaign/NewChatInput';
