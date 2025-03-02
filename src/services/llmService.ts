@@ -83,15 +83,18 @@ export const callLLMAPI = async (
       assistantMessage = {
         role: 'assistant',
         content: structuredData.content,
-        metrics: structuredData.metrics.length > 0 ? structuredData.metrics : undefined,
-        actionButtons: structuredData.actionButtons.length > 0 ? structuredData.actionButtons : undefined
+        title: structuredData.title || undefined,
+        metrics: structuredData.metrics || undefined,
+        actionButtons: structuredData.actionButtons || undefined
       };
       
       // Clean up any leftover formatting issues
       assistantMessage.content = assistantMessage.content.trim();
+      
+      // Log the processed message before returning
+      console.log('Processed assistant message:', assistantMessage);
     }
     
-    console.log('Processed assistant message:', assistantMessage);
     return assistantMessage;
   } catch (error) {
     console.error('Error in callLLMAPI:', error);
@@ -111,6 +114,7 @@ function extractStructuredData(content: string) {
     try {
       // Parse the JSON
       const structuredData = JSON.parse(jsonMatch[1]);
+      console.log('Found structured data in response:', structuredData);
       
       // Remove the JSON block from the content
       const cleanedContent = content.replace(/```json\n[\s\S]*?\n```/, '').trim();
@@ -118,8 +122,8 @@ function extractStructuredData(content: string) {
       return {
         title: structuredData.title,
         content: structuredData.content || cleanedContent,
-        metrics: structuredData.metrics || [],
-        actionButtons: structuredData.actionButtons || []
+        metrics: Array.isArray(structuredData.metrics) ? structuredData.metrics : [],
+        actionButtons: Array.isArray(structuredData.actionButtons) ? structuredData.actionButtons : []
       };
     } catch (e) {
       console.error("Error parsing JSON from LLM:", e);

@@ -50,28 +50,42 @@ export const saveAssistantMessage = async (
   chatId: string,
   assistantResponse: MessageProps
 ) => {
-  // Create a database-safe version of the response without onClick functions
-  // We only need to store label and primary properties for action buttons
-  const dbSafeActionButtons = assistantResponse.actionButtons 
-    ? assistantResponse.actionButtons.map(btn => ({
-        label: btn.label,
-        primary: btn.primary
-      })) 
-    : null;
+  try {
+    // Create a database-safe version of the response
+    // Remove any functions or circular references that can't be stored in JSONB
+    const sanitizedMetrics = assistantResponse.metrics 
+      ? JSON.parse(JSON.stringify(assistantResponse.metrics))
+      : null;
+    
+    // For action buttons, only save properties that can be stored in the database
+    // Remove any functions like onClick handlers
+    const sanitizedActionButtons = assistantResponse.actionButtons 
+      ? assistantResponse.actionButtons.map(btn => ({
+          label: btn.label,
+          primary: btn.primary || false
+        }))
+      : null;
+    
+    console.log('Sanitized metrics:', sanitizedMetrics);
+    console.log('Sanitized action buttons:', sanitizedActionButtons);
+    
+    const { error } = await supabase
+      .from('chat_messages')
+      .insert({
+        chat_id: chatId,
+        role: 'assistant',
+        content: assistantResponse.content,
+        title: assistantResponse.title || null,
+        metrics: sanitizedMetrics,
+        actionbuttons: sanitizedActionButtons
+      });
 
-  const { error } = await supabase
-    .from('chat_messages')
-    .insert({
-      chat_id: chatId,
-      role: 'assistant',
-      content: assistantResponse.content,
-      title: assistantResponse.title || null,
-      metrics: assistantResponse.metrics || null,
-      actionbuttons: dbSafeActionButtons
-    });
-
-  if (error) {
-    console.error('Error saving assistant message:', error);
+    if (error) {
+      console.error('Error saving assistant message:', error);
+      throw error;
+    }
+  } catch (error) {
+    console.error('Error processing assistant message for save:', error);
     throw error;
   }
 };
