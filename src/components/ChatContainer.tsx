@@ -1,5 +1,6 @@
 
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import MessageList from './MessageList';
 import ChatEmptyState from './ChatEmptyState';
 import ChatFooter from './ChatFooter';
@@ -28,6 +29,8 @@ const ChatContainer = ({
   campaignName,
   setChatTitle
 }: ChatContainerProps) => {
+  const navigate = useNavigate();
+  
   const handleSendMessage = async (content: string) => {
     await sendMessage(
       content,
@@ -41,10 +44,6 @@ const ChatContainer = ({
       navigate
     );
   };
-  
-  // Import the navigate function and pass it to the ActionHandler
-  const { useNavigate } = require('react-router-dom');
-  const navigate = useNavigate();
   
   // Use our extracted action handler
   const { handleActionClick, handlePillClick } = ActionHandler({ 
