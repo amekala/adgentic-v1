@@ -122,6 +122,51 @@ export type Database = {
         }
         Relationships: []
       }
+      contact_submissions: {
+        Row: {
+          company_name: string | null
+          country: string | null
+          created_at: string
+          first_name: string
+          id: string
+          job_role: string | null
+          last_name: string
+          monthly_ad_spend: string | null
+          phone_number: string | null
+          retailers: string[] | null
+          solutions_of_interest: string[] | null
+          work_email: string
+        }
+        Insert: {
+          company_name?: string | null
+          country?: string | null
+          created_at?: string
+          first_name: string
+          id?: string
+          job_role?: string | null
+          last_name: string
+          monthly_ad_spend?: string | null
+          phone_number?: string | null
+          retailers?: string[] | null
+          solutions_of_interest?: string[] | null
+          work_email: string
+        }
+        Update: {
+          company_name?: string | null
+          country?: string | null
+          created_at?: string
+          first_name?: string
+          id?: string
+          job_role?: string | null
+          last_name?: string
+          monthly_ad_spend?: string | null
+          phone_number?: string | null
+          retailers?: string[] | null
+          solutions_of_interest?: string[] | null
+          work_email?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

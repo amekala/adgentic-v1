@@ -1,8 +1,8 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ChevronRight, Check, Globe, BarChart2, Zap, ArrowRight, Search, PieChart, TrendingUp, Tag, AlertCircle, Plus } from 'lucide-react';
+import ContactForm from '@/components/ContactForm';
 
 const FEATURED_LOGOS = [
   "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b9/TechCrunch_logo.svg/512px-TechCrunch_logo.svg.png",
@@ -151,6 +151,7 @@ const ExampleChat = ({ title, conversation, icon: Icon, iconColor }) => {
 const Marketing = () => {
   const navigate = useNavigate();
   const pricingSectionRef = useRef<HTMLDivElement>(null);
+  const contactSectionRef = useRef<HTMLDivElement>(null);
   
   const handleLoginClick = () => {
     navigate('/app');
@@ -158,6 +159,10 @@ const Marketing = () => {
 
   const handlePricingClick = () => {
     pricingSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const handleContactClick = () => {
+    contactSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   const campaignCreationChat = [
@@ -289,7 +294,7 @@ const Marketing = () => {
           <a href="#features" className="text-sm hover:text-blue-600 transition-colors">Features</a>
           <a href="#benefits" className="text-sm hover:text-blue-600 transition-colors">Benefits</a>
           <button onClick={handlePricingClick} className="text-sm hover:text-blue-600 transition-colors">Pricing</button>
-          <a href="#contact" className="text-sm hover:text-blue-600 transition-colors">Contact</a>
+          <button onClick={handleContactClick} className="text-sm hover:text-blue-600 transition-colors">Contact Us</button>
         </div>
         <Button 
           onClick={handleLoginClick} 
@@ -545,17 +550,54 @@ const Marketing = () => {
         </div>
       </section>
 
-      <section className="py-20 px-6 md:px-16 max-w-6xl mx-auto text-center">
-        <h2 className="text-3xl md:text-4xl font-bold mb-8">Ready to Transform Your Retail Media Strategy?</h2>
-        <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-10">
-          Join forward-thinking brands already using Adgentic to simplify their retail media management and drive growth.
-        </p>
-        <Button
-          onClick={handleLoginClick}
-          className="bg-blue-600 hover:bg-blue-700 text-white text-lg px-8 py-6 rounded-md"
-        >
-          Get Started <ArrowRight className="ml-2 h-5 w-5" />
-        </Button>
+      <section id="contact" ref={contactSectionRef} className="py-16 px-6 md:px-16 bg-gray-50">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              Ready to <span className="text-blue-500">Transform</span> Your Retail Media Strategy?
+            </h2>
+            <p className="text-gray-600 text-lg max-w-3xl mx-auto">
+              Get in touch with our team to schedule a personalized demo and see how Adgentic can help you achieve your retail media goals.
+            </p>
+          </div>
+          
+          <div className="grid md:grid-cols-5 gap-8 items-start">
+            <div className="md:col-span-2 space-y-6">
+              <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                <h3 className="font-semibold text-xl mb-4">Why Request a Demo?</h3>
+                
+                <ul className="space-y-4">
+                  {[
+                    "See our AI-powered platform in action with your actual campaigns",
+                    "Learn how our solutions can increase your ROAS by up to 30%",
+                    "Discover optimization opportunities specific to your retail channels",
+                    "Get expert insights from our retail media specialists"
+                  ].map((item, index) => (
+                    <li key={index} className="flex items-start">
+                      <Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
+                      <span className="text-gray-700">{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              
+              <div className="bg-blue-50 p-6 rounded-xl border border-blue-100">
+                <h3 className="font-semibold text-xl mb-4 text-blue-800">Already a Customer?</h3>
+                <p className="text-blue-700 mb-4">If you're an existing customer and need assistance, our customer success team is here to help.</p>
+                <Button
+                  variant="outline"
+                  className="w-full bg-white text-blue-600 border-blue-200 hover:bg-blue-50"
+                >
+                  Contact Support
+                </Button>
+              </div>
+            </div>
+            
+            <div className="md:col-span-3">
+              <ContactForm />
+            </div>
+          </div>
+        </div>
       </section>
 
       <footer className="bg-gray-900 text-gray-400 py-12 px-6 md:px-16">
