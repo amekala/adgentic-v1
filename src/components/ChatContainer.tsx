@@ -63,7 +63,7 @@ const ChatContainer = ({
     <div className="flex h-full flex-col justify-between pt-[60px] pb-4">
       {messages.length === 0 ? (
         <div className="flex-1 flex flex-col items-center justify-center p-4">
-          <h2 className="text-2xl font-bold text-white mb-8">Adgentic Chat Assistant</h2>
+          <h2 className="text-2xl font-bold text-adgentic-text-primary mb-8">Adgentic Chat Assistant</h2>
           <ChatActionPills onPillClick={handlePillClick} className="mb-8" />
         </div>
       ) : (
@@ -77,7 +77,7 @@ const ChatContainer = ({
         <div className="w-full max-w-3xl mx-auto">
           <ChatInput onSend={handleSendMessage} isLoading={isLoading} />
         </div>
-        <div className="text-xs text-center text-gray-500">
+        <div className="text-xs text-center text-adgentic-text-secondary">
           Adgentic can make mistakes. Check important info.
         </div>
       </div>

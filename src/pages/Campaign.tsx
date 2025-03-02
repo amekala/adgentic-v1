@@ -17,6 +17,7 @@ import ChatHeader from '@/components/ChatHeader';
 import Breadcrumb from '@/components/Breadcrumb';
 import { Button } from '@/components/ui/button';
 import { AdCreativesSection } from '@/components/AdCreativesSection';
+import NewCampaignModal from '@/components/NewCampaignModal';
 
 const Campaign = () => {
   const { id: campaignId } = useParams();
@@ -27,6 +28,7 @@ const Campaign = () => {
   const [chats, setChats] = useState([]);
   const [loading, setLoading] = useState(true);
   const [newChatInput, setNewChatInput] = useState('');
+  const [isNewCampaignModalOpen, setIsNewCampaignModalOpen] = useState(false);
 
   // Fetch campaign data
   useEffect(() => {
@@ -113,6 +115,36 @@ const Campaign = () => {
 
   const handleNewCampaign = () => {
     navigate('/campaign/new');
+  };
+
+  const handleCampaignSettings = () => {
+    setIsNewCampaignModalOpen(true);
+  };
+  
+  const handleCreateCampaign = async (data: { name: string; goals: string; notes: string }) => {
+    if (campaignId === 'new') {
+      // For new campaigns, this is handled by NewCampaignModal
+      return;
+    }
+    
+    try {
+      const { error } = await supabase
+        .from('campaigns')
+        .update({
+          campaign_name: data.name.trim() || campaignName,
+          goals_description: data.goals.trim() || null,
+          campaign_notes: data.notes.trim() || null,
+        })
+        .eq('id', campaignId);
+        
+      if (error) throw error;
+      
+      toast.success('Campaign updated successfully!');
+      setCampaignName(data.name.trim() || campaignName);
+    } catch (error: any) {
+      console.error("Error updating campaign:", error);
+      toast.error(error.message || "Failed to update campaign. Please try again.");
+    }
   };
 
   // Sample metrics
@@ -226,7 +258,7 @@ const Campaign = () => {
                 </div>
                 
                 <div className="bg-white rounded-xl border border-adgentic-border p-6 hover:shadow-sm transition-shadow cursor-pointer"
-                     onClick={() => navigate(`/campaign/${campaignId}/settings`)}>
+                     onClick={handleCampaignSettings}>
                   <div className="flex items-center gap-3 mb-3">
                     <div className="text-adgentic-accent">
                       <Settings className="h-5 w-5" />
@@ -303,6 +335,12 @@ const Campaign = () => {
           )}
         </div>
       </main>
+      
+      <NewCampaignModal
+        isOpen={isNewCampaignModalOpen}
+        onClose={() => setIsNewCampaignModalOpen(false)}
+        onCreateCampaign={handleCreateCampaign}
+      />
     </div>
   );
 };
