@@ -3,12 +3,40 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Add light theme default colors */
+:root {
+  --background: 0 0% 100%;
+  --foreground: 222.2 47.4% 11.2%;
+  --border: 210 20% 90%;
+  --input: 214.3 31.8% 91.4%;
+  --ring: 221.2 83.2% 53.3%;
+  --primary: 221.2 83.2% 53.3%;
+  --primary-foreground: 210 40% 98%;
+  --secondary: 210 40% 96.1%;
+  --secondary-foreground: 222.2 47.4% 11.2%;
+  --accent: 210 40% 96.1%;
+  --accent-foreground: 222.2 47.4% 11.2%;
+  --destructive: 0 100% 50%;
+  --destructive-foreground: 210 40% 98%;
+  --muted: 210 40% 96.1%;
+  --muted-foreground: 215.4 16.3% 46.9%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 222.2 47.4% 11.2%;
+  --card: 0 0% 100%;
+  --card-foreground: 222.2 47.4% 11.2%;
+  --radius: 0.5rem;
+}
+
 body {
   @apply bg-adgentic-white text-adgentic-text-primary;
 }
 
-.dark-theme {
-  @apply bg-chatgpt-main text-white;
+/* Override any potential dark mode with explicit light mode */
+.light {
+  color-scheme: light;
+  --background: 0 0% 100%;
+  --foreground: 222.2 47.4% 11.2%;
+  @apply bg-adgentic-white text-adgentic-text-primary;
 }
 
 .marketing-page {
