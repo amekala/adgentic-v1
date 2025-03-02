@@ -32,14 +32,17 @@ const CampaignListItem = ({
       <div 
         className="flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-adgentic-hover cursor-pointer text-sm text-adgentic-text-secondary"
       >
-        <div onClick={(e) => {
-          e.stopPropagation();
-          navigate(`/campaign/${campaign.id}`);
-        }}>
+        <div 
+          className="cursor-pointer"
+          onClick={(e) => {
+            e.stopPropagation();
+            navigate(`/campaign/${campaign.id}`);
+          }}
+        >
           <FolderOpen className="h-4 w-4 min-w-4 text-adgentic-text-secondary" />
         </div>
         <span 
-          className="truncate flex-1"
+          className="truncate flex-1 cursor-pointer"
           onClick={(e) => {
             e.stopPropagation();
             navigate(`/campaign/${campaign.id}`);
@@ -47,10 +50,13 @@ const CampaignListItem = ({
         >
           {campaign.campaign_name}
         </span>
-        <div onClick={(e) => {
-          e.stopPropagation();
-          onToggle(campaign.id);
-        }}>
+        <div 
+          className="cursor-pointer"
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggle(campaign.id);
+          }}
+        >
           {isExpanded ? 
             <ChevronDown className="h-3 w-3 min-w-3 text-adgentic-text-light" /> : 
             <ChevronRight className="h-3 w-3 min-w-3 text-adgentic-text-light" />}

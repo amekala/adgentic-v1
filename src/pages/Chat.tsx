@@ -33,7 +33,10 @@ const Chat = () => {
 
   // Set up campaign id based on URL or existing chat
   useEffect(() => {
-    setEffectiveCampaignId(queryCampaignId);
+    if (queryCampaignId) {
+      console.log("Setting campaign ID from query param:", queryCampaignId);
+      setEffectiveCampaignId(queryCampaignId);
+    }
   }, [queryCampaignId]);
 
   // Fetch messages when chatId or campaign changes
@@ -46,28 +49,25 @@ const Chat = () => {
     navigate('/campaign/new');
   };
 
-  // Prepare breadcrumb items
+  // Prepare breadcrumb items - always maintain Home > Campaign > Chat structure
   let breadcrumbItems = [
     { label: "Home", href: "/app" },
   ];
   
-  // Always show campaign in breadcrumb when we have campaign info
+  // For campaign chats, always show the complete path
   if (effectiveCampaignId && campaignName) {
-    // If campaign exists, set the breadcrumb chain to Home > Campaign > Chat
-    breadcrumbItems = [
-      { label: "Home", href: "/app" },
-      { label: campaignName, href: `/campaign/${effectiveCampaignId}` },
-    ];
-    
-    // Add chat to breadcrumb 
-    if (chatTitle) {
-      breadcrumbItems.push({ label: chatTitle, href: `/chat/${chatId}` });
-    }
-  } else {
-    // Only add chat to breadcrumb if no campaign (direct chat)
-    if (chatTitle) {
-      breadcrumbItems.push({ label: chatTitle, href: `/chat/${chatId}` });
-    }
+    breadcrumbItems.push({ 
+      label: campaignName, 
+      href: `/campaign/${effectiveCampaignId}` 
+    });
+  }
+  
+  // Always add chat to breadcrumb as the final item
+  if (chatTitle) {
+    breadcrumbItems.push({ 
+      label: chatTitle, 
+      href: `/chat/${chatId}` 
+    });
   }
 
   return (

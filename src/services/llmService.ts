@@ -183,10 +183,25 @@ function extractStructuredData(content: string) {
     }
   }
   
-  // Return original content if no valid JSON found and couldn't format simply
+  // Auto-format plain text responses into structured JSON format
+  // Find a potential title from the first line or create one
+  const firstLine = content.split('\n')[0].trim();
+  const title = firstLine.length < 50 ? firstLine : "Analysis Results";
+  
+  // Create a content section from the rest of the message
+  let cleanContent = content;
+  if (firstLine.length < 50) {
+    cleanContent = content.substring(firstLine.length).trim();
+  }
+  
+  // Force structured format with action buttons that make sense for the content
   return {
-    content,
+    title: title,
+    content: cleanContent,
     metrics: [],
-    actionButtons: []
+    actionButtons: [
+      { label: "Tell me more", primary: true },
+      { label: "Optimize strategy", primary: false }
+    ]
   };
 }
