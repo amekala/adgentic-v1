@@ -79,7 +79,9 @@ const Chat = () => {
     const items = [
       { 
         label: "Home", 
-        href: "/app"
+        href: "/app",
+        type: "home" as const,
+        id: "home"
       }
     ];
     
@@ -88,14 +90,16 @@ const Chat = () => {
       items.push({ 
         label: campaignName, 
         href: `/campaign/${effectiveCampaignId}`,
-        isCampaign: true
+        type: "campaign" as const,
+        id: effectiveCampaignId
       });
       
       if (chatTitle) {
         items.push({ 
           label: chatTitle, 
           href: `/chat/${chatId}`,
-          isChat: true
+          type: "chat" as const,
+          id: chatId as string
         });
       }
     } else {
@@ -105,7 +109,8 @@ const Chat = () => {
         items.push({ 
           label: chatTitle, 
           href: `/chat/${chatId}`,
-          isChat: true
+          type: "chat" as const,
+          id: chatId as string
         });
       }
     }

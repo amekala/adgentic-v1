@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { MessageSquare, ArrowRight, CalendarClock, Clock } from 'lucide-react';
+import { MessageSquare, ArrowRight, CalendarClock, Clock, Plus } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 interface Chat {
@@ -51,17 +51,20 @@ const ChatsList = ({ chats, campaignId }: ChatsListProps) => {
   });
 
   return (
-    <div className="mb-8">
-      <div className="flex justify-between items-center mb-4">
+    <div className="mb-8 bg-white rounded-xl shadow-sm border border-adgentic-border overflow-hidden">
+      <div className="flex justify-between items-center px-6 py-4 border-b border-adgentic-border">
         <h2 className="text-xl font-semibold text-adgentic-text-primary flex items-center">
           <MessageSquare className="h-5 w-5 mr-2 text-adgentic-accent" /> 
-          Conversation History <span className="ml-2 text-sm text-adgentic-text-secondary">({chats.length})</span>
+          Past Conversations 
+          <div className="ml-2 px-2 py-0.5 bg-adgentic-lightGray rounded-full text-adgentic-text-secondary text-sm">
+            {chats.length}
+          </div>
         </h2>
         
         {chats.length > 0 && (
           <Link 
             to={`/campaign/${campaignId}/chats`} 
-            className="text-sm text-adgentic-accent font-medium hover:underline flex items-center"
+            className="text-sm text-adgentic-accent font-medium hover:underline flex items-center bg-adgentic-accent/5 px-3 py-1.5 rounded-full"
           >
             View All <ArrowRight className="h-3.5 w-3.5 ml-1" />
           </Link>
@@ -69,7 +72,7 @@ const ChatsList = ({ chats, campaignId }: ChatsListProps) => {
       </div>
 
       {chats.length === 0 ? (
-        <div className="bg-white border border-adgentic-border rounded-xl p-8 text-center">
+        <div className="p-8 text-center">
           <div className="bg-adgentic-lightGray p-4 rounded-full inline-flex items-center justify-center mb-4">
             <MessageSquare className="h-6 w-6 text-adgentic-accent" />
           </div>
@@ -77,12 +80,16 @@ const ChatsList = ({ chats, campaignId }: ChatsListProps) => {
           <p className="text-adgentic-text-secondary mb-4">
             Start a new conversation to get insights about your campaign
           </p>
-          <Link to={`/chat/new?campaign_id=${campaignId}`} className="text-adgentic-accent hover:underline font-medium">
-            Start a new conversation
+          <Link 
+            to={`/chat/new?campaign_id=${campaignId}`} 
+            className="inline-flex items-center px-4 py-2 rounded-full bg-adgentic-accent text-white hover:bg-adgentic-accent/90 transition-colors"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Start new conversation
           </Link>
         </div>
       ) : (
-        <div className="bg-white border border-adgentic-border rounded-xl p-4 shadow-sm">
+        <div className="p-4">
           {sortedGroups.map(groupName => (
             <div key={groupName} className="mb-4 last:mb-0">
               <div className="flex items-center gap-2 mb-2 text-sm font-medium text-adgentic-text-secondary">

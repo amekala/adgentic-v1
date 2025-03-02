@@ -7,30 +7,43 @@ interface ChatActionPillsProps {
 }
 
 const ChatActionPills = ({ onPillClick, className = '' }: ChatActionPillsProps) => {
+  // Suggestions with rich styling and clear visual design
   const suggestions = [
     {
       id: 'analyze',
       label: 'Campaign Analysis',
       icon: <BarChart3 className="h-4 w-4" />,
-      message: "Let's analyze your campaign performance and find opportunities for improvement."
+      message: "Let's analyze your campaign performance and find opportunities for improvement.",
+      color: "bg-blue-50 text-blue-900",
+      iconBg: "bg-blue-100",
+      iconColor: "text-blue-500"
     },
     {
       id: 'ideas',
       label: 'Get Ideas',
       icon: <Lightbulb className="h-4 w-4" />,
-      message: "I'll help you brainstorm creative ideas to enhance your campaign."
+      message: "I'll help you brainstorm creative ideas to enhance your campaign.",
+      color: "bg-amber-50 text-amber-900",
+      iconBg: "bg-amber-100",
+      iconColor: "text-amber-500"
     },
     {
       id: 'targeting',
       label: 'Targeting Strategy',
       icon: <Target className="h-4 w-4" />,
-      message: "Let's optimize your campaign targeting strategy."
+      message: "Let's optimize your campaign targeting strategy.",
+      color: "bg-green-50 text-green-900",
+      iconBg: "bg-green-100",
+      iconColor: "text-green-500"
     },
     {
       id: 'optimize',
       label: 'Campaign Goals',
       icon: <PenSquare className="h-4 w-4" />,
-      message: "Let's define clear goals and KPIs for your campaign."
+      message: "Let's define clear goals and KPIs for your campaign.",
+      color: "bg-purple-50 text-purple-900",
+      iconBg: "bg-purple-100",
+      iconColor: "text-purple-500"
     }
   ];
 
@@ -45,12 +58,12 @@ const ChatActionPills = ({ onPillClick, className = '' }: ChatActionPillsProps) 
             <button
               key={suggestion.id}
               onClick={() => onPillClick?.(suggestion.message)}
-              className="flex items-center gap-3 px-4 py-3 rounded-lg bg-adgentic-lightGray hover:bg-gray-200 transition-colors text-sm text-adgentic-text-primary"
+              className={`flex items-center gap-3 px-4 py-3 rounded-lg ${suggestion.color || 'bg-white'} border border-transparent hover:border-adgentic-border shadow-sm transition-all text-sm`}
             >
-              <div className="p-2 rounded-md bg-white border border-adgentic-border text-adgentic-accent">
+              <div className={`p-2 rounded-md ${suggestion.iconBg || 'bg-white'} ${suggestion.iconColor || 'text-adgentic-accent'}`}>
                 {suggestion.icon}
               </div>
-              <span>{suggestion.label}</span>
+              <span className="font-medium">{suggestion.label}</span>
             </button>
           ))}
         </div>
