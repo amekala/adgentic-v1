@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from "@/integrations/supabase/client";
@@ -16,7 +15,7 @@ type ChatMessageRow = {
   created_at: string;
   id: string;
   role: string;
-  metrics?: string; // Add optional fields for metrics and actionButtons
+  metrics?: string; // Optional fields for metrics and actionButtons
   actionButtons?: string;
 };
 
@@ -78,7 +77,7 @@ const Chat = () => {
     if (messageLower.includes('performance') || messageLower.includes('analytics') || messageLower.includes('report')) {
       return {
         role: 'assistant' as const,
-        content: "Here's the performance data for your campaigns over the past 7 days:",
+        content: "# Performance Report\n\nHere's the performance data for your campaigns over the past 7 days:\n\nYour campaigns are showing strong overall performance with improvements in most key metrics. CTR has increased by 0.3% and ACOS has decreased by 1.2% compared to the previous period.",
         metrics: [
           { label: 'Impressions', value: '142,587', improvement: true },
           { label: 'Clicks', value: '3,842', improvement: true },
@@ -97,7 +96,7 @@ const Chat = () => {
     else if (messageLower.includes('keyword') || messageLower.includes('search terms')) {
       return {
         role: 'assistant' as const,
-        content: "Based on your campaign performance, I recommend the following keyword changes:",
+        content: "# Keyword Recommendations\n\nBased on your campaign performance, I recommend the following keyword changes:\n\n- Add \"organic protein powder\" as a broad match\n- Increase bid on \"vegan supplements\" by 15%\n- Pause \"discount protein\" due to low conversion\n- Add negative keyword \"sample\" to reduce irrelevant clicks",
         metrics: [
           { label: 'Under-performing Keywords', value: '8', improvement: false },
           { label: 'Suggested New Keywords', value: '12', improvement: true },
@@ -114,7 +113,7 @@ const Chat = () => {
     else if (messageLower.includes('budget') || messageLower.includes('spend') || messageLower.includes('allocation')) {
       return {
         role: 'assistant' as const,
-        content: "Based on ROAS analysis, I recommend the following budget allocation:",
+        content: "# Budget Allocation Recommendations\n\nBased on ROAS analysis, I recommend the following budget allocation:\n\nYour current budget allocation is showing strong performance on Walmart and Instacart. I recommend shifting 15% of your Amazon budget to these channels to maximize overall ROAS.",
         metrics: [
           { label: 'Amazon (current)', value: '65%', improvement: false },
           { label: 'Amazon (recommended)', value: '50%', improvement: true },
@@ -133,7 +132,7 @@ const Chat = () => {
     else {
       return {
         role: 'assistant' as const,
-        content: "I'm here to help optimize your retail media campaigns. You can ask me about performance analytics, keyword optimization, budget allocation, or campaign creation.",
+        content: "# Adgentic Assistant\n\nI'm here to help optimize your retail media campaigns. You can ask me about:\n\n- Performance analytics and insights\n- Keyword optimization and recommendations\n- Budget allocation across channels\n- Campaign creation and management\n\nWhat would you like help with today?",
         actionButtons: [
           { label: 'Performance Analysis', primary: false },
           { label: 'Keyword Optimization', primary: false },
@@ -237,8 +236,12 @@ const Chat = () => {
     }
   };
 
+  const handlePillClick = (message: string) => {
+    handleSendMessage(message);
+  };
+
   return (
-    <div className="flex h-screen">
+    <div className="flex h-screen bg-[#111]">
       <Sidebar 
         isOpen={isSidebarOpen} 
         onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -250,9 +253,13 @@ const Chat = () => {
         <ChatHeader isSidebarOpen={isSidebarOpen} />
         
         <div className="flex h-full flex-col justify-between pt-[60px] pb-4">
-          <MessageList messages={messages} onActionClick={handleActionClick} />
-          <div className="space-y-4 mt-auto">
-            <div className="w-full max-w-3xl mx-auto px-4">
+          <MessageList 
+            messages={messages} 
+            onActionClick={handleActionClick} 
+            onPillClick={handlePillClick}
+          />
+          <div className="space-y-4 mt-auto px-4">
+            <div className="w-full max-w-3xl mx-auto">
               <ChatInput onSend={handleSendMessage} isLoading={isLoading} />
             </div>
             <div className="text-xs text-center text-gray-500">
