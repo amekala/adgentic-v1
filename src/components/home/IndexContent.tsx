@@ -10,9 +10,10 @@ import { useToast } from '@/hooks/use-toast';
 
 interface IndexContentProps {
   isSidebarOpen: boolean;
+  onNewCampaign: () => void; // Add this prop to receive the function from parent
 }
 
-const IndexContent = ({ isSidebarOpen }: IndexContentProps) => {
+const IndexContent = ({ isSidebarOpen, onNewCampaign }: IndexContentProps) => {
   const [messages, setMessages] = useState<MessageProps[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
@@ -150,7 +151,8 @@ const IndexContent = ({ isSidebarOpen }: IndexContentProps) => {
 
   const handleActionClick = (action: string) => {
     if (action === "Create Campaign") {
-      navigate('/campaign/new');
+      // Call the onNewCampaign function passed from parent component
+      onNewCampaign();
     } else if (action === "Apply Recommendations" || action === "Optimize Campaigns") {
       toast({
         title: "Success",

@@ -51,10 +51,12 @@ const Chat = () => {
     { label: "Home", href: "/app" },
   ];
   
+  // Only add campaign to breadcrumb if we have both ID and name
   if (effectiveCampaignId && campaignName) {
     breadcrumbItems.push({ label: campaignName, href: `/campaign/${effectiveCampaignId}` });
   }
   
+  // Always add chat to breadcrumb
   if (chatTitle) {
     breadcrumbItems.push({ label: chatTitle, href: `/chat/${chatId}` });
   }

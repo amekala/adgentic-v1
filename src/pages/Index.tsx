@@ -32,7 +32,10 @@ const Index = () => {
       <main className={`flex-1 transition-all duration-300 ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}>
         <ChatHeader isSidebarOpen={isSidebarOpen} />
         
-        <IndexContent isSidebarOpen={isSidebarOpen} />
+        <IndexContent 
+          isSidebarOpen={isSidebarOpen} 
+          onNewCampaign={handleStartNewCampaign} 
+        />
       </main>
 
       <NewCampaignModal

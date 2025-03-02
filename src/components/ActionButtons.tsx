@@ -33,6 +33,7 @@ const ActionButtons = ({ onActionClick }: ActionButtonsProps) => {
 
   const handleClick = async (action: typeof actions[0]) => {
     if (action.label === "Create Campaign") {
+      // Just call the action handler with the action label
       onActionClick?.(action.label);
       return;
     }

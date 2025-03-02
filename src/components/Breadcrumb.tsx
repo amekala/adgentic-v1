@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 
 export const Breadcrumb = ({ items }: { items: { label: string; href: string }[] }) => {
   return (
-    <div className="flex items-center gap-2 text-sm text-adgentic-text-secondary px-4 py-2">
+    <div className="flex items-center gap-2 text-sm text-adgentic-text-secondary px-4 py-2 border-b border-adgentic-border">
       {items.map((item, index) => (
         <React.Fragment key={item.href}>
           {index > 0 && <ChevronRight className="h-3 w-3" />}
