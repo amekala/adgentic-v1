@@ -17,7 +17,8 @@ const Index = () => {
 
   const handleCreateCampaign = async (data: { name: string; goals: string; notes: string }) => {
     setIsNewCampaignModalOpen(false);
-    navigate('/campaign/new');
+    // Navigate to the new campaign page with the data
+    navigate('/campaign/new', { state: { campaignData: data } });
   };
 
   return (
