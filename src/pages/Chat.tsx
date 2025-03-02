@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from "@/integrations/supabase/client";
@@ -7,6 +8,17 @@ import ChatInput from '@/components/ChatInput';
 import MessageList from '@/components/MessageList';
 import { useToast } from '@/hooks/use-toast';
 import { MessageProps } from '@/components/Message';
+
+// Define a type for the chat_messages table rows
+type ChatMessageRow = {
+  chat_id: string;
+  content: string;
+  created_at: string;
+  id: string;
+  role: string;
+  metrics?: string; // Add optional fields for metrics and actionButtons
+  actionButtons?: string;
+};
 
 const Chat = () => {
   const { id: chatId } = useParams();
@@ -46,7 +58,8 @@ const Chat = () => {
 
       if (data) {
         console.log('Fetched messages:', data);
-        const validMessages = data.map(msg => ({
+        // Safely convert data to MessageProps format
+        const validMessages = data.map((msg: ChatMessageRow) => ({
           role: msg.role as MessageProps['role'],
           content: msg.content,
           metrics: msg.metrics ? JSON.parse(msg.metrics) : undefined,
@@ -183,12 +196,15 @@ const Chat = () => {
       setTimeout(async () => {
         const assistantResponse = generateResponse(content);
 
+        // When inserting assistant response, include metrics and actionButtons as JSON strings
         const { error: aiInsertError } = await supabase
           .from('chat_messages')
           .insert({
             chat_id: chatId,
             role: 'assistant',
-            content: assistantResponse.content
+            content: assistantResponse.content,
+            metrics: assistantResponse.metrics ? JSON.stringify(assistantResponse.metrics) : null,
+            actionButtons: assistantResponse.actionButtons ? JSON.stringify(assistantResponse.actionButtons) : null
           });
 
         if (aiInsertError) throw aiInsertError;
