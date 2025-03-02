@@ -273,13 +273,18 @@ export const useCurrentChat = () => {
       console.log('Message history length:', messageHistory.length);
       console.log("Calling AI with messages:", formattedMessages);
       
-      // Call the Supabase Edge Function
+      // Call the Supabase Edge Function with enhanced request options
       const response = await fetch(`${supabaseUrl}/functions/v1/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${supabaseKey}`
+          'Authorization': `Bearer ${supabaseKey}`,
+          'Accept': 'application/json',
+          'X-Client-Info': 'adgentic-web-app'
         },
+        // Add CORS mode and credentials to handle CORS issues
+        mode: 'cors',
+        credentials: 'omit',
         body: JSON.stringify({ messages: formattedMessages })
       });
       
@@ -352,8 +357,43 @@ export const useCurrentChat = () => {
       
       toast.error(`Failed to get AI response: ${detailMessage}`);
       
-      // Remove thinking message on error
-      setMessages(prev => prev.filter(msg => msg.content !== '...'));
+      // Fallback mechanism - generate a basic response without calling API
+      console.log('Using fallback response mechanism');
+      
+      // Generate a basic fallback response
+      const userMessage = messageHistory[messageHistory.length - 1]?.content || '';
+      let fallbackResponse = "I'm sorry, I couldn't connect to the AI service. Here is a basic response:";
+      
+      if (userMessage.toLowerCase().includes('hello') || userMessage.toLowerCase().includes('hi')) {
+        fallbackResponse += "\n\nHello! I'm sorry, but I'm currently operating in fallback mode due to connection issues with the AI service. How can I assist you with basic information?";
+      } else if (userMessage.toLowerCase().includes('campaign')) {
+        fallbackResponse += "\n\nYour campaign is important! When the full AI service is available, I can provide detailed analytics and insights about your advertising campaigns.";
+      } else {
+        fallbackResponse += "\n\nI'm operating in fallback mode due to connection issues. Please try again later or check your network connection. You may need to check that your Supabase Edge Function is properly deployed.";
+      }
+      
+      // Replace thinking message with fallback response
+      setMessages(prev => 
+        prev.map(msg => 
+          msg.content === '...' ? {
+            role: 'assistant',
+            content: fallbackResponse
+          } : msg
+        )
+      );
+      
+      // Save fallback response to database
+      try {
+        await supabase
+          .from('chat_messages')
+          .insert({
+            chat_id: chatId,
+            role: 'assistant',
+            content: fallbackResponse
+          });
+      } catch (dbError) {
+        console.error('Failed to save fallback response to database:', dbError);
+      }
     } finally {
       setIsSending(false);
     }
