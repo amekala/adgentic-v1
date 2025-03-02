@@ -36,10 +36,10 @@ const Chat = () => {
     setEffectiveCampaignId(queryCampaignId);
   }, [queryCampaignId]);
 
-  // Fetch messages when chatId changes
+  // Fetch messages when chatId or campaign changes
   useEffect(() => {
     fetchMessages();
-  }, [chatId]);
+  }, [chatId, queryCampaignId]);
 
   // Handle new campaign button click
   const handleNewCampaign = () => {

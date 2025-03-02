@@ -32,19 +32,29 @@ const CampaignListItem = ({
       <div 
         className="flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-adgentic-hover cursor-pointer text-sm text-adgentic-text-secondary"
       >
-        <FolderOpen 
-          className="h-4 w-4 min-w-4 text-adgentic-text-secondary" 
-          onClick={() => navigate(`/campaign/${campaign.id}`)}
-        />
+        <div onClick={(e) => {
+          e.stopPropagation();
+          navigate(`/campaign/${campaign.id}`);
+        }}>
+          <FolderOpen className="h-4 w-4 min-w-4 text-adgentic-text-secondary" />
+        </div>
         <span 
-          className="truncate flex-1" 
-          onClick={() => navigate(`/campaign/${campaign.id}`)}
+          className="truncate flex-1"
+          onClick={(e) => {
+            e.stopPropagation();
+            navigate(`/campaign/${campaign.id}`);
+          }}
         >
           {campaign.campaign_name}
         </span>
-        {isExpanded ? 
-          <ChevronDown className="h-3 w-3 min-w-3 text-adgentic-text-light" onClick={() => onToggle(campaign.id)} /> : 
-          <ChevronRight className="h-3 w-3 min-w-3 text-adgentic-text-light" onClick={() => onToggle(campaign.id)} />}
+        <div onClick={(e) => {
+          e.stopPropagation();
+          onToggle(campaign.id);
+        }}>
+          {isExpanded ? 
+            <ChevronDown className="h-3 w-3 min-w-3 text-adgentic-text-light" /> : 
+            <ChevronRight className="h-3 w-3 min-w-3 text-adgentic-text-light" />}
+        </div>
       </div>
       
       {isExpanded && (

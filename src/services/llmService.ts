@@ -29,6 +29,8 @@ export const callLLMAPI = async (
                ${campaignContext}
                You help users optimize their ad campaigns and provide insights on marketing strategies.
 
+               IMPORTANT: ALL responses should be well-formatted with a clear structure.
+
                When providing data-rich responses, use this JSON format inside your response:
                \`\`\`json
                {
@@ -45,7 +47,21 @@ export const callLLMAPI = async (
                }
                \`\`\`
                
-               For non-data responses, just respond normally. Use markdown formatting for better readability.`
+               For follow-up questions and conversations, ALWAYS use the same JSON structure, even if you don't have metrics
+               to share. For example:
+               
+               \`\`\`json
+               {
+                 "title": "About Your CPC",
+                 "content": "Your Cost Per Click is lower than average because your ad creative has a high relevance score and good click-through rate. This indicates your targeting is effective.",
+                 "actionButtons": [
+                   {"label": "Improve CTR Further", "primary": true},
+                   {"label": "Compare to Industry", "primary": false}
+                 ]
+               }
+               \`\`\`
+               
+               Always respond with structured, well-formatted information. Start every response with an informative title.`
     };
     
     // Add the new user message
@@ -118,8 +134,8 @@ export const callLLMAPI = async (
 
 // Function to extract structured data from LLM response
 function extractStructuredData(content: string) {
-  // Look for JSON blocks in the response
-  const jsonMatch = content.match(/```json\n([\s\S]*?)\n```/);
+  // Look for JSON blocks in the response - handle both ```json and just ``` format
+  const jsonMatch = content.match(/```json\n([\s\S]*?)\n```/) || content.match(/```([\s\S]*?)```/);
   
   if (jsonMatch && jsonMatch[1]) {
     try {
@@ -131,7 +147,8 @@ function extractStructuredData(content: string) {
       console.log('Found structured data in response:', structuredData);
       
       // Remove the JSON block from the content
-      const cleanedContent = content.replace(/```json\n[\s\S]*?\n```/, '').trim();
+      const cleanedContent = content.replace(/```json\n[\s\S]*?\n```/, '').trim() || 
+                            content.replace(/```[\s\S]*?```/, '').trim();
       
       // Return a safe object with default values for missing properties
       return {
@@ -145,8 +162,28 @@ function extractStructuredData(content: string) {
       console.log("Problematic JSON string:", jsonMatch[1]);
     }
   }
+
+  // If no JSON format was found, check if we can structure simple responses for follow-up questions
+  // This helps format regular text responses nicely
+  const lines = content.split('\n');
+  if (lines.length > 0) {
+    // If first line is short, treat it as a title
+    const firstLine = lines[0].trim();
+    if (firstLine.length < 80 && firstLine.length > 0) {
+      const remainingContent = lines.slice(1).join('\n').trim();
+      return {
+        title: firstLine,
+        content: remainingContent || firstLine, // Use title as content if no other content
+        metrics: [],
+        actionButtons: [
+          { label: "Tell me more", primary: true },
+          { label: "Adjust strategy", primary: false }
+        ]
+      };
+    }
+  }
   
-  // Return original content if no valid JSON found
+  // Return original content if no valid JSON found and couldn't format simply
   return {
     content,
     metrics: [],
