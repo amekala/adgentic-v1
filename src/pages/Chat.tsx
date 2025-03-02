@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from "@/integrations/supabase/client";
@@ -29,42 +30,55 @@ const Chat = () => {
 
   useEffect(() => {
     const fetchMessages = async () => {
-      console.log('Fetching messages for chat:', chatId);
-      
-      let query = supabase
-        .from('chat_messages')
-        .select('*')
-        .order('created_at', { ascending: true });
-
-      if (chatId) {
-        query = query.eq('chat_id', chatId);
-      } else {
+      if (!chatId) {
         // For new chats, don't load any messages
+        setMessages([]);
         return;
       }
 
-      const { data, error } = await query;
+      console.log('Fetching messages for chat:', chatId);
+      setIsLoading(true);
+      
+      try {
+        const { data, error } = await supabase
+          .from('chat_messages')
+          .select('*')
+          .eq('chat_id', chatId)
+          .order('created_at', { ascending: true });
 
-      if (error) {
-        console.error('Error fetching messages:', error);
+        if (error) {
+          console.error('Error fetching messages:', error);
+          toast({
+            title: "Error",
+            description: "Failed to load chat history",
+            variant: "destructive"
+          });
+          return;
+        }
+
+        if (data && data.length > 0) {
+          console.log('Fetched messages:', data);
+          // Safely convert data to MessageProps format
+          const validMessages = data.map((msg: ChatMessageRow) => ({
+            role: msg.role as MessageProps['role'],
+            content: msg.content,
+            metrics: msg.metrics ? JSON.parse(msg.metrics) : undefined,
+            actionButtons: msg.actionButtons ? JSON.parse(msg.actionButtons) : undefined
+          }));
+          setMessages(validMessages);
+        } else {
+          console.log('No messages found for chat:', chatId);
+          setMessages([]);
+        }
+      } catch (error) {
+        console.error('Error processing messages:', error);
         toast({
           title: "Error",
-          description: "Failed to load chat history",
+          description: "Failed to process chat messages",
           variant: "destructive"
         });
-        return;
-      }
-
-      if (data) {
-        console.log('Fetched messages:', data);
-        // Safely convert data to MessageProps format
-        const validMessages = data.map((msg: ChatMessageRow) => ({
-          role: msg.role as MessageProps['role'],
-          content: msg.content,
-          metrics: msg.metrics ? JSON.parse(msg.metrics) : undefined,
-          actionButtons: msg.actionButtons ? JSON.parse(msg.actionButtons) : undefined
-        }));
-        setMessages(validMessages);
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -156,7 +170,10 @@ const Chat = () => {
     setIsLoading(true);
 
     try {
-      if (!chatId) {
+      // If there's no chatId, create a new chat
+      let currentChatId = chatId;
+      
+      if (!currentChatId) {
         const { data: chatData, error: chatError } = await supabase
           .from('chats')
           .insert({
@@ -169,8 +186,8 @@ const Chat = () => {
         if (chatError) throw chatError;
 
         if (chatData) {
-          navigate(`/chat/${chatData.id}`);
-          return;
+          currentChatId = chatData.id;
+          navigate(`/chat/${currentChatId}`);
         }
       }
 
@@ -179,19 +196,21 @@ const Chat = () => {
         content
       };
 
+      // Add user message to local state immediately for UI feedback
+      setMessages(prevMessages => [...prevMessages, userMessage]);
+
+      // Save user message to database
       const { error: insertError } = await supabase
         .from('chat_messages')
         .insert({
-          chat_id: chatId,
+          chat_id: currentChatId,
           role: 'user',
           content: content
         });
 
       if (insertError) throw insertError;
 
-      const newMessages = [...messages, userMessage];
-      setMessages(newMessages);
-
+      // Generate AI response
       setTimeout(async () => {
         const assistantResponse = generateResponse(content);
 
@@ -199,7 +218,7 @@ const Chat = () => {
         const { error: aiInsertError } = await supabase
           .from('chat_messages')
           .insert({
-            chat_id: chatId,
+            chat_id: currentChatId,
             role: 'assistant',
             content: assistantResponse.content,
             metrics: assistantResponse.metrics ? JSON.stringify(assistantResponse.metrics) : null,
@@ -208,7 +227,7 @@ const Chat = () => {
 
         if (aiInsertError) throw aiInsertError;
         
-        setMessages([...newMessages, assistantResponse]);
+        setMessages(prevMessages => [...prevMessages, assistantResponse]);
         setIsLoading(false);
       }, 1000);
 

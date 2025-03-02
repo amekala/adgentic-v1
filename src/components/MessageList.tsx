@@ -12,6 +12,11 @@ interface MessageListProps {
 const MessageList = ({ messages, onActionClick, onPillClick }: MessageListProps) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Add debug logging to see what messages are being passed
+  useEffect(() => {
+    console.log('MessageList received messages:', messages);
+  }, [messages]);
+
   // Auto-scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
