@@ -1,23 +1,18 @@
 
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { 
-  MessageSquare, 
-  BarChart2, 
-  Settings, 
-  FileText, 
-  ImageIcon, 
-  Plus, 
-  ArrowUp
-} from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
-import ChatHeader from '@/components/ChatHeader';
 import Breadcrumb from '@/components/Breadcrumb';
-import { Button } from '@/components/ui/button';
-import { AdCreativesSection } from '@/components/AdCreativesSection';
 import NewCampaignModal from '@/components/NewCampaignModal';
+
+// Import the new components
+import NewChatInput from '@/components/campaign/NewChatInput';
+import ActionsGrid from '@/components/campaign/ActionsGrid';
+import MetricsSection from '@/components/campaign/MetricsSection';
+import CreativesSection from '@/components/campaign/CreativesSection';
+import ChatsList from '@/components/campaign/ChatsList';
 
 const Campaign = () => {
   const { id: campaignId } = useParams();
@@ -27,7 +22,6 @@ const Campaign = () => {
   const [campaignStatus, setCampaignStatus] = useState('draft');
   const [chats, setChats] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [newChatInput, setNewChatInput] = useState('');
   const [isNewCampaignModalOpen, setIsNewCampaignModalOpen] = useState(false);
 
   // Fetch campaign data
@@ -197,140 +191,26 @@ const Campaign = () => {
             </div>
           ) : (
             <div className="p-6">
-              {/* New Chat section */}
-              <div className="mb-8 bg-white border border-adgentic-border rounded-xl p-4">
-                <h2 className="text-lg text-adgentic-text-secondary mb-2">New chat in this campaign</h2>
-                <div className="flex gap-3">
-                  <Button onClick={() => createNewChat()} variant="outline" className="rounded-full p-2 h-10 w-10">
-                    <Plus className="h-5 w-5" />
-                  </Button>
-                  <div className="relative flex-grow">
-                    <input 
-                      type="text" 
-                      placeholder="Message Adgentic..."
-                      className="w-full border border-adgentic-border rounded-full px-4 py-2 pr-10"
-                      value={newChatInput}
-                      onChange={(e) => setNewChatInput(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && newChatInput.trim()) {
-                          createNewChat(newChatInput);
-                          setNewChatInput('');
-                        }
-                      }}
-                    />
-                    <Button 
-                      className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-transparent hover:bg-gray-100 rounded-full p-1 h-7 w-7"
-                      onClick={() => {
-                        if (newChatInput.trim()) {
-                          createNewChat(newChatInput);
-                          setNewChatInput('');
-                        }
-                      }}
-                    >
-                      <ArrowUp className="h-4 w-4 text-adgentic-text-secondary" />
-                    </Button>
-                  </div>
-                </div>
-              </div>
+              {/* New Chat input section */}
+              <NewChatInput onCreateChat={createNewChat} />
               
-              {/* Action Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-                <div className="bg-white rounded-xl border border-adgentic-border p-6 hover:shadow-sm transition-shadow cursor-pointer"
-                     onClick={() => createNewChat()}>
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="text-adgentic-accent">
-                      <MessageSquare className="h-5 w-5" />
-                    </div>
-                    <h3 className="text-lg font-medium text-adgentic-text-primary">Chat with AI</h3>
-                  </div>
-                  <p className="text-adgentic-text-secondary">Ask me anything about your campaign</p>
-                </div>
-                
-                <div className="bg-white rounded-xl border border-adgentic-border p-6 hover:shadow-sm transition-shadow cursor-pointer"
-                     onClick={() => navigate(`/campaign/${campaignId}/report`)}>
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="text-adgentic-accent">
-                      <BarChart2 className="h-5 w-5" />
-                    </div>
-                    <h3 className="text-lg font-medium text-adgentic-text-primary">View Report</h3>
-                  </div>
-                  <p className="text-adgentic-text-secondary">See detailed campaign performance</p>
-                </div>
-                
-                <div className="bg-white rounded-xl border border-adgentic-border p-6 hover:shadow-sm transition-shadow cursor-pointer"
-                     onClick={handleCampaignSettings}>
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="text-adgentic-accent">
-                      <Settings className="h-5 w-5" />
-                    </div>
-                    <h3 className="text-lg font-medium text-adgentic-text-primary">Campaign Settings</h3>
-                  </div>
-                  <p className="text-adgentic-text-secondary">Update campaign configuration</p>
-                </div>
-                
-                <div className="bg-white rounded-xl border border-adgentic-border p-6 hover:shadow-sm transition-shadow cursor-pointer"
-                     onClick={() => navigate(`/campaign/${campaignId}/chats`)}>
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="text-adgentic-accent">
-                      <FileText className="h-5 w-5" />
-                    </div>
-                    <h3 className="text-lg font-medium text-adgentic-text-primary">Past Conversations</h3>
-                  </div>
-                  <p className="text-adgentic-text-secondary">{chats.length} chat{chats.length !== 1 ? 's' : ''} in this campaign</p>
-                </div>
-              </div>
+              {/* Action Cards Grid */}
+              <ActionsGrid
+                onChatClick={() => createNewChat()}
+                onReportClick={() => navigate(`/campaign/${campaignId}/report`)}
+                onSettingsClick={handleCampaignSettings}
+                onHistoryClick={() => navigate(`/campaign/${campaignId}/chats`)}
+                chatsCount={chats.length}
+              />
               
               {/* Campaign Performance */}
-              <div className="mb-8">
-                <h2 className="text-xl font-semibold text-adgentic-text-primary mb-4 flex items-center">
-                  <BarChart2 className="h-5 w-5 mr-2" /> Campaign Performance
-                </h2>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {metrics.map((metric) => (
-                    <div key={metric.id} className="bg-white rounded-lg border border-adgentic-border p-4">
-                      <div className="text-sm text-adgentic-text-secondary">{metric.label}</div>
-                      <div className="text-2xl font-semibold text-adgentic-text-primary">{metric.value}</div>
-                      <div className="text-xs text-adgentic-text-secondary">{metric.timeframe}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <MetricsSection metrics={metrics} />
               
               {/* Ad Creatives Section */}
-              <div className="mb-8">
-                <h2 className="text-xl font-semibold text-adgentic-text-primary mb-4 flex items-center">
-                  <ImageIcon className="h-5 w-5 mr-2" /> Ad Creatives
-                </h2>
-                <AdCreativesSection />
-              </div>
+              <CreativesSection />
               
               {/* Chats in this campaign */}
-              <div className="mb-8">
-                <h2 className="text-xl font-semibold text-adgentic-text-primary mb-4">Chats in this campaign</h2>
-                <div className="space-y-2">
-                  {chats.length === 0 ? (
-                    <div className="text-adgentic-text-secondary p-4 bg-white border border-adgentic-border rounded-lg">
-                      No chats yet. Start a new conversation!
-                    </div>
-                  ) : (
-                    chats.map((chat: any) => (
-                      <Link 
-                        key={chat.id} 
-                        to={`/chat/${chat.id}`}
-                        className="flex items-center gap-3 p-3 bg-white border border-adgentic-border rounded-lg hover:bg-adgentic-lightGray"
-                      >
-                        <MessageSquare className="h-5 w-5 text-adgentic-text-secondary" />
-                        <div>
-                          <div className="font-medium text-adgentic-text-primary">{chat.title}</div>
-                          <div className="text-sm text-adgentic-text-secondary">
-                            {new Date(chat.created_at).toLocaleDateString()}
-                          </div>
-                        </div>
-                      </Link>
-                    ))
-                  )}
-                </div>
-              </div>
+              <ChatsList chats={chats} />
             </div>
           )}
         </div>
