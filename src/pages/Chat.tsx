@@ -156,160 +156,108 @@ const Chat = () => {
     fetchMessages();
   }, [chatId, useToastFn, queryCampaignId]);
 
-  const generateResponse = (userMessage: string, previousMessages: MessageProps[]) => {
-    // Extract the last few messages to establish context
-    const recentMessages = previousMessages.slice(-3);
-    const messageLower = userMessage.toLowerCase();
-    
-    // Determine if this is a follow-up question
-    const isFollowUp = previousMessages.length > 0;
-    
-    // Set conversation context based on the current topic if it's not already set
-    if (!conversationContext) {
-      if (messageLower.includes('performance') || messageLower.includes('analytics') || messageLower.includes('report')) {
-        setConversationContext('performance');
-      } else if (messageLower.includes('keyword') || messageLower.includes('search terms')) {
-        setConversationContext('keywords');
-      } else if (messageLower.includes('budget') || messageLower.includes('spend') || messageLower.includes('allocation')) {
-        setConversationContext('budget');
+  // Function to call the OpenAI integration via Supabase Edge Function
+  const callLLMAPI = async (userMessage: string, previousMessages: MessageProps[]): Promise<MessageProps> => {
+    try {
+      console.log('Calling LLM API with message:', userMessage);
+      
+      // Prepare messages in the format expected by the Edge Function
+      const messageHistory = previousMessages.map(msg => ({
+        role: msg.role,
+        content: msg.content
+      }));
+      
+      // Add context about campaigns if available
+      const campaignContext = campaignId 
+        ? `This is a conversation about the campaign: ${campaignName || 'unknown'}. `
+        : 'This is a general conversation about retail media campaigns. ';
+        
+      const systemMessage = {
+        role: 'system',
+        content: `You are Adgentic, an AI assistant specialized in advertising and marketing campaigns. 
+                 ${campaignContext}
+                 You help users optimize their ad campaigns and provide insights on marketing strategies.
+                 When appropriate, you may include metrics and action buttons in your response.
+                 For metrics, use the format: [{"label": "Metric Name", "value": "Metric Value", "improvement": true/false}]
+                 For action buttons, use: [{"label": "Button Text", "primary": true/false}]`
+      };
+      
+      // Add the new user message
+      messageHistory.unshift(systemMessage);
+      messageHistory.push({
+        role: 'user',
+        content: userMessage
+      });
+      
+      console.log('Sending message history to edge function:', messageHistory);
+      
+      // Call the Supabase Edge Function
+      const { data, error } = await supabase.functions.invoke('chat', {
+        body: { messages: messageHistory }
+      });
+      
+      if (error) {
+        console.error('Error calling OpenAI via Edge Function:', error);
+        throw new Error(error.message || 'Failed to get response from AI');
       }
-    }
-    
-    // Handle follow-up questions based on established context
-    if (isFollowUp) {
-      // Context-aware responses for follow-up questions
-      if (conversationContext === 'performance') {
-        // Handle follow-up questions about performance
-        if (messageLower.includes('why') || messageLower.includes('how') || messageLower.includes('what')) {
-          return {
-            role: 'assistant' as const,
-            content: "Based on your previous question about performance, I can provide more details. Your campaigns are showing an overall strong performance, particularly on Walmart and Instacart because these platforms have lower CPC (Cost Per Click) while maintaining similar conversion rates compared to Amazon. This results in a better ROAS (Return on Ad Spend) on these platforms, which is why I recommend shifting some budget from Amazon to these better-performing channels.",
-            metrics: [
-              { label: 'Amazon ROAS', value: '3.2x', improvement: false },
-              { label: 'Walmart ROAS', value: '4.5x', improvement: true },
-              { label: 'Instacart ROAS', value: '5.1x', improvement: true }
-            ],
-            actionButtons: [
-              { label: 'View Platform Comparison', primary: false },
-              { label: 'Optimize Budget Now', primary: true }
-            ]
-          };
+      
+      console.log('Raw response from Edge Function:', data);
+      
+      // Process the response from the LLM
+      // The Edge Function should return an object with role and content
+      let assistantMessage: MessageProps = {
+        role: 'assistant',
+        content: 'I apologize, but I encountered an issue processing your request.'
+      };
+      
+      if (data && data.content) {
+        assistantMessage = {
+          role: 'assistant',
+          content: data.content
+        };
+        
+        // Try to extract metrics and action buttons from the response if they exist
+        try {
+          // Look for metrics in the format [{"label": "Metric Name", "value": "Metric Value", "improvement": true/false}]
+          const metricsMatch = data.content.match(/\[\s*\{\s*"label":\s*".*?"\s*,\s*"value":\s*".*?"\s*,\s*"improvement":\s*(true|false)\s*\}.*?\]/);
+          if (metricsMatch) {
+            try {
+              const metricsJson = JSON.parse(metricsMatch[0]);
+              assistantMessage.metrics = metricsJson;
+              // Remove the metrics JSON from the content
+              assistantMessage.content = assistantMessage.content.replace(metricsMatch[0], '');
+            } catch (e) {
+              console.error('Failed to parse metrics JSON:', e);
+            }
+          }
+          
+          // Look for action buttons in the format [{"label": "Button Text", "primary": true/false}]
+          const buttonsMatch = data.content.match(/\[\s*\{\s*"label":\s*".*?"\s*,\s*"primary":\s*(true|false)\s*\}.*?\]/);
+          if (buttonsMatch) {
+            try {
+              const buttonsJson = JSON.parse(buttonsMatch[0]);
+              assistantMessage.actionButtons = buttonsJson;
+              // Remove the buttons JSON from the content
+              assistantMessage.content = assistantMessage.content.replace(buttonsMatch[0], '');
+            } catch (e) {
+              console.error('Failed to parse action buttons JSON:', e);
+            }
+          }
+        } catch (e) {
+          console.error('Error processing response extras:', e);
         }
-      } else if (conversationContext === 'keywords') {
-        // Handle follow-up questions about keywords
-        if (messageLower.includes('data') || messageLower.includes('give me') || messageLower.includes('show')) {
-          return {
-            role: 'assistant' as const,
-            content: "Here's the keyword performance data you requested for your campaigns:",
-            metrics: [
-              { label: 'Top Keyword', value: 'organic supplements', improvement: true },
-              { label: 'Highest CTR', value: 'vegan protein', improvement: true },
-              { label: 'Lowest ACOS', value: 'plant protein', improvement: true },
-              { label: 'Most Conversions', value: 'protein powder', improvement: true },
-              { label: 'Worst Performer', value: 'discount supplements', improvement: false }
-            ],
-            actionButtons: [
-              { label: 'Download Full Report', primary: false },
-              { label: 'Optimize Keywords', primary: true }
-            ]
-          };
-        }
-      } else if (conversationContext === 'budget') {
-        // Handle follow-up questions about budget allocation
-        if (messageLower.includes('increase') || messageLower.includes('amazon') || messageLower.includes('why')) {
-          return {
-            role: 'assistant' as const,
-            content: "You asked why I recommend decreasing Amazon's budget rather than increasing it. Amazon currently has the highest CPC among your channels but shows lower conversion rates compared to Walmart and Instacart. Our data indicates you're paying 23% more per click on Amazon while getting 15% fewer conversions. By shifting budget to the other platforms, you'll likely achieve better overall ROAS and more efficient ad spend.",
-            metrics: [
-              { label: 'Amazon CPC', value: '$1.27', improvement: false },
-              { label: 'Walmart CPC', value: '$0.92', improvement: true },
-              { label: 'Instacart CPC', value: '$0.84', improvement: true },
-              { label: 'Amazon Conv. Rate', value: '3.1%', improvement: false },
-              { label: 'Other Platforms Avg', value: '4.2%', improvement: true }
-            ],
-            actionButtons: [
-              { label: 'View Detailed Analysis', primary: false },
-              { label: 'Maintain Amazon Budget', primary: false },
-              { label: 'Apply Recommendations', primary: true }
-            ]
-          };
-        }
+        
+        // Clean up any leftover formatting issues
+        assistantMessage.content = assistantMessage.content.trim();
       }
-    }
-    
-    // If no specific context is set or the follow-up doesn't match contextual patterns,
-    // fall back to the original keyword-based responses
-    
-    if (messageLower.includes('performance') || messageLower.includes('analytics') || messageLower.includes('report')) {
-      setConversationContext('performance');
+      
+      console.log('Processed assistant message:', assistantMessage);
+      return assistantMessage;
+    } catch (error) {
+      console.error('Error in callLLMAPI:', error);
       return {
-        role: 'assistant' as const,
-        content: "# Performance Report\n\nHere's the performance data for your campaigns over the past 7 days:\n\nYour campaigns are showing strong overall performance with improvements in most key metrics. CTR has increased by 0.3% and ACOS has decreased by 1.2% compared to the previous period.",
-        metrics: [
-          { label: 'Impressions', value: '142,587', improvement: true },
-          { label: 'Clicks', value: '3,842', improvement: true },
-          { label: 'CTR', value: '2.69%', improvement: true },
-          { label: 'ACOS', value: '15.8%', improvement: true },
-          { label: 'Spend', value: '$4,215', improvement: false },
-          { label: 'Sales', value: '$26,678', improvement: true }
-        ],
-        actionButtons: [
-          { label: 'View Detailed Report', primary: false },
-          { label: 'Optimize Campaigns', primary: true }
-        ]
-      };
-    }
-    
-    else if (messageLower.includes('keyword') || messageLower.includes('search terms')) {
-      setConversationContext('keywords');
-      return {
-        role: 'assistant' as const,
-        content: "# Keyword Recommendations\n\nBased on your campaign performance, I recommend the following keyword changes:\n\n- Add \"organic protein powder\" as a broad match\n- Increase bid on \"vegan supplements\" by 15%\n- Pause \"discount protein\" due to low conversion\n- Add negative keyword \"sample\" to reduce irrelevant clicks",
-        metrics: [
-          { label: 'Under-performing Keywords', value: '8', improvement: false },
-          { label: 'Suggested New Keywords', value: '12', improvement: true },
-          { label: 'Potential CTR Increase', value: '23%', improvement: true },
-          { label: 'Estimated ACOS Impact', value: '-12%', improvement: true }
-        ],
-        actionButtons: [
-          { label: 'Review All Changes', primary: false },
-          { label: 'Apply Recommendations', primary: true }
-        ]
-      };
-    }
-    
-    else if (messageLower.includes('budget') || messageLower.includes('spend') || messageLower.includes('allocation')) {
-      setConversationContext('budget');
-      return {
-        role: 'assistant' as const,
-        content: "# Budget Allocation Recommendations\n\nBased on ROAS analysis, I recommend the following budget allocation:\n\nYour current budget allocation is showing strong performance on Walmart and Instacart. I recommend shifting 15% of your Amazon budget to these channels to maximize overall ROAS.",
-        metrics: [
-          { label: 'Amazon (current)', value: '65%', improvement: false },
-          { label: 'Amazon (recommended)', value: '50%', improvement: true },
-          { label: 'Walmart (current)', value: '25%', improvement: false },
-          { label: 'Walmart (recommended)', value: '30%', improvement: true },
-          { label: 'Instacart (current)', value: '10%', improvement: false },
-          { label: 'Instacart (recommended)', value: '20%', improvement: true }
-        ],
-        actionButtons: [
-          { label: 'Adjust Manually', primary: false },
-          { label: 'Apply Recommendations', primary: true }
-        ]
-      };
-    }
-    
-    else {
-      // Reset context if user asks something unrelated to previous topics
-      setConversationContext(null);
-      return {
-        role: 'assistant' as const,
-        content: "# Adgentic Assistant\n\nI'm here to help optimize your retail media campaigns. You can ask me about:\n\n- Performance analytics and insights\n- Keyword optimization and recommendations\n- Budget allocation across channels\n- Campaign creation and management\n\nWhat would you like help with today?",
-        actionButtons: [
-          { label: 'Performance Analysis', primary: false },
-          { label: 'Keyword Optimization', primary: false },
-          { label: 'Budget Allocation', primary: false },
-          { label: 'Create Campaign', primary: true }
-        ]
+        role: 'assistant',
+        content: 'I apologize, but I encountered an issue connecting to my knowledge base. Please try again in a moment.'
       };
     }
   };
@@ -380,32 +328,29 @@ const Chat = () => {
         throw insertError;
       }
 
-      // Generate AI response with context from previous messages
-      setTimeout(async () => {
-        // Pass the current messages array to provide context
-        const assistantResponse = generateResponse(content, messages);
-        console.log('Generated assistant response:', assistantResponse);
+      // Call the LLM API to get a response
+      const assistantResponse = await callLLMAPI(content, messages);
+      console.log('LLM API response:', assistantResponse);
 
-        // Direct insertion of metrics and actionButtons as JSONB
-        const { error: aiInsertError } = await supabase
-          .from('chat_messages')
-          .insert({
-            chat_id: currentChatId,
-            role: 'assistant',
-            content: assistantResponse.content,
-            metrics: assistantResponse.metrics || null,
-            actionbuttons: assistantResponse.actionButtons || null
-          });
+      // Save the assistant's response to the database
+      const { error: aiInsertError } = await supabase
+        .from('chat_messages')
+        .insert({
+          chat_id: currentChatId,
+          role: 'assistant',
+          content: assistantResponse.content,
+          metrics: assistantResponse.metrics || null,
+          actionbuttons: assistantResponse.actionButtons || null
+        });
 
-        if (aiInsertError) {
-          console.error('Error saving assistant message:', aiInsertError);
-          throw aiInsertError;
-        }
-        
-        setMessages(prevMessages => [...prevMessages, assistantResponse]);
-        setIsLoading(false);
-      }, 1000);
-
+      if (aiInsertError) {
+        console.error('Error saving assistant message:', aiInsertError);
+        throw aiInsertError;
+      }
+      
+      // Add the assistant's response to the UI
+      setMessages(prevMessages => [...prevMessages, assistantResponse]);
+      setIsLoading(false);
     } catch (error: any) {
       console.error('Chat error:', error);
       toast.error(error.message || "Failed to send message");
