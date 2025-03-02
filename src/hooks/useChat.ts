@@ -12,7 +12,6 @@ export type ChatMessageRow = {
   created_at: string;
   id: string;
   role: string;
-  title?: string;
   metrics?: any; // Changed to 'any' to handle JSONB from database
   actionbuttons?: any; // Changed to 'any' to handle JSONB from database
 };
@@ -109,10 +108,23 @@ export const useChat = (chatId: string | undefined, campaignId: string | null) =
           console.log('metrics type:', typeof msg.metrics, 'value:', msg.metrics);
           console.log('actionbuttons type:', typeof msg.actionbuttons, 'value:', msg.actionbuttons);
           
+          // Parse potential title from the content
+          let title: string | undefined = undefined;
+          let content = msg.content;
+          
+          // Simple heuristic: if the first line is short (< 80 chars), treat it as a title
+          if (msg.role === 'assistant' && content) {
+            const lines = content.split('\n');
+            if (lines.length > 1 && lines[0].length < 80 && lines[1].trim() === '') {
+              title = lines[0].trim();
+              content = lines.slice(2).join('\n').trim();
+            }
+          }
+          
           return {
             role: msg.role as MessageProps['role'],
-            content: msg.content,
-            title: msg.title || undefined,
+            content: content,
+            title: title,
             // Since we're using JSONB in the database, no need to parse
             metrics: msg.metrics || undefined,
             actionButtons: msg.actionbuttons || undefined

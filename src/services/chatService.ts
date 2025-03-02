@@ -51,18 +51,29 @@ export const saveAssistantMessage = async (
   assistantResponse: MessageProps
 ) => {
   try {
-    // Extreme defensive coding to ensure we only save what the database can handle
-    // First, create a clean object with only the properties we need
+    console.log('Saving assistant message with structure:', JSON.stringify(assistantResponse, null, 2));
+    
+    // Extract title from the assistantResponse if it exists
+    const title = assistantResponse.title || null;
+    let contentToSave = assistantResponse.content || '';
+    
+    // If there's a title, prepend it to the content for storage
+    // We'll do this only if we need to store the title as part of content
+    if (title && !contentToSave.includes(title)) {
+      contentToSave = `${title}\n\n${contentToSave}`;
+      console.log('Added title to content for storage:', contentToSave.substring(0, 100) + '...');
+    }
+    
+    // Create a clean object with only the properties our database supports
     const messageToSave = {
       chat_id: chatId,
       role: 'assistant',
-      content: assistantResponse.content || '',
-      title: assistantResponse.title || null,
+      content: contentToSave,
       metrics: null,
       actionbuttons: null
     };
     
-    // Then carefully process metrics if they exist
+    // Process metrics if they exist
     if (assistantResponse.metrics && Array.isArray(assistantResponse.metrics)) {
       try {
         // Create a minimal version with only required properties
@@ -81,7 +92,7 @@ export const saveAssistantMessage = async (
       }
     }
     
-    // Similarly process action buttons if they exist
+    // Process action buttons if they exist
     if (assistantResponse.actionButtons && Array.isArray(assistantResponse.actionButtons)) {
       try {
         // Create a minimal version with only required properties
