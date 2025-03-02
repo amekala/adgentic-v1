@@ -1,11 +1,14 @@
 
-import { Menu, Play, Pause, FilePen, Plus, UserCircle2, DollarSign, Search, MessageSquare, ChevronDown, ChevronRight, FolderOpen } from "lucide-react";
+import { Menu, Plus, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "./ui/input";
 import { toast } from "sonner";
+import CampaignList from "./sidebar/CampaignList";
+import GeneralChats from "./sidebar/GeneralChats";
+import SidebarFooter from "./sidebar/SidebarFooter";
 
 interface Campaign {
   id: string;
@@ -151,20 +154,6 @@ const Sidebar = ({ isOpen, onToggle, onApiKeyChange, onNewCampaign }: SidebarPro
     }));
   };
 
-  const hasMatchingCampaigns = (items: Campaign[]) => {
-    if (!searchQuery) return true;
-    return items.some(campaign => 
-      campaign.campaign_name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  };
-
-  const filterCampaigns = (campaigns: Campaign[]) => {
-    if (!searchQuery) return campaigns;
-    return campaigns.filter(campaign => 
-      campaign.campaign_name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  };
-
   const toggleSection = (section: string) => {
     setExpandedSection(expandedSection === section ? "" : section);
   };
@@ -194,72 +183,6 @@ const Sidebar = ({ isOpen, onToggle, onApiKeyChange, onNewCampaign }: SidebarPro
       console.error('Error in createNewChatForCampaign:', err);
       toast.error("An unexpected error occurred");
     }
-  };
-
-  const renderCampaignSection = (title: string, campaigns: Campaign[], sectionKey: string, icon: React.ReactNode, textColorClass: string) => {
-    if (!hasMatchingCampaigns(campaigns) && searchQuery) return null;
-    
-    return (
-      <div className="mb-4">
-        <button
-          onClick={() => toggleSection(sectionKey)}
-          className={cn(
-            "flex w-full items-center justify-between px-2 py-1.5 text-sm font-medium rounded-md",
-            textColorClass,
-            isOpen ? "hover:bg-adgentic-hover" : "justify-center"
-          )}
-        >
-          <div className="flex items-center gap-2">
-            {icon}
-            {isOpen && <span>{title}</span>}
-          </div>
-          {isOpen && campaigns.length > 0 && (
-            <ChevronDown className={cn("h-4 w-4 transition-transform", expandedSection !== sectionKey && "rotate-[-90deg]")} />
-          )}
-        </button>
-        
-        {isOpen && expandedSection === sectionKey && (
-          <div className="mt-1 space-y-1">
-            {filterCampaigns(campaigns).map(campaign => (
-              <div key={campaign.id} className="mb-1">
-                <div 
-                  className="flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-adgentic-hover cursor-pointer text-sm text-adgentic-text-secondary"
-                  onClick={() => toggleCampaignExpansion(campaign.id)}
-                >
-                  <FolderOpen className="h-4 w-4 min-w-4 text-adgentic-text-secondary" />
-                  <span className="truncate flex-1">{campaign.campaign_name}</span>
-                  {expandedCampaigns[campaign.id] ? 
-                    <ChevronDown className="h-3 w-3 min-w-3 text-adgentic-text-light" /> : 
-                    <ChevronRight className="h-3 w-3 min-w-3 text-adgentic-text-light" />}
-                </div>
-                
-                {expandedCampaigns[campaign.id] && (
-                  <div className="ml-5 space-y-0.5 mt-0.5">
-                    {campaignChats[campaign.id]?.map(chat => (
-                      <div
-                        key={chat.id}
-                        onClick={() => navigate(`/chat/${chat.id}`)}
-                        className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-adgentic-hover cursor-pointer text-xs text-adgentic-text-light hover:text-adgentic-text-primary"
-                      >
-                        <MessageSquare className="h-3.5 w-3.5 min-w-3.5" />
-                        <span className="truncate">{chat.title}</span>
-                      </div>
-                    ))}
-                    <div
-                      onClick={() => createNewChatForCampaign(campaign.id)}
-                      className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-adgentic-hover cursor-pointer text-xs text-adgentic-accent hover:text-blue-700"
-                    >
-                      <Plus className="h-3.5 w-3.5 min-w-3.5" />
-                      <span>New chat</span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    );
   };
 
   return (
@@ -306,91 +229,27 @@ const Sidebar = ({ isOpen, onToggle, onApiKeyChange, onNewCampaign }: SidebarPro
         </div>
 
         <div className="flex-1 overflow-y-auto px-3 py-2">
-          <div className="space-y-1">
-            {renderCampaignSection(
-              "Live Campaigns", 
-              campaigns.live, 
-              "live", 
-              <Play className="h-5 w-5" />, 
-              "text-green-600"
-            )}
-            
-            {renderCampaignSection(
-              "Paused Campaigns", 
-              campaigns.paused, 
-              "paused", 
-              <Pause className="h-5 w-5" />, 
-              "text-yellow-500"
-            )}
-            
-            {renderCampaignSection(
-              "Draft Campaigns", 
-              campaigns.draft, 
-              "draft", 
-              <FilePen className="h-5 w-5" />, 
-              "text-adgentic-text-secondary"
-            )}
-
-            <button 
-              onClick={() => toggleSection("chats")}
-              className={cn(
-                "flex w-full items-center justify-between px-2 py-1.5 text-sm font-medium rounded-md text-adgentic-accent hover:bg-adgentic-hover",
-                !isOpen && "justify-center"
-              )}
-            >
-              <div className="flex items-center gap-2">
-                <MessageSquare className="h-5 w-5" />
-                {isOpen && <span>General Chats</span>}
-              </div>
-              {isOpen && chats.length > 0 && (
-                <ChevronDown className={cn("h-4 w-4 transition-transform", expandedSection !== "chats" && "rotate-[-90deg]")} />
-              )}
-            </button>
-            
-            {isOpen && expandedSection === "chats" && (
-              <div className="mt-1 space-y-0.5">
-                {chats.map(chat => (
-                  <div
-                    key={chat.id}
-                    onClick={() => navigate(`/chat/${chat.id}`)}
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-md hover:bg-adgentic-hover cursor-pointer text-sm text-adgentic-text-secondary hover:text-adgentic-text-primary ml-1"
-                  >
-                    <MessageSquare className="h-4 w-4" />
-                    <span className="truncate">{chat.title}</span>
-                  </div>
-                ))}
-                <div
-                  onClick={() => navigate('/chat/new')}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-md hover:bg-adgentic-hover cursor-pointer text-sm text-adgentic-accent hover:text-blue-700 ml-1"
-                >
-                  <Plus className="h-4 w-4" />
-                  <span>New chat</span>
-                </div>
-              </div>
-            )}
-          </div>
+          <CampaignList 
+            campaigns={campaigns}
+            campaignChats={campaignChats}
+            expandedCampaigns={expandedCampaigns}
+            expandedSection={expandedSection}
+            toggleSection={toggleSection}
+            toggleCampaignExpansion={toggleCampaignExpansion}
+            createNewChatForCampaign={createNewChatForCampaign}
+            searchQuery={searchQuery}
+            isOpen={isOpen}
+          />
+          
+          <GeneralChats 
+            isOpen={isOpen}
+            expandedSection={expandedSection}
+            toggleSection={toggleSection}
+            chats={chats}
+          />
         </div>
 
-        <div className="mt-auto px-3 pb-4 space-y-2">
-          <button
-            onClick={() => navigate('/account')}
-            className="flex w-full items-center gap-2 px-3 py-2 text-sm font-medium text-adgentic-text-secondary hover:bg-adgentic-hover rounded-md"
-          >
-            <UserCircle2 className="h-5 w-5" />
-            <div className="text-left">
-              <div className="text-adgentic-text-primary">Your Account</div>
-              <div className="text-xs">Standard Tier</div>
-            </div>
-          </button>
-
-          <button
-            onClick={() => navigate('/pricing')}
-            className="flex w-full items-center gap-2 px-3 py-2 text-sm font-medium text-adgentic-text-secondary hover:bg-adgentic-hover rounded-md"
-          >
-            <DollarSign className="h-5 w-5" />
-            <span>Pricing</span>
-          </button>
-        </div>
+        <SidebarFooter />
       </div>
     </>
   );
