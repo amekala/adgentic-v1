@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from "@/integrations/supabase/client";
@@ -163,7 +164,7 @@ const Chat = () => {
       
       // Prepare messages in the format expected by the Edge Function
       const messageHistory = previousMessages.map(msg => ({
-        role: msg.role,
+        role: msg.role as "user" | "assistant" | "system",
         content: msg.content
       }));
       
@@ -173,7 +174,7 @@ const Chat = () => {
         : 'This is a general conversation about retail media campaigns. ';
         
       const systemMessage = {
-        role: 'system',
+        role: 'system' as const,
         content: `You are Adgentic, an AI assistant specialized in advertising and marketing campaigns. 
                  ${campaignContext}
                  You help users optimize their ad campaigns and provide insights on marketing strategies.
@@ -185,7 +186,7 @@ const Chat = () => {
       // Add the new user message
       messageHistory.unshift(systemMessage);
       messageHistory.push({
-        role: 'user',
+        role: 'user' as const,
         content: userMessage
       });
       
@@ -332,6 +333,15 @@ const Chat = () => {
       const assistantResponse = await callLLMAPI(content, messages);
       console.log('LLM API response:', assistantResponse);
 
+      // Create a database-safe version of the response without onClick functions
+      // We only need to store label and primary properties for action buttons
+      const dbSafeActionButtons = assistantResponse.actionButtons 
+        ? assistantResponse.actionButtons.map(btn => ({
+            label: btn.label,
+            primary: btn.primary
+          })) 
+        : null;
+
       // Save the assistant's response to the database
       const { error: aiInsertError } = await supabase
         .from('chat_messages')
@@ -340,7 +350,7 @@ const Chat = () => {
           role: 'assistant',
           content: assistantResponse.content,
           metrics: assistantResponse.metrics || null,
-          actionbuttons: assistantResponse.actionButtons || null
+          actionbuttons: dbSafeActionButtons
         });
 
       if (aiInsertError) {
