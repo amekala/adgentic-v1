@@ -36,20 +36,35 @@ const Message = ({ role, content, title, metrics, actionButtons, onActionClick }
     }
   };
 
-  // Format content with proper line breaks and markdown
-  const formattedContent = content.split('\n').map((line, index) => (
-    <p key={index} className={cn(
-      "mb-2",
-      line.startsWith('#') && "font-bold text-lg",
-      line.startsWith('##') && "font-bold text-base",
-      line.startsWith('*') && line.endsWith('*') && "italic",
-      line.startsWith('**') && line.endsWith('**') && "font-bold"
-    )}>
-      {line.replace(/^#+ /, '')
-           .replace(/^\*\*(.*)\*\*$/, "$1")
-           .replace(/^\*(.*)\*$/, "$1")}
-    </p>
-  ));
+  // Enhanced function to format content with proper line breaks and markdown
+  const formattedContent = content.split('\n').map((line, index) => {
+    // Check for list items
+    const isListItem = line.trim().match(/^(\d+\.|-)/)
+    
+    // Check for headers and formatting
+    return (
+      <p key={index} className={cn(
+        "mb-2",
+        line.startsWith('#') && "font-bold text-lg",
+        line.startsWith('##') && "font-bold text-base",
+        line.startsWith('###') && "font-bold text-sm",
+        line.match(/^\d+\./) && "pl-4",
+        line.startsWith('-') && "pl-4",
+        line.startsWith('*') && line.endsWith('*') && "italic",
+        line.startsWith('**') && line.endsWith('**') && "font-bold",
+        isListItem && "flex"
+      )}>
+        {isListItem && <span className="mr-2">{line.match(/^(\d+\.|-)/)?.[0]}</span>}
+        <span>
+          {isListItem 
+            ? line.replace(/^(\d+\.|-)\s+/, '')
+            : line.replace(/^#+ /, '')
+                 .replace(/^\*\*(.*)\*\*$/, "$1")
+                 .replace(/^\*(.*)\*$/, "$1")}
+        </span>
+      </p>
+    );
+  });
 
   return (
     <div className={cn(
