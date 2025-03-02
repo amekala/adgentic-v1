@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from "@/integrations/supabase/client";
@@ -7,17 +6,13 @@ import ChatHeader from '@/components/ChatHeader';
 import ChatInput from '@/components/ChatInput';
 import MessageList from '@/components/MessageList';
 import { useToast } from '@/hooks/use-toast';
-
-type Message = {
-  role: 'user' | 'assistant' | 'system';
-  content: string;
-};
+import { MessageProps } from '@/components/Message';
 
 const Chat = () => {
   const { id: chatId } = useParams();
   const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<MessageProps[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
@@ -52,8 +47,10 @@ const Chat = () => {
       if (data) {
         console.log('Fetched messages:', data);
         const validMessages = data.map(msg => ({
-          role: msg.role as Message['role'],
-          content: msg.content
+          role: msg.role as MessageProps['role'],
+          content: msg.content,
+          metrics: msg.metrics ? JSON.parse(msg.metrics) : undefined,
+          actionButtons: msg.actionButtons ? JSON.parse(msg.actionButtons) : undefined
         }));
         setMessages(validMessages);
       }
@@ -61,6 +58,78 @@ const Chat = () => {
 
     fetchMessages();
   }, [chatId, toast]);
+
+  const generateResponse = (userMessage: string) => {
+    const messageLower = userMessage.toLowerCase();
+    
+    if (messageLower.includes('performance') || messageLower.includes('analytics') || messageLower.includes('report')) {
+      return {
+        role: 'assistant' as const,
+        content: "Here's the performance data for your campaigns over the past 7 days:",
+        metrics: [
+          { label: 'Impressions', value: '142,587', improvement: true },
+          { label: 'Clicks', value: '3,842', improvement: true },
+          { label: 'CTR', value: '2.69%', improvement: true },
+          { label: 'ACOS', value: '15.8%', improvement: true },
+          { label: 'Spend', value: '$4,215', improvement: false },
+          { label: 'Sales', value: '$26,678', improvement: true }
+        ],
+        actionButtons: [
+          { label: 'View Detailed Report', primary: false },
+          { label: 'Optimize Campaigns', primary: true }
+        ]
+      };
+    }
+    
+    else if (messageLower.includes('keyword') || messageLower.includes('search terms')) {
+      return {
+        role: 'assistant' as const,
+        content: "Based on your campaign performance, I recommend the following keyword changes:",
+        metrics: [
+          { label: 'Under-performing Keywords', value: '8', improvement: false },
+          { label: 'Suggested New Keywords', value: '12', improvement: true },
+          { label: 'Potential CTR Increase', value: '23%', improvement: true },
+          { label: 'Estimated ACOS Impact', value: '-12%', improvement: true }
+        ],
+        actionButtons: [
+          { label: 'Review All Changes', primary: false },
+          { label: 'Apply Recommendations', primary: true }
+        ]
+      };
+    }
+    
+    else if (messageLower.includes('budget') || messageLower.includes('spend') || messageLower.includes('allocation')) {
+      return {
+        role: 'assistant' as const,
+        content: "Based on ROAS analysis, I recommend the following budget allocation:",
+        metrics: [
+          { label: 'Amazon (current)', value: '65%', improvement: false },
+          { label: 'Amazon (recommended)', value: '50%', improvement: true },
+          { label: 'Walmart (current)', value: '25%', improvement: false },
+          { label: 'Walmart (recommended)', value: '30%', improvement: true },
+          { label: 'Instacart (current)', value: '10%', improvement: false },
+          { label: 'Instacart (recommended)', value: '20%', improvement: true }
+        ],
+        actionButtons: [
+          { label: 'Adjust Manually', primary: false },
+          { label: 'Apply Recommendations', primary: true }
+        ]
+      };
+    }
+    
+    else {
+      return {
+        role: 'assistant' as const,
+        content: "I'm here to help optimize your retail media campaigns. You can ask me about performance analytics, keyword optimization, budget allocation, or campaign creation.",
+        actionButtons: [
+          { label: 'Performance Analysis', primary: false },
+          { label: 'Keyword Optimization', primary: false },
+          { label: 'Budget Allocation', primary: false },
+          { label: 'Create Campaign', primary: true }
+        ]
+      };
+    }
+  };
 
   const handleSendMessage = async (content: string) => {
     if (!content.trim()) {
@@ -75,12 +144,11 @@ const Chat = () => {
     setIsLoading(true);
 
     try {
-      // If this is a new chat, create it first
       if (!chatId) {
         const { data: chatData, error: chatError } = await supabase
           .from('chats')
           .insert({
-            title: content.substring(0, 50), // Use first 50 chars of first message as title
+            title: content.substring(0, 50),
             chat_type: 'campaign'
           })
           .select()
@@ -89,20 +157,16 @@ const Chat = () => {
         if (chatError) throw chatError;
 
         if (chatData) {
-          // Navigate to the new chat's URL
           navigate(`/chat/${chatData.id}`);
-          // We don't need to continue with this execution as the navigation
-          // will trigger a re-render and the message will be sent in the new context
           return;
         }
       }
 
-      const userMessage: Message = {
+      const userMessage: MessageProps = {
         role: 'user',
         content
       };
 
-      // Save user message to database
       const { error: insertError } = await supabase
         .from('chat_messages')
         .insert({
@@ -116,32 +180,22 @@ const Chat = () => {
       const newMessages = [...messages, userMessage];
       setMessages(newMessages);
 
-      // Get AI response
-      const { data, error } = await supabase.functions.invoke('chat', {
-        body: { messages: newMessages }
-      });
+      setTimeout(async () => {
+        const assistantResponse = generateResponse(content);
 
-      if (error) throw error;
-
-      if (data?.content) {
-        const assistantMessage: Message = {
-          role: 'assistant',
-          content: data.content
-        };
-
-        // Save AI response to database
         const { error: aiInsertError } = await supabase
           .from('chat_messages')
           .insert({
             chat_id: chatId,
             role: 'assistant',
-            content: data.content
+            content: assistantResponse.content
           });
 
         if (aiInsertError) throw aiInsertError;
         
-        setMessages([...newMessages, assistantMessage]);
-      }
+        setMessages([...newMessages, assistantResponse]);
+        setIsLoading(false);
+      }, 1000);
 
     } catch (error: any) {
       console.error('Chat error:', error);
@@ -150,8 +204,20 @@ const Chat = () => {
         description: error.message || "Failed to send message",
         variant: "destructive"
       });
-    } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleActionClick = (action: string) => {
+    if (action === "Apply Recommendations" || action === "Optimize Campaigns") {
+      toast({
+        title: "Success",
+        description: "Recommendations applied successfully!",
+      });
+    } else if (action === "View Detailed Report") {
+      navigate(`/campaign/${chatId || 'new'}`);
+    } else {
+      handleSendMessage(`Tell me more about ${action}`);
     }
   };
 
@@ -168,7 +234,7 @@ const Chat = () => {
         <ChatHeader isSidebarOpen={isSidebarOpen} />
         
         <div className="flex h-full flex-col justify-between pt-[60px] pb-4">
-          <MessageList messages={messages} />
+          <MessageList messages={messages} onActionClick={handleActionClick} />
           <div className="space-y-4 mt-auto">
             <div className="w-full max-w-3xl mx-auto px-4">
               <ChatInput onSend={handleSendMessage} isLoading={isLoading} />

@@ -1,17 +1,19 @@
 
-import Message from './Message';
+import Message, { MessageProps } from './Message';
 
-type Message = {
-  role: 'user' | 'assistant' | 'system';
-  content: string;
-};
-
-const MessageList = ({ messages }: { messages: Message[] }) => {
+const MessageList = ({ messages, onActionClick }: { 
+  messages: MessageProps[]; 
+  onActionClick?: (action: string) => void;
+}) => {
   return (
     <div className="flex-1 overflow-y-auto">
       <div className="w-full max-w-3xl mx-auto px-4">
         {messages.map((message, index) => (
-          <Message key={index} {...message} />
+          <Message 
+            key={index} 
+            {...message} 
+            onActionClick={onActionClick}
+          />
         ))}
       </div>
     </div>
