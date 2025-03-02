@@ -16,21 +16,23 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Marketing />} />
-          <Route path="/app" element={<Index />} />
-          <Route path="/campaign/:id" element={<Campaign />} />
-          <Route path="/chat/:id" element={<Chat />} />
-          <Route path="/chat/new" element={<Chat />} />
-          <Route path="/account" element={<Account />} />
-          <Route path="/pricing" element={<Pricing />} />
-          {/* Add a catch-all redirect to ensure users land on Marketing */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </BrowserRouter>
+      <div className="app-container">
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Marketing />} />
+            <Route path="/app" element={<Index />} />
+            <Route path="/campaign/:id" element={<Campaign />} />
+            <Route path="/chat/:id" element={<Chat />} />
+            <Route path="/chat/new" element={<Chat />} />
+            <Route path="/account" element={<Account />} />
+            <Route path="/pricing" element={<Pricing />} />
+            {/* Add a catch-all redirect to ensure users land on Marketing */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </BrowserRouter>
+      </div>
     </TooltipProvider>
   </QueryClientProvider>
 );

@@ -53,8 +53,8 @@ const Message = ({ role, content, title, metrics, actionButtons, onActionClick }
 
   return (
     <div className={cn(
-      "py-6 border-b border-gray-800",
-      role === 'assistant' && "bg-[#1E1E1E]"
+      "py-6 border-b border-adgentic-border",
+      role === 'assistant' && "bg-adgentic-secondary"
     )}>
       <div className="w-full max-w-3xl mx-auto">
         <div className={`flex gap-4 ${role === 'user' ? 'flex-row-reverse' : ''}`}>
@@ -62,20 +62,20 @@ const Message = ({ role, content, title, metrics, actionButtons, onActionClick }
           <div className={`flex-1 space-y-2 ${role === 'user' ? 'flex justify-end' : ''}`}>
             {/* Main content container */}
             <div className={`
-              ${role === 'user' ? 'bg-gray-700/50 rounded-[20px] px-4 py-3 inline-block max-w-[85%]' : 'w-full'}
-              ${role === 'system' ? 'bg-blue-500/20 rounded-[20px] px-4 py-3 inline-block text-blue-200' : ''}
+              ${role === 'user' ? 'bg-blue-100 text-adgentic-text-primary rounded-[20px] px-4 py-3 inline-block max-w-[85%]' : 'w-full'}
+              ${role === 'system' ? 'bg-blue-500/20 rounded-[20px] px-4 py-3 inline-block text-blue-800' : ''}
             `}>
               {/* Message header */}
               {isAssistantMessage && 
-                <p className="text-sm font-medium text-gray-400 mb-2">Adgentic Assistant:</p>
+                <p className="text-sm font-medium text-adgentic-text-secondary mb-2">Adgentic Assistant:</p>
               }
               {role === 'user' && 
-                <p className="text-sm font-medium text-gray-400 mb-1">You:</p>
+                <p className="text-sm font-medium text-adgentic-text-secondary mb-1">You:</p>
               }
 
               {/* Title when available */}
               {title && isAssistantMessage && (
-                <h2 className="text-xl font-bold mb-3 text-white">{title}</h2>
+                <h2 className="text-xl font-bold mb-3 text-adgentic-text-primary">{title}</h2>
               )}
 
               {/* Collapsible content section */}
@@ -83,7 +83,7 @@ const Message = ({ role, content, title, metrics, actionButtons, onActionClick }
                 "transition-all duration-300 overflow-hidden",
                 !expanded && "max-h-20"
               )}>
-                <div className="text-white space-y-1">
+                <div className="text-adgentic-text-primary space-y-1">
                   {formattedContent}
                 </div>
                 
@@ -91,11 +91,11 @@ const Message = ({ role, content, title, metrics, actionButtons, onActionClick }
                 {metrics && metrics.length > 0 && (
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-4">
                     {metrics.map((metric, index) => (
-                      <div key={index} className="bg-gray-800/50 p-3 rounded-lg">
-                        <div className="text-xs text-gray-400">{metric.label}</div>
+                      <div key={index} className="bg-white shadow-sm p-3 rounded-lg border border-adgentic-border">
+                        <div className="text-xs text-adgentic-text-secondary">{metric.label}</div>
                         <div className={`text-lg font-medium flex items-center ${
-                          metric.improvement === undefined ? 'text-white' :
-                          metric.improvement ? 'text-green-500' : 'text-red-500'
+                          metric.improvement === undefined ? 'text-adgentic-text-primary' :
+                          metric.improvement ? 'text-green-600' : 'text-red-500'
                         }`}>
                           {metric.value}
                           {metric.improvement !== undefined && (
@@ -117,8 +117,8 @@ const Message = ({ role, content, title, metrics, actionButtons, onActionClick }
                         key={index}
                         className={`px-4 py-2 rounded-full text-sm ${
                           button.primary 
-                            ? 'bg-green-600 hover:bg-green-700 text-white' 
-                            : 'bg-gray-700 hover:bg-gray-600 text-white'
+                            ? 'bg-adgentic-accent hover:bg-blue-700 text-white' 
+                            : 'bg-gray-100 hover:bg-gray-200 text-adgentic-text-primary border border-adgentic-border'
                         }`}
                         onClick={() => handleActionClick(button.label)}
                       >
@@ -133,7 +133,7 @@ const Message = ({ role, content, title, metrics, actionButtons, onActionClick }
               {content.length > 300 && (
                 <button 
                   onClick={() => setExpanded(!expanded)} 
-                  className="flex items-center gap-1 text-sm text-gray-400 hover:text-white mt-2"
+                  className="flex items-center gap-1 text-sm text-adgentic-text-secondary hover:text-adgentic-accent mt-2"
                 >
                   {expanded ? (
                     <>

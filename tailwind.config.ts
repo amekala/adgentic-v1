@@ -32,6 +32,19 @@ export default {
           hover: "#2A2B32",
           border: "#565869"
         },
+        adgentic: {
+          sidebar: "#ffffff",
+          main: "#f8fafc",  // slate-50
+          secondary: "#f1f5f9", // slate-100
+          accent: "#2563eb", // blue-600
+          hover: "#f1f5f9",
+          border: "#e2e8f0", // slate-200
+          text: {
+            primary: "#0f172a", // slate-900
+            secondary: "#64748b", // slate-500
+            light: "#94a3b8", // slate-400
+          }
+        },
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",

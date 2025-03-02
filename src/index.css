@@ -4,6 +4,10 @@
 @tailwind utilities;
 
 body {
+  @apply bg-adgentic-main text-adgentic-text-primary;
+}
+
+.dark-theme {
   @apply bg-chatgpt-main text-white;
 }
 
@@ -12,11 +16,19 @@ body {
 }
 
 .sidebar-item {
-  @apply flex items-center gap-3 rounded-md px-3 py-3 text-sm transition-colors duration-200 hover:bg-chatgpt-hover cursor-pointer;
+  @apply flex items-center gap-3 rounded-md px-3 py-3 text-sm transition-colors duration-200 hover:bg-adgentic-hover cursor-pointer text-adgentic-text-primary;
+}
+
+.dark .sidebar-item {
+  @apply hover:bg-chatgpt-hover text-white;
 }
 
 .action-button {
-  @apply flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-chatgpt-hover/50 border border-transparent hover:border-chatgpt-border transition-all duration-200;
+  @apply flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-adgentic-hover/50 border border-adgentic-border transition-all duration-200 text-adgentic-text-primary;
+}
+
+.dark .action-button {
+  @apply hover:bg-chatgpt-hover/50 border-chatgpt-border text-white;
 }
 
 @keyframes ticker {

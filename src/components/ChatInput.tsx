@@ -42,7 +42,7 @@ const ChatInput = ({ onSend, isLoading = false, placeholder = "Message Adgentic.
 
   return (
     <div className="relative flex w-full flex-col items-center py-2">
-      <div className="relative w-full border border-gray-700 rounded-xl bg-[#222] focus-within:ring-1 focus-within:ring-gray-500">
+      <div className="relative w-full border border-adgentic-border rounded-xl bg-white shadow-sm focus-within:ring-1 focus-within:ring-blue-200">
         <div className="flex items-end">
           <textarea
             ref={textareaRef}
@@ -51,18 +51,18 @@ const ChatInput = ({ onSend, isLoading = false, placeholder = "Message Adgentic.
             onChange={(e) => setMessage(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={placeholder}
-            className="w-full resize-none rounded-xl bg-transparent px-4 py-3 pr-12 focus:outline-none text-white placeholder-gray-400 max-h-[200px] min-h-[56px]"
+            className="w-full resize-none rounded-xl bg-transparent px-4 py-3 pr-12 focus:outline-none text-adgentic-text-primary placeholder-adgentic-text-light max-h-[200px] min-h-[56px]"
             disabled={isLoading}
           />
           <div className="flex items-center p-2">
             <button 
-              className="text-gray-400 hover:text-white p-2 rounded-full"
+              className="text-adgentic-text-light hover:text-adgentic-text-primary p-2 rounded-full"
               type="button"
             >
               <Paperclip className="h-5 w-5" />
             </button>
             <button 
-              className="text-gray-400 hover:text-white p-2 rounded-full"
+              className="text-adgentic-text-light hover:text-adgentic-text-primary p-2 rounded-full"
               type="button"
             >
               <Smile className="h-5 w-5" />
@@ -70,7 +70,7 @@ const ChatInput = ({ onSend, isLoading = false, placeholder = "Message Adgentic.
             <button 
               onClick={handleSubmit}
               disabled={isLoading || !message.trim()}
-              className="p-2 bg-green-600 rounded-full hover:bg-green-700 disabled:opacity-50 disabled:bg-gray-600 disabled:cursor-not-allowed ml-1"
+              className="p-2 bg-adgentic-accent rounded-full hover:bg-blue-700 disabled:opacity-50 disabled:bg-gray-300 disabled:cursor-not-allowed ml-1"
             >
               {isLoading ? (
                 <Loader2 className="h-5 w-5 text-white animate-spin" />

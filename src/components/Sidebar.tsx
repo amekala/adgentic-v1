@@ -206,7 +206,7 @@ const Sidebar = ({ isOpen, onToggle, onApiKeyChange, onNewCampaign }: SidebarPro
           className={cn(
             "flex w-full items-center justify-between px-2 py-1.5 text-sm font-medium rounded-md",
             textColorClass,
-            isOpen ? "hover:bg-[#2A2B32]" : "justify-center"
+            isOpen ? "hover:bg-adgentic-hover" : "justify-center"
           )}
         >
           <div className="flex items-center gap-2">
@@ -223,14 +223,14 @@ const Sidebar = ({ isOpen, onToggle, onApiKeyChange, onNewCampaign }: SidebarPro
             {filterCampaigns(campaigns).map(campaign => (
               <div key={campaign.id} className="mb-1">
                 <div 
-                  className="flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-[#2A2B32] cursor-pointer text-sm text-gray-300"
+                  className="flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-adgentic-hover cursor-pointer text-sm text-adgentic-text-secondary"
                   onClick={() => toggleCampaignExpansion(campaign.id)}
                 >
-                  <FolderOpen className="h-4 w-4 min-w-4 text-gray-400" />
+                  <FolderOpen className="h-4 w-4 min-w-4 text-adgentic-text-secondary" />
                   <span className="truncate flex-1">{campaign.campaign_name}</span>
                   {expandedCampaigns[campaign.id] ? 
-                    <ChevronDown className="h-3 w-3 min-w-3 text-gray-500" /> : 
-                    <ChevronRight className="h-3 w-3 min-w-3 text-gray-500" />}
+                    <ChevronDown className="h-3 w-3 min-w-3 text-adgentic-text-light" /> : 
+                    <ChevronRight className="h-3 w-3 min-w-3 text-adgentic-text-light" />}
                 </div>
                 
                 {expandedCampaigns[campaign.id] && (
@@ -239,7 +239,7 @@ const Sidebar = ({ isOpen, onToggle, onApiKeyChange, onNewCampaign }: SidebarPro
                       <div
                         key={chat.id}
                         onClick={() => navigate(`/chat/${chat.id}`)}
-                        className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-[#2A2B32] cursor-pointer text-xs text-gray-400 hover:text-white"
+                        className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-adgentic-hover cursor-pointer text-xs text-adgentic-text-light hover:text-adgentic-text-primary"
                       >
                         <MessageSquare className="h-3.5 w-3.5 min-w-3.5" />
                         <span className="truncate">{chat.title}</span>
@@ -247,7 +247,7 @@ const Sidebar = ({ isOpen, onToggle, onApiKeyChange, onNewCampaign }: SidebarPro
                     ))}
                     <div
                       onClick={() => createNewChatForCampaign(campaign.id)}
-                      className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-[#2A2B32] cursor-pointer text-xs text-indigo-400 hover:text-indigo-300"
+                      className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-adgentic-hover cursor-pointer text-xs text-adgentic-accent hover:text-blue-700"
                     >
                       <Plus className="h-3.5 w-3.5 min-w-3.5" />
                       <span>New chat</span>
@@ -268,24 +268,24 @@ const Sidebar = ({ isOpen, onToggle, onApiKeyChange, onNewCampaign }: SidebarPro
         <div className="fixed top-4 left-4 z-50">
           <button
             onClick={onToggle}
-            className="h-10 w-10 rounded-md flex items-center justify-center bg-[#2F2F2F] hover:bg-[#383737]"
+            className="h-10 w-10 rounded-md flex items-center justify-center bg-white shadow-sm border border-adgentic-border hover:bg-adgentic-hover"
           >
-            <Menu className="h-5 w-5 text-gray-400" />
+            <Menu className="h-5 w-5 text-adgentic-text-primary" />
           </button>
         </div>
       )}
       <div className={cn(
-        "fixed top-0 left-0 z-40 h-screen bg-[#202123] transition-all duration-300 flex flex-col",
+        "fixed top-0 left-0 z-40 h-screen bg-adgentic-sidebar border-r border-adgentic-border transition-all duration-300 flex flex-col",
         isOpen ? "w-64" : "w-0 overflow-hidden"
       )}>
         <div className="flex h-[60px] items-center px-3">
           <div className="flex w-full justify-between items-center">
-            <button onClick={onToggle} className="h-10 rounded-md px-2 text-gray-400 hover:bg-[#2A2B32]">
+            <button onClick={onToggle} className="h-10 rounded-md px-2 text-adgentic-text-secondary hover:bg-adgentic-hover">
               <Menu className="h-5 w-5" />
             </button>
             <button 
               onClick={onNewCampaign}
-              className="flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-blue-600 bg-blue-500 text-white"
+              className="flex items-center gap-2 rounded-md px-3 py-2 text-sm bg-adgentic-accent hover:bg-blue-700 text-white"
             >
               <Plus className="h-4 w-4" />
               <span>New Campaign</span>
@@ -295,12 +295,12 @@ const Sidebar = ({ isOpen, onToggle, onApiKeyChange, onNewCampaign }: SidebarPro
 
         <div className="px-3 pb-2">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-adgentic-text-light" />
             <Input
               placeholder="Search campaigns..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 bg-[#212121] border-[#383737] text-white placeholder-gray-400 h-9"
+              className="pl-9 bg-white border-adgentic-border text-adgentic-text-primary placeholder-adgentic-text-light h-9"
             />
           </div>
         </div>
@@ -312,7 +312,7 @@ const Sidebar = ({ isOpen, onToggle, onApiKeyChange, onNewCampaign }: SidebarPro
               campaigns.live, 
               "live", 
               <Play className="h-5 w-5" />, 
-              "text-green-500"
+              "text-green-600"
             )}
             
             {renderCampaignSection(
@@ -328,13 +328,13 @@ const Sidebar = ({ isOpen, onToggle, onApiKeyChange, onNewCampaign }: SidebarPro
               campaigns.draft, 
               "draft", 
               <FilePen className="h-5 w-5" />, 
-              "text-gray-400"
+              "text-adgentic-text-secondary"
             )}
 
             <button 
               onClick={() => toggleSection("chats")}
               className={cn(
-                "flex w-full items-center justify-between px-2 py-1.5 text-sm font-medium rounded-md text-blue-500 hover:bg-[#2A2B32]",
+                "flex w-full items-center justify-between px-2 py-1.5 text-sm font-medium rounded-md text-adgentic-accent hover:bg-adgentic-hover",
                 !isOpen && "justify-center"
               )}
             >
@@ -353,7 +353,7 @@ const Sidebar = ({ isOpen, onToggle, onApiKeyChange, onNewCampaign }: SidebarPro
                   <div
                     key={chat.id}
                     onClick={() => navigate(`/chat/${chat.id}`)}
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-md hover:bg-[#2A2B32] cursor-pointer text-sm text-gray-400 hover:text-white ml-1"
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-md hover:bg-adgentic-hover cursor-pointer text-sm text-adgentic-text-secondary hover:text-adgentic-text-primary ml-1"
                   >
                     <MessageSquare className="h-4 w-4" />
                     <span className="truncate">{chat.title}</span>
@@ -361,7 +361,7 @@ const Sidebar = ({ isOpen, onToggle, onApiKeyChange, onNewCampaign }: SidebarPro
                 ))}
                 <div
                   onClick={() => navigate('/chat/new')}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-md hover:bg-[#2A2B32] cursor-pointer text-sm text-indigo-400 hover:text-indigo-300 ml-1"
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-md hover:bg-adgentic-hover cursor-pointer text-sm text-adgentic-accent hover:text-blue-700 ml-1"
                 >
                   <Plus className="h-4 w-4" />
                   <span>New chat</span>
@@ -374,18 +374,18 @@ const Sidebar = ({ isOpen, onToggle, onApiKeyChange, onNewCampaign }: SidebarPro
         <div className="mt-auto px-3 pb-4 space-y-2">
           <button
             onClick={() => navigate('/account')}
-            className="flex w-full items-center gap-2 px-3 py-2 text-sm font-medium text-gray-400 hover:bg-[#2A2B32] rounded-md"
+            className="flex w-full items-center gap-2 px-3 py-2 text-sm font-medium text-adgentic-text-secondary hover:bg-adgentic-hover rounded-md"
           >
             <UserCircle2 className="h-5 w-5" />
             <div className="text-left">
-              <div className="text-white">Your Account</div>
+              <div className="text-adgentic-text-primary">Your Account</div>
               <div className="text-xs">Standard Tier</div>
             </div>
           </button>
 
           <button
             onClick={() => navigate('/pricing')}
-            className="flex w-full items-center gap-2 px-3 py-2 text-sm font-medium text-gray-400 hover:bg-[#2A2B32] rounded-md"
+            className="flex w-full items-center gap-2 px-3 py-2 text-sm font-medium text-adgentic-text-secondary hover:bg-adgentic-hover rounded-md"
           >
             <DollarSign className="h-5 w-5" />
             <span>Pricing</span>
