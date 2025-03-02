@@ -6,7 +6,9 @@ import Sidebar from '@/components/Sidebar';
 import ChatHeader from '@/components/ChatHeader';
 import ChatInput from '@/components/ChatInput';
 import MessageList from '@/components/MessageList';
+import ChatActionPills from '@/components/ChatActionPills';
 import { useToast } from '@/hooks/use-toast';
+import { toast } from "sonner";
 import { MessageProps } from '@/components/Message';
 
 // Define a type for the chat_messages table rows
@@ -17,7 +19,7 @@ type ChatMessageRow = {
   id: string;
   role: string;
   metrics?: any; // Changed to 'any' to handle JSONB from database
-  actionButtons?: any; // Changed to 'any' to handle JSONB from database
+  actionbuttons?: any; // Changed to 'any' to handle JSONB from database
 };
 
 const Chat = () => {
@@ -28,11 +30,13 @@ const Chat = () => {
   const [messages, setMessages] = useState<MessageProps[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [chatTitle, setChatTitle] = useState<string>('New Chat');
-  const { toast } = useToast();
+  const [campaignId, setCampaignId] = useState<string | null>(null);
+  const [campaignName, setCampaignName] = useState<string | null>(null);
+  const { toast: useToastFn } = useToast();
   
   // Extract campaign_id from URL query params if present
   const searchParams = new URLSearchParams(location.search);
-  const campaignId = searchParams.get('campaign_id');
+  const queryCampaignId = searchParams.get('campaign_id');
 
   useEffect(() => {
     const fetchMessages = async () => {
@@ -40,6 +44,24 @@ const Chat = () => {
         // For new chats, don't load any messages
         console.log('No chatId provided, creating a new chat');
         setMessages([]);
+        
+        // If campaign_id is in the URL, set it for context
+        if (queryCampaignId) {
+          setCampaignId(queryCampaignId);
+          try {
+            const { data: campaignData } = await supabase
+              .from('campaigns')
+              .select('campaign_name')
+              .eq('id', queryCampaignId)
+              .single();
+              
+            if (campaignData) {
+              setCampaignName(campaignData.campaign_name);
+            }
+          } catch (error) {
+            console.error('Error fetching campaign data:', error);
+          }
+        }
         return;
       }
 
@@ -47,15 +69,32 @@ const Chat = () => {
       setIsLoading(true);
       
       try {
-        // Fetch chat details to get title
+        // Fetch chat details to get title and campaign association
         const { data: chatData, error: chatError } = await supabase
           .from('chats')
-          .select('title')
+          .select('title, campaign_id')
           .eq('id', chatId)
           .single();
           
         if (chatData) {
           setChatTitle(chatData.title);
+          
+          // If this chat belongs to a campaign, fetch campaign details
+          if (chatData.campaign_id) {
+            setCampaignId(chatData.campaign_id);
+            const { data: campaignData } = await supabase
+              .from('campaigns')
+              .select('campaign_name')
+              .eq('id', chatData.campaign_id)
+              .single();
+              
+            if (campaignData) {
+              setCampaignName(campaignData.campaign_name);
+            }
+          } else {
+            setCampaignId(null);
+            setCampaignName(null);
+          }
         }
         
         // Fetch messages
@@ -67,7 +106,7 @@ const Chat = () => {
 
         if (error) {
           console.error('Error fetching messages:', error);
-          toast({
+          useToastFn({
             title: "Error",
             description: "Failed to load chat history",
             variant: "destructive"
@@ -83,14 +122,14 @@ const Chat = () => {
             // Debug each message conversion
             console.log('Processing message:', msg.id, 'role:', msg.role);
             console.log('metrics type:', typeof msg.metrics, 'value:', msg.metrics);
-            console.log('actionButtons type:', typeof msg.actionButtons, 'value:', msg.actionButtons);
+            console.log('actionbuttons type:', typeof msg.actionbuttons, 'value:', msg.actionbuttons);
             
             return {
               role: msg.role as MessageProps['role'],
               content: msg.content,
               // Since we're using JSONB in the database, no need to parse
               metrics: msg.metrics || undefined,
-              actionButtons: msg.actionButtons || undefined
+              actionButtons: msg.actionbuttons || undefined
             };
           });
           
@@ -102,7 +141,7 @@ const Chat = () => {
         }
       } catch (error) {
         console.error('Error processing messages:', error);
-        toast({
+        useToastFn({
           title: "Error",
           description: "Failed to process chat messages",
           variant: "destructive"
@@ -113,7 +152,7 @@ const Chat = () => {
     };
 
     fetchMessages();
-  }, [chatId, toast]);
+  }, [chatId, useToastFn, queryCampaignId]);
 
   const generateResponse = (userMessage: string) => {
     const messageLower = userMessage.toLowerCase();
@@ -189,11 +228,7 @@ const Chat = () => {
 
   const handleSendMessage = async (content: string) => {
     if (!content.trim()) {
-      toast({
-        title: "Error",
-        description: "Please enter a message",
-        variant: "destructive"
-      });
+      toast.error("Please enter a message");
       return;
     }
 
@@ -205,12 +240,14 @@ const Chat = () => {
       
       if (!currentChatId) {
         console.log('Creating new chat with title:', content.substring(0, 50));
-        console.log('Campaign ID:', campaignId);
+        console.log('Campaign ID:', campaignId || queryCampaignId);
+        
+        const effectiveCampaignId = campaignId || queryCampaignId;
         
         const chatData = {
           title: content.substring(0, 50),
-          chat_type: 'campaign',
-          ...(campaignId ? { campaign_id: campaignId } : {})
+          chat_type: effectiveCampaignId ? 'campaign' : 'general',
+          ...(effectiveCampaignId ? { campaign_id: effectiveCampaignId } : {})
         };
         
         const { data: newChatData, error: chatError } = await supabase
@@ -268,7 +305,7 @@ const Chat = () => {
             role: 'assistant',
             content: assistantResponse.content,
             metrics: assistantResponse.metrics || null,
-            actionButtons: assistantResponse.actionButtons || null
+            actionbuttons: assistantResponse.actionButtons || null
           });
 
         if (aiInsertError) {
@@ -282,21 +319,14 @@ const Chat = () => {
 
     } catch (error: any) {
       console.error('Chat error:', error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to send message",
-        variant: "destructive"
-      });
+      toast.error(error.message || "Failed to send message");
       setIsLoading(false);
     }
   };
 
   const handleActionClick = (action: string) => {
     if (action === "Apply Recommendations" || action === "Optimize Campaigns") {
-      toast({
-        title: "Success",
-        description: "Recommendations applied successfully!",
-      });
+      toast.success("Recommendations applied successfully!");
     } else if (action === "View Detailed Report") {
       navigate(`/campaign/${campaignId || 'new'}`);
     } else {
@@ -314,7 +344,7 @@ const Chat = () => {
   };
 
   return (
-    <div className="flex h-screen bg-[#111]">
+    <div className="flex h-screen bg-[#343541]">
       <Sidebar 
         isOpen={isSidebarOpen} 
         onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -323,14 +353,26 @@ const Chat = () => {
       />
       
       <main className={`flex-1 transition-all duration-300 ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}>
-        <ChatHeader isSidebarOpen={isSidebarOpen} title={chatTitle} />
+        <ChatHeader 
+          isSidebarOpen={isSidebarOpen} 
+          title={chatTitle}
+          campaignId={campaignId || undefined}
+          campaignName={campaignName || undefined}
+        />
         
         <div className="flex h-full flex-col justify-between pt-[60px] pb-4">
-          <MessageList 
-            messages={messages} 
-            onActionClick={handleActionClick} 
-            onPillClick={handlePillClick}
-          />
+          {messages.length === 0 ? (
+            <div className="flex-1 flex flex-col items-center justify-center p-4">
+              <h2 className="text-2xl font-bold text-white mb-8">Adgentic Chat Assistant</h2>
+              <ChatActionPills onPillClick={handlePillClick} className="mb-8" />
+            </div>
+          ) : (
+            <MessageList 
+              messages={messages} 
+              onActionClick={handleActionClick} 
+              onPillClick={handlePillClick}
+            />
+          )}
           <div className="space-y-4 mt-auto px-4">
             <div className="w-full max-w-3xl mx-auto">
               <ChatInput onSend={handleSendMessage} isLoading={isLoading} />
