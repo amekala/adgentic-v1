@@ -316,18 +316,34 @@ export const useCurrentChat = () => {
         throw new Error('Invalid JSON response from API');
       }
       
-      // Validate the response structure
-      if (!aiResponse || !aiResponse.content) {
-        console.error('Invalid AI response structure:', aiResponse);
-        throw new Error('AI response missing required content');
+      // Validate the response structure and extract content, handling different response formats
+      let responseContent = "I couldn't generate a response.";
+      
+      if (aiResponse) {
+        if (typeof aiResponse.content === 'string') {
+          responseContent = aiResponse.content;
+        } else if (aiResponse.error && typeof aiResponse.content === 'string') {
+          // If there's an error but also content (from our fallback)
+          responseContent = aiResponse.content;
+        } else if (aiResponse.choices && aiResponse.choices[0]?.message?.content) {
+          // Handle direct OpenAI response format
+          responseContent = aiResponse.choices[0].message.content;
+        } else {
+          console.warn('Unexpected response format:', aiResponse);
+          responseContent = "Received an unexpected response format from the server. Please try again.";
+        }
+      } else {
+        console.error('Empty AI response');
       }
+      
+      console.log('Using content for response:', responseContent.substring(0, 100) + '...');
       
       // Replace thinking message with actual response
       setMessages(prev => 
         prev.map(msg => 
           msg === thinkingMessage ? {
             role: 'assistant',
-            content: aiResponse.content || "I couldn't generate a response."
+            content: responseContent
           } : msg
         )
       );
@@ -338,7 +354,7 @@ export const useCurrentChat = () => {
         .insert({
           chat_id: chatId,
           role: 'assistant',
-          content: aiResponse.content || "I couldn't generate a response."
+          content: responseContent
         });
         
       if (error) throw error;

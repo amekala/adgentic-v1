@@ -1,18 +1,21 @@
 
-// Follow this setup guide to integrate the Deno runtime into your application:
-// https://deno.land/manual/examples/deploy_deno
-// Learn more about Deno: https://deno.land/
-
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 
-// OpenAI integration
+// OpenAI integration - only require one API key
 const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
-const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
 
 interface ChatMessage {
   role: "system" | "user" | "assistant";
   content: string;
+}
+
+// Simple dummy response generator for testing connection
+function generateDummyResponse(text: string) {
+  return {
+    content: `This is a test response from the Supabase Edge Function. We received your message: "${text}"`,
+    model: "dummy-test-model",
+  };
 }
 
 serve(async (req) => {
@@ -25,12 +28,6 @@ serve(async (req) => {
     // Log request details for debugging
     console.log(`Processing chat request from ${req.headers.get("origin") || "unknown origin"}`);
     
-    // Check if API keys are available
-    if (!OPENAI_API_KEY && !ANTHROPIC_API_KEY) {
-      console.error("Missing API keys: Both OpenAI and Anthropic API keys are missing");
-      throw new Error("API configuration missing. Contact administrator.");
-    }
-
     // Parse request body
     const requestData = await req.json().catch(err => {
       console.error("Failed to parse request JSON:", err);
@@ -46,15 +43,22 @@ serve(async (req) => {
     // Log messages for debugging
     console.log(`Received ${requestData.messages.length} messages for processing`);
     
-    // Decide which API to use - prefer OpenAI if available
+    // First, try with OpenAI if available
     let response;
     
     if (OPENAI_API_KEY) {
       console.log("Using OpenAI for response generation");
-      response = await generateOpenAIResponse(requestData.messages);
-    } else if (ANTHROPIC_API_KEY) {
-      console.log("Using Anthropic for response generation");
-      response = await generateAnthropicResponse(requestData.messages);
+      try {
+        response = await generateOpenAIResponse(requestData.messages);
+      } catch (openaiError) {
+        console.error("OpenAI error, falling back to dummy response:", openaiError);
+        // Fall back to dummy response
+        response = generateDummyResponse(requestData.messages[requestData.messages.length - 1].content);
+      }
+    } else {
+      // No API key - use dummy response for testing
+      console.log("No API keys available, using dummy response for testing");
+      response = generateDummyResponse(requestData.messages[requestData.messages.length - 1].content);
     }
 
     // Format and return the response
@@ -66,8 +70,10 @@ serve(async (req) => {
     // Properly handle and log errors
     console.error("Chat function error:", error.message || "Unknown error");
     
+    // Even on error, return a valid response object to avoid client parsing errors
     return new Response(
       JSON.stringify({
+        content: `Error: ${error.message || "Unknown error occurred"}. This is a fallback response to prevent UI breakage.`,
         error: error.message || "Unknown error occurred",
         status: "error",
       }),
@@ -120,49 +126,5 @@ async function generateOpenAIResponse(messages: ChatMessage[]) {
   } catch (error) {
     console.error("Error calling OpenAI:", error);
     throw new Error(`OpenAI processing error: ${error.message}`);
-  }
-}
-
-// Function to generate responses with Anthropic (fallback)
-async function generateAnthropicResponse(messages: ChatMessage[]) {
-  console.log("Generating Anthropic response");
-  
-  try {
-    // Format messages for Anthropic API
-    const anthropicMessages = messages.map(msg => ({
-      role: msg.role === "assistant" ? "assistant" : "user",
-      content: msg.content
-    }));
-
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "x-api-key": `${ANTHROPIC_API_KEY}`,
-        "anthropic-version": "2023-06-01",
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "claude-3-sonnet-20240229",
-        messages: anthropicMessages,
-        max_tokens: 800,
-      }),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`Anthropic API error (${response.status}):`, errorText);
-      throw new Error(`Anthropic API error: ${response.status} ${errorText.substring(0, 100)}...`);
-    }
-
-    const data = await response.json();
-    console.log("Anthropic response received successfully");
-    
-    return {
-      content: data.content[0].text,
-      model: data.model,
-    };
-  } catch (error) {
-    console.error("Error calling Anthropic:", error);
-    throw new Error(`Anthropic processing error: ${error.message}`);
   }
 }
