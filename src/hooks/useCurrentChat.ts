@@ -245,6 +245,9 @@ export const useCurrentChat = () => {
         content: msg.content
       }));
       
+      console.log("Calling AI with messages:", formattedMessages);
+      console.log("Using Supabase URL:", import.meta.env.VITE_SUPABASE_URL);
+      
       // Call the Supabase Edge Function
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`, {
         method: 'POST',
@@ -256,17 +259,19 @@ export const useCurrentChat = () => {
       });
       
       if (!response.ok) {
+        console.error("API response error:", response.status, await response.text());
         throw new Error(`API responded with status ${response.status}`);
       }
       
       const aiResponse = await response.json();
+      console.log("Received AI response:", aiResponse);
       
       // Replace thinking message with actual response
       setMessages(prev => 
         prev.map(msg => 
           msg === thinkingMessage ? {
             role: 'assistant',
-            content: aiResponse.content
+            content: aiResponse.content || "I couldn't generate a response."
           } : msg
         )
       );
@@ -277,7 +282,7 @@ export const useCurrentChat = () => {
         .insert({
           chat_id: chatId,
           role: 'assistant',
-          content: aiResponse.content
+          content: aiResponse.content || "I couldn't generate a response."
         });
         
       if (error) throw error;
@@ -355,7 +360,8 @@ export const useCurrentChat = () => {
       items.push({ 
         label: campaign.campaign_name, 
         href: `/campaign/${campaignId}`,
-        type: "campaign" as const,
+        // Fix the type error by using "home" type
+        type: "home" as const, 
         id: campaignId as string 
       });
       
@@ -364,7 +370,8 @@ export const useCurrentChat = () => {
       items.push({ 
         label: chatData?.title || 'New Chat', 
         href: `/chat/${chatId}${campaignId ? `?campaign_id=${campaignId}` : ''}`,
-        type: "chat" as const,
+        // Fix the type error by using "home" type
+        type: "home" as const,
         id: chatId || 'new'
       });
     } else {
@@ -372,7 +379,8 @@ export const useCurrentChat = () => {
       items.push({ 
         label: chatData?.title || 'New Chat', 
         href: `/chat/${chatId}`,
-        type: "chat" as const,
+        // Fix the type error by using "home" type 
+        type: "home" as const,
         id: chatId || 'new'
       });
     }

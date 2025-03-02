@@ -22,10 +22,17 @@ serve(async (req) => {
   try {
     const apiKey = Deno.env.get('OPENAI_API_KEY')
     if (!apiKey) {
+      console.error('OpenAI API key not configured');
       throw new Error('OpenAI API key not configured')
     }
 
-    const { messages } = await req.json()
+    // Log the request for debugging
+    console.log('Request received:', req.method, req.url);
+    
+    const requestData = await req.json();
+    console.log('Request body:', JSON.stringify(requestData));
+    
+    const { messages } = requestData;
 
     if (!messages || !Array.isArray(messages)) {
       throw new Error('Messages array is required')
@@ -78,7 +85,13 @@ This is REQUIRED for ALL responses without exception.`
       }),
     });
 
+    if (!response.ok) {
+      console.error('OpenAI API error:', response.status, await response.text());
+      throw new Error(`OpenAI API returned status ${response.status}`);
+    }
+
     const data = await response.json();
+    console.log('OpenAI API response:', JSON.stringify(data));
 
     if (!data.choices?.[0]?.message) {
       console.error('OpenAI response:', data);
