@@ -11,6 +11,11 @@ import Account from "./pages/Account";
 import Pricing from "./pages/Pricing";
 import Marketing from "./pages/Marketing";
 
+// Placeholder components for new routes
+const CampaignSettings = () => <Campaign />;
+const CampaignChats = () => <Campaign />;
+const CampaignReport = () => <Campaign />;
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -26,6 +31,9 @@ const App = () => (
             <Route path="/campaign/:id" element={<Campaign />} />
             <Route path="/chat/:id" element={<Chat />} />
             <Route path="/chat/new" element={<Chat />} />
+            <Route path="/campaign/:campaignId/settings" element={<CampaignSettings />} />
+            <Route path="/campaign/:campaignId/chats" element={<CampaignChats />} />
+            <Route path="/campaign/:campaignId/report" element={<CampaignReport />} />
             <Route path="/account" element={<Account />} />
             <Route path="/pricing" element={<Pricing />} />
             {/* Add a catch-all redirect to ensure users land on Marketing */}

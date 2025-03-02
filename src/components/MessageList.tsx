@@ -29,7 +29,7 @@ const MessageList = ({ messages, onActionClick, onPillClick }: MessageListProps)
   }, [messages]);
 
   return (
-    <div className="flex-1 overflow-y-auto bg-white">
+    <div className="flex-1 overflow-y-auto bg-adgentic-lightGray">
       <div className="w-full">
         {messages.length === 0 ? (
           <div className="pt-8 px-4">

@@ -39,6 +39,9 @@ export default {
           accent: "#2563eb", // blue-600
           hover: "#f1f5f9",
           border: "#e5e5e5", // Lighter border color
+          white: "#ffffff",  // White
+          lightGray: "#f7f7f8", // Light gray background
+          inputBg: "#ffffff", // White input background
           text: {
             primary: "#343541", // Main text color
             secondary: "#6e6e80", // Secondary text color

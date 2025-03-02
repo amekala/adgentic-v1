@@ -5,6 +5,7 @@ import Sidebar from '@/components/Sidebar';
 import ChatHeader from '@/components/ChatHeader';
 import ChatContainer from '@/components/ChatContainer';
 import { useChat } from '@/hooks/useChat';
+import Breadcrumb from '@/components/Breadcrumb';
 
 const Chat = () => {
   const { id: chatId } = useParams();
@@ -45,8 +46,21 @@ const Chat = () => {
     navigate('/campaign/new');
   };
 
+  // Prepare breadcrumb items
+  const breadcrumbItems = [
+    { label: "Home", href: "/app" },
+  ];
+  
+  if (effectiveCampaignId && campaignName) {
+    breadcrumbItems.push({ label: campaignName, href: `/campaign/${effectiveCampaignId}` });
+  }
+  
+  if (chatTitle) {
+    breadcrumbItems.push({ label: chatTitle, href: `/chat/${chatId}` });
+  }
+
   return (
-    <div className="flex h-screen bg-[#343541]">
+    <div className="flex h-screen bg-adgentic-white">
       <Sidebar 
         isOpen={isSidebarOpen} 
         onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -54,7 +68,7 @@ const Chat = () => {
         onNewCampaign={handleNewCampaign}
       />
       
-      <main className={`flex-1 transition-all duration-300 ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}>
+      <main className={`flex-1 transition-all duration-300 ${isSidebarOpen ? 'ml-64' : 'ml-0'} flex flex-col`}>
         <ChatHeader 
           isSidebarOpen={isSidebarOpen} 
           title={chatTitle}
@@ -62,16 +76,24 @@ const Chat = () => {
           campaignName={campaignName || undefined}
         />
         
-        <ChatContainer
-          messages={messages}
-          setMessages={setMessages}
-          isLoading={isLoading}
-          setIsLoading={setIsLoading}
-          chatId={chatId}
-          campaignId={effectiveCampaignId}
-          campaignName={campaignName}
-          setChatTitle={setChatTitle}
-        />
+        {/* Breadcrumb navigation */}
+        <div className="pt-[60px]">
+          <Breadcrumb items={breadcrumbItems} />
+        </div>
+        
+        {/* Flex container for messages and input */}
+        <div className="flex-1 flex flex-col">
+          <ChatContainer
+            messages={messages}
+            setMessages={setMessages}
+            isLoading={isLoading}
+            setIsLoading={setIsLoading}
+            chatId={chatId}
+            campaignId={effectiveCampaignId}
+            campaignName={campaignName}
+            setChatTitle={setChatTitle}
+          />
+        </div>
       </main>
     </div>
   );

@@ -4,7 +4,7 @@
 @tailwind utilities;
 
 body {
-  @apply bg-adgentic-main text-adgentic-text-primary;
+  @apply bg-adgentic-white text-adgentic-text-primary;
 }
 
 .dark-theme {
@@ -42,4 +42,12 @@ body {
 
 .ticker {
   animation: ticker 30s linear infinite;
+}
+
+.glass {
+  @apply bg-white/10 backdrop-blur-lg border border-adgentic-border rounded-xl;
+}
+
+.card-gradient {
+  @apply bg-gradient-to-br from-white to-adgentic-secondary/80 backdrop-blur-sm;
 }
