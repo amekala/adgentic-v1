@@ -149,10 +149,14 @@ const Campaign = () => {
     { id: '4', label: 'ACOS', value: '15.2%', timeframe: 'Last 30 days' }
   ];
 
-  // Breadcrumb items
+  // Breadcrumb items with enhanced styling
   const breadcrumbItems = [
     { label: "Home", href: "/app" },
-    { label: campaignName, href: `/campaign/${campaignId}` },
+    { 
+      label: campaignName, 
+      href: `/campaign/${campaignId}`,
+      isCampaign: true 
+    },
   ];
 
   return (

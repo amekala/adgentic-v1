@@ -27,36 +27,29 @@ const CampaignListItem = ({
 }: CampaignListItemProps) => {
   const navigate = useNavigate();
 
+  // Click handler for the entire campaign row
+  const handleCampaignClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigate(`/campaign/${campaign.id}`);
+  };
+
+  // Click handler just for the toggle arrow
+  const handleToggleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onToggle(campaign.id);
+  };
+
   return (
     <div className="mb-1">
       <div 
         className="flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-adgentic-hover cursor-pointer text-sm text-adgentic-text-secondary"
+        onClick={handleCampaignClick}
       >
-        <div 
-          className="cursor-pointer"
-          onClick={(e) => {
-            e.stopPropagation();
-            navigate(`/campaign/${campaign.id}`);
-          }}
-        >
-          <FolderOpen className="h-4 w-4 min-w-4 text-adgentic-text-secondary" />
-        </div>
-        <span 
-          className="truncate flex-1 cursor-pointer"
-          onClick={(e) => {
-            e.stopPropagation();
-            navigate(`/campaign/${campaign.id}`);
-          }}
-        >
+        <FolderOpen className="h-4 w-4 min-w-4 text-adgentic-text-secondary" />
+        <span className="truncate flex-1">
           {campaign.campaign_name}
         </span>
-        <div 
-          className="cursor-pointer"
-          onClick={(e) => {
-            e.stopPropagation();
-            onToggle(campaign.id);
-          }}
-        >
+        <div onClick={handleToggleClick} className="p-1.5">
           {isExpanded ? 
             <ChevronDown className="h-3 w-3 min-w-3 text-adgentic-text-light" /> : 
             <ChevronRight className="h-3 w-3 min-w-3 text-adgentic-text-light" />}

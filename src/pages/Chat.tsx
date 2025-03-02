@@ -6,6 +6,7 @@ import ChatHeader from '@/components/ChatHeader';
 import ChatContainer from '@/components/ChatContainer';
 import { useChat } from '@/hooks/useChat';
 import Breadcrumb from '@/components/Breadcrumb';
+import { supabase } from '@/integrations/supabase/client';
 
 const Chat = () => {
   const { id: chatId } = useParams();
@@ -36,8 +37,31 @@ const Chat = () => {
     if (queryCampaignId) {
       console.log("Setting campaign ID from query param:", queryCampaignId);
       setEffectiveCampaignId(queryCampaignId);
+    } else {
+      // When fetching chat details, if we have a chat that belongs to a campaign
+      // the useChat hook will set campaignName, but we also need the ID
+      const getChatCampaignDetails = async () => {
+        if (chatId && chatId !== 'new') {
+          try {
+            const { data, error } = await supabase
+              .from('chats')
+              .select('campaign_id')
+              .eq('id', chatId)
+              .single();
+              
+            if (!error && data && data.campaign_id) {
+              console.log("Setting campaign ID from chat details:", data.campaign_id);
+              setEffectiveCampaignId(data.campaign_id);
+            }
+          } catch (err) {
+            console.error("Error fetching chat campaign details:", err);
+          }
+        }
+      };
+      
+      getChatCampaignDetails();
     }
-  }, [queryCampaignId]);
+  }, [chatId, queryCampaignId]);
 
   // Fetch messages when chatId or campaign changes
   useEffect(() => {
@@ -49,26 +73,45 @@ const Chat = () => {
     navigate('/campaign/new');
   };
 
-  // Prepare breadcrumb items - always maintain Home > Campaign > Chat structure
-  let breadcrumbItems = [
-    { label: "Home", href: "/app" },
-  ];
-  
-  // For campaign chats, always show the complete path
-  if (effectiveCampaignId && campaignName) {
-    breadcrumbItems.push({ 
-      label: campaignName, 
-      href: `/campaign/${effectiveCampaignId}` 
-    });
-  }
-  
-  // Always add chat to breadcrumb as the final item
-  if (chatTitle) {
-    breadcrumbItems.push({ 
-      label: chatTitle, 
-      href: `/chat/${chatId}` 
-    });
-  }
+  // Prepare breadcrumb items with a clear hierarchy
+  const breadcrumbItems = (() => {
+    // Start with home
+    const items = [
+      { 
+        label: "Home", 
+        href: "/app"
+      }
+    ];
+    
+    // For campaign chats, ensure we show Home > Campaign > Chat
+    if (effectiveCampaignId && campaignName) {
+      items.push({ 
+        label: campaignName, 
+        href: `/campaign/${effectiveCampaignId}`,
+        isCampaign: true
+      });
+      
+      if (chatTitle) {
+        items.push({ 
+          label: chatTitle, 
+          href: `/chat/${chatId}`,
+          isChat: true
+        });
+      }
+    } else {
+      // For direct chats (not connected to campaigns)
+      // Show just Home > Chat
+      if (chatTitle) {
+        items.push({ 
+          label: chatTitle, 
+          href: `/chat/${chatId}`,
+          isChat: true
+        });
+      }
+    }
+    
+    return items;
+  })();
 
   return (
     <div className="flex h-screen bg-adgentic-white">

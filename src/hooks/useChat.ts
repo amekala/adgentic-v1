@@ -35,18 +35,25 @@ export const useChat = (chatId: string | undefined, campaignId: string | null) =
       // If campaign_id is in the URL, set it for context
       if (campaignId) {
         try {
-          const { data: campaignData } = await supabase
+          console.log('Fetching campaign data for new chat with campaign ID:', campaignId);
+          const { data: campaignData, error } = await supabase
             .from('campaigns')
             .select('campaign_name')
             .eq('id', campaignId)
             .single();
             
-          if (campaignData) {
+          if (error) {
+            console.error('Error fetching campaign data:', error);
+          } else if (campaignData) {
+            console.log('Found campaign name for new chat:', campaignData.campaign_name);
             setCampaignName(campaignData.campaign_name);
           }
         } catch (error) {
-          console.error('Error fetching campaign data:', error);
+          console.error('Exception fetching campaign data:', error);
         }
+      } else {
+        // Make sure we clear campaign name if no campaign ID
+        setCampaignName(null);
       }
       return;
     }

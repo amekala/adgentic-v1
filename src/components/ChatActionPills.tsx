@@ -37,7 +37,7 @@ const ChatActionPills = ({ onPillClick, className = '' }: ChatActionPillsProps) 
   return (
     <div className={`w-full max-w-3xl mx-auto ${className}`}>
       <div className="space-y-3">
-        <p className="text-sm text-gray-400">
+        <p className="text-sm text-adgentic-text-secondary">
           Get started with one of these topics, or ask me anything about your campaign:
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -45,9 +45,9 @@ const ChatActionPills = ({ onPillClick, className = '' }: ChatActionPillsProps) 
             <button
               key={suggestion.id}
               onClick={() => onPillClick?.(suggestion.message)}
-              className="flex items-center gap-3 px-4 py-3 rounded-lg bg-[#2F2F2F] hover:bg-[#383737] transition-colors text-sm text-gray-300 hover:text-white"
+              className="flex items-center gap-3 px-4 py-3 rounded-lg bg-adgentic-lightGray hover:bg-gray-200 transition-colors text-sm text-adgentic-text-primary"
             >
-              <div className="p-2 rounded-md bg-[#383737] group-hover:bg-[#444444]">
+              <div className="p-2 rounded-md bg-white border border-adgentic-border text-adgentic-accent">
                 {suggestion.icon}
               </div>
               <span>{suggestion.label}</span>
