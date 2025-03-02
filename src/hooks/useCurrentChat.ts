@@ -1,8 +1,8 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { BreadcrumbItem } from '@/components/Breadcrumb';
 
 interface Message {
   id?: string;
@@ -448,11 +448,11 @@ export const useCurrentChat = () => {
 
   // Breadcrumb items with proper type information
   const getBreadcrumbItems = () => {
-    const items = [
+    const items: BreadcrumbItem[] = [
       { 
         label: "Home", 
         href: "/app",
-        type: "home" as const,
+        type: "home",
         id: "home"
       },
     ];
@@ -462,7 +462,7 @@ export const useCurrentChat = () => {
       items.push({ 
         label: campaign.campaign_name, 
         href: `/campaign/${campaignId}`,
-        type: "campaign" as const, 
+        type: "campaign", 
         id: campaignId as string 
       });
       
@@ -471,7 +471,7 @@ export const useCurrentChat = () => {
       items.push({ 
         label: chatData?.title || 'New Chat', 
         href: `/chat/${chatId}${campaignId ? `?campaign_id=${campaignId}` : ''}`,
-        type: "chat" as const,
+        type: "chat",
         id: chatId || 'new'
       });
     } else {
@@ -479,7 +479,7 @@ export const useCurrentChat = () => {
       items.push({ 
         label: chatData?.title || 'New Chat', 
         href: `/chat/${chatId}`,
-        type: "chat" as const,
+        type: "chat",
         id: chatId || 'new'
       });
     }
