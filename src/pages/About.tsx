@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -169,9 +168,9 @@ const About = () => {
               <p className="max-w-xs">AI-powered retail media management that simplifies campaign creation and optimization.</p>
             </div>
             
-            <div className="grid grid-cols-2 md:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-1 gap-8">
               <div>
-                <h4 className="text-white font-medium mb-4">Product</h4>
+                <h4 className="text-white font-medium mb-4">Quick Links</h4>
                 <ul className="space-y-2">
                   <li><a href="/#features" className="hover:text-white transition-colors">Features</a></li>
                   <li><a href="/#pricing" className="hover:text-white transition-colors">Pricing</a></li>
@@ -179,25 +178,11 @@ const About = () => {
                   <li><a href="/about" className="hover:text-white transition-colors">About Us</a></li>
                 </ul>
               </div>
-              
-              <div>
-                <h4 className="text-white font-medium mb-4">Legal</h4>
-                <ul className="space-y-2">
-                  <li><a href="#" className="hover:text-white transition-colors">Terms</a></li>
-                  <li><a href="#" className="hover:text-white transition-colors">Privacy</a></li>
-                  <li><a href="#" className="hover:text-white transition-colors">Cookies</a></li>
-                </ul>
-              </div>
             </div>
           </div>
           
           <div className="border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center">
             <p>© 2023 Adspirer. All rights reserved. Owned by betsonagi, LLC.</p>
-            <div className="flex gap-4 mt-4 md:mt-0">
-              <a href="#" className="hover:text-white transition-colors">Terms</a>
-              <a href="#" className="hover:text-white transition-colors">Privacy</a>
-              <a href="#" className="hover:text-white transition-colors">Cookies</a>
-            </div>
           </div>
         </div>
       </footer>
