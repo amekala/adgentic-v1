@@ -23,3 +23,6 @@ enabled = true
 
 [functions.chat]
 verify_jwt = false
+
+[functions.campaign_chat]
+verify_jwt = false

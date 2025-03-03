@@ -275,7 +275,6 @@ export const useCurrentChat = () => {
       
       // Enhanced logging for debugging
       console.log(`Trying to get AI response from Edge Function...`);
-      console.log('Invoking Supabase Edge Function: chat');
       
       // Add context about whether this is a campaign chat
       const requestData = { 
@@ -286,8 +285,12 @@ export const useCurrentChat = () => {
         }
       };
       
-      // Call the Supabase Edge Function with enhanced request options
-      const response = await supabase.functions.invoke('chat', {
+      // Determine which edge function to call based on chat type
+      const functionName = campaignId ? 'campaign_chat' : 'chat';
+      console.log(`Invoking Supabase Edge Function: ${functionName}`);
+      
+      // Call the appropriate Supabase Edge Function with enhanced request options
+      const response = await supabase.functions.invoke(functionName, {
         body: requestData
       });
       
@@ -306,12 +309,17 @@ export const useCurrentChat = () => {
       
       // Get the response content
       let responseContent = "I couldn't generate a response.";
+      let actionButtons = [];
       const aiResponse = response.data;
       
       if (aiResponse) {
-        // Simple case - we got a direct content string
+        // Simple case - we got a direct content string with possible action buttons
         if (typeof aiResponse.content === 'string') {
           responseContent = aiResponse.content;
+          // Check if we received action buttons
+          if (aiResponse.actionButtons && Array.isArray(aiResponse.actionButtons)) {
+            actionButtons = aiResponse.actionButtons;
+          }
           console.log('Successfully received AI response:', responseContent.substring(0, 100) + '...');
         } 
         // Error case but with content (from fallback)
@@ -325,6 +333,10 @@ export const useCurrentChat = () => {
         // Our Edge Function returns OpenAI's message directly
         else if (aiResponse.role === 'assistant' && typeof aiResponse.content === 'string') {
           responseContent = aiResponse.content;
+          // Check if we received action buttons
+          if (aiResponse.actionButtons && Array.isArray(aiResponse.actionButtons)) {
+            actionButtons = aiResponse.actionButtons;
+          }
         }
         // Unexpected format
         else {
@@ -340,7 +352,8 @@ export const useCurrentChat = () => {
         prev.map(msg => 
           msg === thinkingMessage ? {
             role: 'assistant',
-            content: responseContent
+            content: responseContent,
+            actionButtons: actionButtons.length > 0 ? actionButtons : undefined
           } : msg
         )
       );
@@ -376,11 +389,17 @@ export const useCurrentChat = () => {
       // Generate a basic fallback response
       const userMessage = messageHistory[messageHistory.length - 1]?.content || '';
       let fallbackResponse = "I'm sorry, I couldn't connect to the AI service. Here is a basic response:";
+      let fallbackButtons = [];
       
-      if (userMessage.toLowerCase().includes('hello') || userMessage.toLowerCase().includes('hi')) {
-        fallbackResponse += "\n\nHello! I'm sorry, but I'm currently operating in fallback mode due to connection issues with the AI service. How can I assist you with basic information?";
-      } else if (userMessage.toLowerCase().includes('campaign')) {
+      if (campaignId) {
         fallbackResponse += "\n\nYour campaign is important! When the full AI service is available, I can provide detailed analytics and insights about your advertising campaigns.";
+        fallbackButtons = [
+          { label: 'Campaign Settings', primary: false },
+          { label: 'Performance Analysis', primary: true },
+          { label: 'Budget Allocation', primary: false }
+        ];
+      } else if (userMessage.toLowerCase().includes('hello') || userMessage.toLowerCase().includes('hi')) {
+        fallbackResponse += "\n\nHello! I'm sorry, but I'm currently operating in fallback mode due to connection issues with the AI service. How can I assist you with basic information?";
       } else {
         fallbackResponse += "\n\nI'm operating in fallback mode due to connection issues. Please try again later or check your network connection. You may need to check that your Supabase Edge Function is properly deployed.";
       }
@@ -390,7 +409,8 @@ export const useCurrentChat = () => {
         prev.map(msg => 
           msg.content === '...' ? {
             role: 'assistant',
-            content: fallbackResponse
+            content: fallbackResponse,
+            actionButtons: fallbackButtons.length > 0 ? fallbackButtons : undefined
           } : msg
         )
       );
