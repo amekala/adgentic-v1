@@ -1,7 +1,6 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { MessageProps } from '@/components/Message';
-import { callLLMAPI } from './llmService';
+import { generateChatResponse } from './llmService';
 import { toast } from "sonner";
 
 export const createNewChat = async (
@@ -172,7 +171,23 @@ export const sendMessage = async (
     await saveUserMessage(currentChatId!, content);
 
     // Call the LLM API to get a response
-    const assistantResponse = await callLLMAPI(content, messages, campaignId, campaignName);
+    const assistantResponse = await generateChatResponse(
+      messages.map(msg => ({
+        role: msg.role === 'user' || msg.role === 'assistant' || msg.role === 'system' 
+          ? msg.role 
+          : 'assistant',
+        content: msg.content
+      })).concat([{
+        role: 'user',
+        content
+      }]),
+      campaignId ? {
+        chatType: 'campaign',
+        campaignId,
+        campaignName
+      } : undefined
+    );
+    
     console.log('LLM API response:', assistantResponse);
 
     // Save the assistant's response to the database
