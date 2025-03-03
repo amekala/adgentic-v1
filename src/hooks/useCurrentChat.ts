@@ -258,8 +258,13 @@ export const useCurrentChat = () => {
     setMessages(prev => [...prev, thinkingMessage]);
     
     try {
+      // Ensure all messages are valid
+      const filteredHistory = messageHistory.filter(msg => 
+        msg && msg.role && msg.content
+      );
+      
       // Format messages for the AI
-      const formattedMessages = messageHistory.map(msg => ({
+      const formattedMessages = filteredHistory.map(msg => ({
         role: msg.role,
         content: msg.content
       }));
@@ -275,10 +280,26 @@ export const useCurrentChat = () => {
       
       // Enhanced logging for debugging
       console.log(`Trying to get AI response from Edge Function...`);
+      console.log(`Campaign ID: ${campaignId || 'none'}`);
+      console.log(`Campaign Name: ${campaign?.campaign_name || 'none'}`);
+      
+      // System message that will be prepended
+      const systemMessage = {
+        role: 'system' as const,
+        content: campaignId 
+          ? `You are Adgentic, an AI assistant specialized in advertising campaigns. This is a conversation about campaign: ${campaign?.campaign_name || 'unknown'}.`
+          : `You are Adgentic, an AI assistant specialized in advertising and marketing campaigns.`
+      };
+      
+      // Add system message and context
+      const completeMessages = [
+        systemMessage,
+        ...formattedMessages
+      ];
       
       // Add context about whether this is a campaign chat
       const requestData = { 
-        messages: formattedMessages,
+        messages: completeMessages,
         context: campaignId ? {
           chatType: 'campaign',
           campaignId,
@@ -289,18 +310,19 @@ export const useCurrentChat = () => {
       // Determine which edge function to call based on chat type
       const functionName = campaignId ? 'campaign_chat' : 'chat';
       console.log(`Invoking Supabase Edge Function: ${functionName}`);
+      console.log(`With data:`, JSON.stringify(requestData, null, 2));
       
-      // Call the appropriate Supabase Edge Function with enhanced request options
+      // Call the appropriate Supabase Edge Function
       const response = await supabase.functions.invoke(functionName, {
         body: requestData
       });
+      
+      console.log('Edge Function response received:', response);
       
       // Check if we received a response at all
       if (!response) {
         throw new Error('No response received from API');
       }
-      
-      console.log('Edge Function response:', response);
       
       // Handle error case
       if (response.error) {
@@ -308,67 +330,147 @@ export const useCurrentChat = () => {
         throw new Error(`API error: ${response.error.message || response.error}`);
       }
       
-      // Get the response content
-      let responseContent = "I couldn't generate a response.";
-      let actionButtons = [];
-      const aiResponse = response.data;
+      // The raw AI response data
+      const responseData = response.data;
+      console.log('Raw response data:', responseData);
       
-      if (aiResponse) {
-        // Simple case - we got a direct content string with possible action buttons
-        if (typeof aiResponse.content === 'string') {
-          responseContent = aiResponse.content;
-          // Check if we received action buttons
-          if (aiResponse.actionButtons && Array.isArray(aiResponse.actionButtons)) {
-            actionButtons = aiResponse.actionButtons;
-          }
-          console.log('Successfully received AI response:', responseContent.substring(0, 100) + '...');
-        } 
-        // Error case but with content (from fallback)
-        else if (aiResponse.error && typeof aiResponse.content === 'string') {
-          responseContent = aiResponse.content;
-        } 
-        // Standard OpenAI API direct response format
-        else if (aiResponse.choices && aiResponse.choices[0]?.message?.content) {
-          responseContent = aiResponse.choices[0].message.content;
-        }
-        // Our Edge Function returns OpenAI's message directly
-        else if (aiResponse.role === 'assistant' && typeof aiResponse.content === 'string') {
-          responseContent = aiResponse.content;
-          // Check if we received action buttons
-          if (aiResponse.actionButtons && Array.isArray(aiResponse.actionButtons)) {
-            actionButtons = aiResponse.actionButtons;
-          }
-        }
-        // Unexpected format
-        else {
-          console.warn('Unexpected response format:', aiResponse);
-          responseContent = "Received an unexpected response format from the server. Please try again.";
-        }
-      } else {
-        console.error('Empty AI response');
+      if (!responseData) {
+        throw new Error('No data in API response');
       }
       
+      // Initialize with defaults
+      let responseContent = "I couldn't generate a response.";
+      let actionButtons: any[] = [];
+      let responseTitle: string | undefined = undefined;
+      
+      // Handle different response formats
+      if (typeof responseData === 'string') {
+        // Plain string response
+        responseContent = responseData;
+      } 
+      else if (responseData.content && typeof responseData.content === 'string') {
+        // Object with content field ({content: "..."})
+        responseContent = responseData.content;
+        
+        // Check for action buttons in the response
+        if (responseData.actionButtons && Array.isArray(responseData.actionButtons)) {
+          actionButtons = responseData.actionButtons;
+        }
+        
+        // Check for title in the response
+        if (responseData.title) {
+          responseTitle = responseData.title;
+        }
+      }
+      else if (responseData.role === 'assistant' && responseData.content) {
+        // Format from campaign_chat edge function: {role: "assistant", content: "..."}
+        responseContent = responseData.content;
+        
+        // Campaign chat includes action buttons
+        if (responseData.actionButtons && Array.isArray(responseData.actionButtons)) {
+          actionButtons = responseData.actionButtons;
+        }
+      }
+      else if (responseData.choices && responseData.choices[0] && responseData.choices[0].message) {
+        // Raw OpenAI API format
+        responseContent = responseData.choices[0].message.content;
+      }
+      else {
+        console.warn('Unexpected response format:', responseData);
+        responseContent = "Received an unexpected response format. Please try again.";
+      }
+      
+      // Extract structured data from response if it contains JSON
+      if (typeof responseContent === 'string' && 
+         (responseContent.includes('```json') || responseContent.includes('```'))) {
+        try {
+          // Look for JSON blocks in the response
+          const jsonMatch = responseContent.match(/```json\n([\s\S]*?)\n```/) || 
+                          responseContent.match(/```([\s\S]*?)```/);
+                          
+          if (jsonMatch && jsonMatch[1]) {
+            // Parse the JSON
+            const jsonString = jsonMatch[1].trim();
+            const structuredData = JSON.parse(jsonString);
+            
+            console.log('Found structured data in response:', structuredData);
+            
+            // Extract parts from the structured data
+            if (structuredData.title) {
+              responseTitle = structuredData.title;
+            }
+            
+            if (structuredData.content) {
+              // Replace content with the cleaned version from JSON
+              responseContent = structuredData.content;
+            } else {
+              // Remove the JSON block from the content
+              responseContent = responseContent.replace(/```json\n[\s\S]*?\n```/, '').trim() || 
+                              responseContent.replace(/```[\s\S]*?```/, '').trim();
+            }
+            
+            // Use action buttons from structured data if available
+            if (structuredData.actionButtons && Array.isArray(structuredData.actionButtons)) {
+              actionButtons = structuredData.actionButtons;
+            }
+          }
+        } catch (e) {
+          console.error('Error parsing JSON from response:', e);
+          // If parsing fails, use the full content
+        }
+      }
+      
+      // Ensure the content is not empty
+      if (!responseContent || responseContent.trim() === '') {
+        responseContent = "I received an empty response from the server. Please try again.";
+      }
+      
+      // Build the complete assistant message
+      const assistantResponse: Message = {
+        role: 'assistant',
+        content: responseContent.trim()
+      };
+      
+      // Add optional properties if available
+      if (responseTitle) {
+        assistantResponse.title = responseTitle;
+      }
+      
+      if (actionButtons.length > 0) {
+        assistantResponse.actionButtons = actionButtons;
+      }
+      
+      console.log('Final assistant response:', assistantResponse);
+      
       // Replace thinking message with actual response
-      setMessages(prev => 
-        prev.map(msg => 
-          msg === thinkingMessage ? {
-            role: 'assistant',
-            content: responseContent,
-            actionButtons: actionButtons.length > 0 ? actionButtons : undefined
-          } : msg
-        )
-      );
+      setMessages(prev => prev.map(msg => msg === thinkingMessage ? assistantResponse : msg));
+      
+      // Prepare the message for database storage
+      const dbMessage = {
+        chat_id: chatId,
+        role: 'assistant',
+        content: assistantResponse.content
+      };
+      
+      // Add actionbuttons if available
+      if (assistantResponse.actionButtons && assistantResponse.actionButtons.length > 0) {
+        try {
+          // Convert to string for storage
+          const actionButtonsString = JSON.stringify(assistantResponse.actionButtons);
+          // @ts-ignore - actionbuttons is available in the DB but not typed
+          dbMessage.actionbuttons = assistantResponse.actionButtons;
+        } catch (e) {
+          console.error('Error serializing action buttons:', e);
+        }
+      }
       
       // Save AI response to database
       const { error } = await supabase
         .from('chat_messages')
-        .insert({
-          chat_id: chatId,
-          role: 'assistant',
-          content: responseContent
-        });
+        .insert(dbMessage);
         
       if (error) throw error;
+      
     } catch (error) {
       console.error('Error getting AI response:', error);
       
@@ -418,13 +520,21 @@ export const useCurrentChat = () => {
       
       // Save fallback response to database
       try {
+        const dbMessage = {
+          chat_id: chatId,
+          role: 'assistant',
+          content: fallbackResponse
+        };
+        
+        // Add actionbuttons if available
+        if (fallbackButtons.length > 0) {
+          // @ts-ignore
+          dbMessage.actionbuttons = fallbackButtons;
+        }
+        
         await supabase
           .from('chat_messages')
-          .insert({
-            chat_id: chatId,
-            role: 'assistant',
-            content: fallbackResponse
-          });
+          .insert(dbMessage);
       } catch (dbError) {
         console.error('Failed to save fallback response to database:', dbError);
       }

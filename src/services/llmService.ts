@@ -11,9 +11,16 @@ export const callLLMAPI = async (
 ): Promise<MessageProps> => {
   try {
     console.log('Calling LLM API with message:', userMessage);
+    console.log('Using campaignId:', campaignId);
+    console.log('Using campaignName:', campaignName);
+    
+    // Filter out any undefined or null messages
+    const filteredMessages = previousMessages.filter(msg => 
+      msg && msg.role && msg.content
+    );
     
     // Prepare messages in the format expected by the Edge Function
-    const messageHistory = previousMessages.map(msg => ({
+    const messageHistory = filteredMessages.map(msg => ({
       role: msg.role as "user" | "assistant" | "system",
       content: msg.content
     }));
@@ -64,14 +71,17 @@ export const callLLMAPI = async (
                Always respond with structured, well-formatted information. Start every response with an informative title.`
     };
     
-    // Add the new user message
-    messageHistory.unshift(systemMessage);
-    messageHistory.push({
-      role: 'user' as const,
-      content: userMessage
-    });
+    // Create a new history array instead of modifying the original
+    const completeMessageHistory = [
+      systemMessage,
+      ...messageHistory,
+      {
+        role: 'user' as const,
+        content: userMessage
+      }
+    ];
     
-    console.log('Sending message history to edge function:', messageHistory);
+    console.log('Sending message history to edge function:', completeMessageHistory);
     
     // Determine which edge function to call based on chat type
     const functionName = campaignId ? 'campaign_chat' : 'chat';
@@ -80,7 +90,7 @@ export const callLLMAPI = async (
     // Call the appropriate Supabase Edge Function
     const { data, error } = await supabase.functions.invoke(functionName, {
       body: { 
-        messages: messageHistory,
+        messages: completeMessageHistory,
         context: campaignId ? { 
           campaignId, 
           campaignName,
@@ -96,42 +106,79 @@ export const callLLMAPI = async (
     
     console.log('Raw response from Edge Function:', data);
     
-    // Process the response from the LLM
-    // The Edge Function should return an object with role and content
+    // Handle the response from the edge function
+    // The response structure may be different between regular and campaign chats
     let assistantMessage: MessageProps = {
       role: 'assistant',
       content: 'I apologize, but I encountered an issue processing your request.'
     };
     
-    if (data && data.content) {
-      // Extract structured data if present
-      const structuredData = extractStructuredData(data.content);
-      
-      // Make sure we construct a valid MessageProps object
-      assistantMessage = {
-        role: 'assistant',
-        content: structuredData.content || '',
-      };
-      
-      // Only add optional properties if they exist and are valid
-      if (structuredData.title) {
-        assistantMessage.title = structuredData.title;
-      }
-      
-      if (Array.isArray(structuredData.metrics) && structuredData.metrics.length > 0) {
-        assistantMessage.metrics = structuredData.metrics;
-      }
-      
-      if (Array.isArray(structuredData.actionButtons) && structuredData.actionButtons.length > 0) {
-        assistantMessage.actionButtons = structuredData.actionButtons;
-      }
-      
-      // Clean up any leftover formatting issues
-      assistantMessage.content = assistantMessage.content.trim();
-      
-      // Log the processed message before returning
-      console.log('Processed assistant message:', assistantMessage);
+    if (!data) {
+      console.error('No data received from edge function');
+      throw new Error('No response data received from AI service');
     }
+    
+    // Handle different possible response formats
+    if (typeof data === 'string') {
+      // Direct string response
+      assistantMessage.content = data;
+    } 
+    else if (data.content) {
+      // Most common format: {content: "..."}
+      assistantMessage.content = data.content;
+      
+      // If the edge function returns actionButtons directly, use them
+      if (data.actionButtons && Array.isArray(data.actionButtons)) {
+        assistantMessage.actionButtons = data.actionButtons;
+      }
+      
+      // Extract structured data from the content if it contains JSON
+      if (typeof data.content === 'string' && 
+          (data.content.includes('```json') || data.content.includes('```'))) {
+        const structuredData = extractStructuredData(data.content);
+        
+        // Use structured data if available
+        if (structuredData.title) {
+          assistantMessage.title = structuredData.title;
+        }
+        
+        if (structuredData.content) {
+          assistantMessage.content = structuredData.content;
+        }
+        
+        if (Array.isArray(structuredData.metrics) && structuredData.metrics.length > 0) {
+          assistantMessage.metrics = structuredData.metrics;
+        }
+        
+        if (Array.isArray(structuredData.actionButtons) && structuredData.actionButtons.length > 0) {
+          assistantMessage.actionButtons = structuredData.actionButtons;
+        }
+      }
+    }
+    else if (data.role === 'assistant' && data.content) {
+      // Format from campaign_chat function: {role: "assistant", content: "..."}
+      assistantMessage.content = data.content;
+      
+      // Use action buttons directly from campaign_chat response
+      if (data.actionButtons && Array.isArray(data.actionButtons)) {
+        assistantMessage.actionButtons = data.actionButtons;
+      }
+    }
+    else if (data.choices && data.choices[0] && data.choices[0].message) {
+      // Raw OpenAI API format
+      assistantMessage.content = data.choices[0].message.content;
+    }
+    
+    // Clean up the content
+    assistantMessage.content = (assistantMessage.content || '').trim();
+    
+    // Ensure we always have content
+    if (!assistantMessage.content) {
+      assistantMessage.content = "I received an empty response. Please try again.";
+    }
+    
+    // Log the processed message before returning
+    console.log('Processed assistant message:', assistantMessage);
     
     return assistantMessage;
   } catch (error) {
