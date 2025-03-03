@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -58,8 +59,11 @@ const About = () => {
             <p className="text-lg text-gray-700 mb-6">
               At Adspirer, we're on a mission to revolutionize how brands approach retail media advertising. We believe that AI can transform complex campaign management into intuitive conversations, making retail media accessible to everyone.
             </p>
-            <p className="text-lg text-gray-700">
+            <p className="text-lg text-gray-700 mb-6">
               Our platform empowers marketers with intelligent insights and automated optimizations that were previously only available to those with technical expertise and large teams. With Adspirer, we're democratizing retail media excellence! 💪
+            </p>
+            <p className="text-lg text-gray-700">
+              Adspirer is proudly owned by betsonagi, LLC — committed to building innovative solutions for retail media challenges.
             </p>
           </div>
         </div>
