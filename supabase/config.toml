@@ -1,1 +1,27 @@
+
 project_id = "wllhsxoabzdzulomizzx"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "storage", "graphql_public"]
+
+[db]
+port = 54322
+
+[studio]
+port = 54323
+
+[inbucket]
+port = 54324
+
+[auth]
+enabled = true
+port = 54325
+uri = "http://localhost:54321/auth/v1"
+
+[storage]
+enabled = true
+
+[functions.chat]
+verify_jwt = false
