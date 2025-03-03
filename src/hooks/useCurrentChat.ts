@@ -279,10 +279,11 @@ export const useCurrentChat = () => {
       // Add context about whether this is a campaign chat
       const requestData = { 
         messages: formattedMessages,
-        context: {
-          chatType: campaignId ? 'campaign' : 'general',
-          campaignId: campaignId || null
-        }
+        context: campaignId ? {
+          chatType: 'campaign',
+          campaignId,
+          campaignName: campaign?.campaign_name || 'Unknown Campaign'
+        } : undefined
       };
       
       // Determine which edge function to call based on chat type

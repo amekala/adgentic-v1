@@ -73,9 +73,20 @@ export const callLLMAPI = async (
     
     console.log('Sending message history to edge function:', messageHistory);
     
-    // Call the Supabase Edge Function
-    const { data, error } = await supabase.functions.invoke('chat', {
-      body: { messages: messageHistory }
+    // Determine which edge function to call based on chat type
+    const functionName = campaignId ? 'campaign_chat' : 'chat';
+    console.log(`Invoking Supabase Edge Function: ${functionName}`);
+    
+    // Call the appropriate Supabase Edge Function
+    const { data, error } = await supabase.functions.invoke(functionName, {
+      body: { 
+        messages: messageHistory,
+        context: campaignId ? { 
+          campaignId, 
+          campaignName,
+          chatType: 'campaign' // Add chatType to ensure backward compatibility with both edge functions
+        } : undefined
+      }
     });
     
     if (error) {
