@@ -273,14 +273,22 @@ export const useCurrentChat = () => {
         throw new Error('Missing Supabase configuration. Check environment variables.');
       }
       
-      // Log details about the request
-      console.log(`Calling Supabase Edge Function at: ${supabaseUrl}/functions/v1/chat`);
-      console.log('Message history length:', messageHistory.length);
-      console.log("Calling AI with messages:", formattedMessages);
+      // Enhanced logging for debugging
+      console.log(`Trying to get AI response from Edge Function...`);
+      console.log('Invoking Supabase Edge Function: chat');
+      
+      // Add context about whether this is a campaign chat
+      const requestData = { 
+        messages: formattedMessages,
+        context: {
+          chatType: campaignId ? 'campaign' : 'general',
+          campaignId: campaignId || null
+        }
+      };
       
       // Call the Supabase Edge Function with enhanced request options
       const response = await supabase.functions.invoke('chat', {
-        body: { messages: formattedMessages }
+        body: requestData
       });
       
       // Check if we received a response at all
@@ -288,9 +296,7 @@ export const useCurrentChat = () => {
         throw new Error('No response received from API');
       }
       
-      // Fixed: Don't access status directly, check error property instead
-      console.log('API Response data:', response.data);
-      console.log('API Response error:', response.error);
+      console.log('Edge Function response:', response);
       
       // Handle error case
       if (response.error) {
@@ -306,6 +312,7 @@ export const useCurrentChat = () => {
         // Simple case - we got a direct content string
         if (typeof aiResponse.content === 'string') {
           responseContent = aiResponse.content;
+          console.log('Successfully received AI response:', responseContent.substring(0, 100) + '...');
         } 
         // Error case but with content (from fallback)
         else if (aiResponse.error && typeof aiResponse.content === 'string') {
@@ -327,8 +334,6 @@ export const useCurrentChat = () => {
       } else {
         console.error('Empty AI response');
       }
-      
-      console.log('Using content for response:', responseContent.substring(0, 100) + '...');
       
       // Replace thinking message with actual response
       setMessages(prev => 
