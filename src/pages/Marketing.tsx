@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ChevronRight, Check, Globe, BarChart2, Zap, ArrowRight, Search, PieChart, TrendingUp, Tag, AlertCircle, Plus } from 'lucide-react';
 import ContactForm from '@/components/ContactForm';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 
 const FEATURED_LOGOS = [
   "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b9/TechCrunch_logo.svg/512px-TechCrunch_logo.svg.png",
@@ -283,6 +284,8 @@ const Marketing = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 text-slate-900">
+      <SpeedInsights />
+      
       <nav className="flex items-center justify-between py-6 px-8 md:px-16">
         <div className="flex items-center gap-2">
           <div className="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center text-white">
@@ -613,31 +616,22 @@ const Marketing = () => {
               <p className="max-w-xs">AI-powered retail media management that simplifies campaign creation and optimization.</p>
             </div>
             
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-8">
+            <div className="grid grid-cols-2 md:grid-cols-2 gap-8">
               <div>
                 <h4 className="text-white font-medium mb-4">Product</h4>
                 <ul className="space-y-2">
                   <li><a href="#features" className="hover:text-white transition-colors">Features</a></li>
                   <li><a href="#pricing" className="hover:text-white transition-colors">Pricing</a></li>
-                  <li><a href="#" className="hover:text-white transition-colors">Integrations</a></li>
+                  <li><button onClick={handleContactClick} className="hover:text-white transition-colors text-left">Contact Us</button></li>
                 </ul>
               </div>
               
               <div>
-                <h4 className="text-white font-medium mb-4">Resources</h4>
+                <h4 className="text-white font-medium mb-4">Legal</h4>
                 <ul className="space-y-2">
-                  <li><a href="#" className="hover:text-white transition-colors">Blog</a></li>
-                  <li><a href="#" className="hover:text-white transition-colors">Documentation</a></li>
-                  <li><a href="#" className="hover:text-white transition-colors">Guides</a></li>
-                </ul>
-              </div>
-              
-              <div>
-                <h4 className="text-white font-medium mb-4">Company</h4>
-                <ul className="space-y-2">
-                  <li><a href="#" className="hover:text-white transition-colors">About Us</a></li>
-                  <li><a href="#" className="hover:text-white transition-colors">Contact</a></li>
-                  <li><a href="#" className="hover:text-white transition-colors">Careers</a></li>
+                  <li><a href="#" className="hover:text-white transition-colors">Terms</a></li>
+                  <li><a href="#" className="hover:text-white transition-colors">Privacy</a></li>
+                  <li><a href="#" className="hover:text-white transition-colors">Cookies</a></li>
                 </ul>
               </div>
             </div>
