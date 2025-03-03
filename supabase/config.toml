@@ -17,8 +17,6 @@ port = 54324
 
 [auth]
 enabled = true
-port = 54325
-uri = "http://localhost:54321/auth/v1"
 
 [storage]
 enabled = true
