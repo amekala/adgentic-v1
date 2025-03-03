@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -287,10 +288,11 @@ export const useCurrentChat = () => {
         throw new Error('No response received from API');
       }
       
-      console.log('API Response status:', response.status);
+      // Fixed: Don't access status directly, check error property instead
       console.log('API Response data:', response.data);
+      console.log('API Response error:', response.error);
       
-      // Handle error status
+      // Handle error case
       if (response.error) {
         console.error("API response error:", response.error);
         throw new Error(`API error: ${response.error.message || response.error}`);

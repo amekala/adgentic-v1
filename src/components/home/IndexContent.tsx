@@ -25,50 +25,46 @@ const IndexContent = ({ isSidebarOpen, onNewCampaign }: IndexContentProps) => {
     const messageLower = userMessage.toLowerCase();
     
     try {
-      // First try to get a response from the AI if we're not in a specific scenario
-      if (!messageLower.includes('performance') && 
-          !messageLower.includes('analytics') && 
-          !messageLower.includes('report') && 
-          !messageLower.includes('keyword') && 
-          !messageLower.includes('search terms') && 
-          !messageLower.includes('budget') && 
-          !messageLower.includes('spend') && 
-          !messageLower.includes('allocation') && 
-          !messageLower.includes('create') && 
-          !messageLower.includes('new campaign') && 
-          !messageLower.includes('setup')) {
+      // First try to get a response from the AI
+      try {
+        console.log("Trying to get AI response from Edge Function...");
         
         // Try to get a response from the Supabase Edge Function
-        try {
-          const response = await supabase.functions.invoke('chat', {
-            body: { 
-              messages: [
-                { 
-                  role: 'system', 
-                  content: 'You are Adgentic, an AI assistant specialized in advertising and marketing campaigns. Keep your response brief and concise, under 200 words.'
-                },
-                { role: 'user', content: userMessage }
-              ]
-            }
-          });
-          
-          if (response.data && response.data.content) {
-            return {
-              role: 'assistant' as const,
-              content: response.data.content,
-              actionButtons: [
-                { label: 'Performance Analysis', primary: false },
-                { label: 'Keyword Optimization', primary: false },
-                { label: 'Budget Allocation', primary: false },
-                { label: 'Create Campaign', primary: true }
-              ]
-            };
+        const response = await supabase.functions.invoke('chat', {
+          body: { 
+            messages: [
+              { 
+                role: 'system', 
+                content: 'You are Adgentic, an AI assistant specialized in advertising and marketing campaigns. Keep your response brief and concise, under 200 words.'
+              },
+              { role: 'user', content: userMessage }
+            ]
           }
-        } catch (error) {
-          console.error('Error calling AI service:', error);
-          // Fall back to hardcoded responses
+        });
+        
+        console.log("Edge Function response:", response);
+        
+        if (response.data && response.data.content) {
+          // If we get a successful response from the AI
+          return {
+            role: 'assistant' as const,
+            content: response.data.content,
+            actionButtons: [
+              { label: 'Performance Analysis', primary: false },
+              { label: 'Keyword Optimization', primary: false },
+              { label: 'Budget Allocation', primary: false },
+              { label: 'Create Campaign', primary: true }
+            ]
+          };
+        } else {
+          console.log("No content in response, falling back to scenario-based responses");
         }
+      } catch (error) {
+        console.error('Error calling AI service:', error);
+        // Fall back to scenario-based responses
       }
+      
+      // If AI response failed or not applicable, use scenario-based responses
       
       // Performance analysis scenario
       if (messageLower.includes('performance') || messageLower.includes('analytics') || messageLower.includes('report')) {

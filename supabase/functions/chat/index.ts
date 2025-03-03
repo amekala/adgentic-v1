@@ -19,16 +19,28 @@ serve(async (req) => {
   }
 
   try {
-    // Get OpenAI API key from environment variable
+    console.log("Chat function invoked");
+    
+    // Try OpenAI first, fallback to a basic response if not available
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
+    
+    // Log key status (safely)
+    console.log('OpenAI API key status:', openaiApiKey ? 'present' : 'missing');
+    
     if (!openaiApiKey) {
-      console.error('OpenAI API key not configured in Supabase secrets');
-      throw new Error('OpenAI API key not configured');
+      console.warn('No OpenAI API key found in environment');
+      // Return a helpful message without failing
+      return new Response(
+        JSON.stringify({
+          content: "I'm operating in fallback mode. To enable AI responses, please add an OpenAI API key to your Supabase Edge Function secrets."
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200
+        }
+      );
     }
 
-    // Log request details
-    console.log('Request received:', req.method, req.url);
-    
     // Parse the request body
     const { messages } = await req.json();
 
