@@ -1,4 +1,5 @@
 
+// Import necessary modules for Deno runtime
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 // Define CORS headers for cross-origin requests
@@ -21,7 +22,7 @@ serve(async (req) => {
   try {
     console.log("Chat function invoked");
     
-    // Try OpenAI first, fallback to a basic response if not available
+    // Get OpenAI API key from environment variables
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
     
     // Log key status (safely)
