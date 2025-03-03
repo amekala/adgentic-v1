@@ -7,10 +7,11 @@ import ActionButtons from '@/components/ActionButtons';
 import MessageList from '@/components/MessageList';
 import ChatActionPills from '@/components/ChatActionPills';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface IndexContentProps {
   isSidebarOpen: boolean;
-  onNewCampaign: () => void; // Add this prop to receive the function from parent
+  onNewCampaign: () => void;
 }
 
 const IndexContent = ({ isSidebarOpen, onNewCampaign }: IndexContentProps) => {
@@ -20,90 +21,146 @@ const IndexContent = ({ isSidebarOpen, onNewCampaign }: IndexContentProps) => {
   const navigate = useNavigate();
 
   // Enhanced responses for different marketing scenarios
-  const generateResponse = (userMessage: string) => {
+  const generateResponse = async (userMessage: string): Promise<MessageProps> => {
     const messageLower = userMessage.toLowerCase();
     
-    // Performance analysis scenario
-    if (messageLower.includes('performance') || messageLower.includes('analytics') || messageLower.includes('report')) {
+    try {
+      // First try to get a response from the AI if we're not in a specific scenario
+      if (!messageLower.includes('performance') && 
+          !messageLower.includes('analytics') && 
+          !messageLower.includes('report') && 
+          !messageLower.includes('keyword') && 
+          !messageLower.includes('search terms') && 
+          !messageLower.includes('budget') && 
+          !messageLower.includes('spend') && 
+          !messageLower.includes('allocation') && 
+          !messageLower.includes('create') && 
+          !messageLower.includes('new campaign') && 
+          !messageLower.includes('setup')) {
+        
+        // Try to get a response from the Supabase Edge Function
+        try {
+          const response = await supabase.functions.invoke('chat', {
+            body: { 
+              messages: [
+                { 
+                  role: 'system', 
+                  content: 'You are Adgentic, an AI assistant specialized in advertising and marketing campaigns. Keep your response brief and concise, under 200 words.'
+                },
+                { role: 'user', content: userMessage }
+              ]
+            }
+          });
+          
+          if (response.data && response.data.content) {
+            return {
+              role: 'assistant' as const,
+              content: response.data.content,
+              actionButtons: [
+                { label: 'Performance Analysis', primary: false },
+                { label: 'Keyword Optimization', primary: false },
+                { label: 'Budget Allocation', primary: false },
+                { label: 'Create Campaign', primary: true }
+              ]
+            };
+          }
+        } catch (error) {
+          console.error('Error calling AI service:', error);
+          // Fall back to hardcoded responses
+        }
+      }
+      
+      // Performance analysis scenario
+      if (messageLower.includes('performance') || messageLower.includes('analytics') || messageLower.includes('report')) {
+        return {
+          role: 'assistant' as const,
+          content: "Here's the performance data for your campaigns over the past 7 days:",
+          metrics: [
+            { label: 'Impressions', value: '142,587', improvement: true },
+            { label: 'Clicks', value: '3,842', improvement: true },
+            { label: 'CTR', value: '2.69%', improvement: true },
+            { label: 'ACOS', value: '15.8%', improvement: true },
+            { label: 'Spend', value: '$4,215', improvement: false },
+            { label: 'Sales', value: '$26,678', improvement: true }
+          ],
+          actionButtons: [
+            { label: 'View Detailed Report', primary: false },
+            { label: 'Optimize Campaigns', primary: true }
+          ]
+        };
+      }
+      
+      // Keyword optimization scenario
+      else if (messageLower.includes('keyword') || messageLower.includes('search terms')) {
+        return {
+          role: 'assistant' as const,
+          content: "Based on your campaign performance, I recommend the following keyword changes:",
+          metrics: [
+            { label: 'Under-performing Keywords', value: '8', improvement: false },
+            { label: 'Suggested New Keywords', value: '12', improvement: true },
+            { label: 'Potential CTR Increase', value: '23%', improvement: true },
+            { label: 'Estimated ACOS Impact', value: '-12%', improvement: true }
+          ],
+          actionButtons: [
+            { label: 'Review All Changes', primary: false },
+            { label: 'Apply Recommendations', primary: true }
+          ]
+        };
+      }
+      
+      // Budget allocation scenario
+      else if (messageLower.includes('budget') || messageLower.includes('spend') || messageLower.includes('allocation')) {
+        return {
+          role: 'assistant' as const,
+          content: "Based on ROAS analysis, I recommend the following budget allocation:",
+          metrics: [
+            { label: 'Amazon (current)', value: '65%', improvement: false },
+            { label: 'Amazon (recommended)', value: '50%', improvement: true },
+            { label: 'Walmart (current)', value: '25%', improvement: false },
+            { label: 'Walmart (recommended)', value: '30%', improvement: true },
+            { label: 'Instacart (current)', value: '10%', improvement: false },
+            { label: 'Instacart (recommended)', value: '20%', improvement: true }
+          ],
+          actionButtons: [
+            { label: 'Adjust Manually', primary: false },
+            { label: 'Apply Recommendations', primary: true }
+          ]
+        };
+      }
+      
+      // Campaign creation assistance
+      else if (messageLower.includes('create') || messageLower.includes('new campaign') || messageLower.includes('setup')) {
+        return {
+          role: 'assistant' as const,
+          content: "I'd be happy to help you set up a new campaign. What type of campaign are you looking to create?",
+          actionButtons: [
+            { label: 'Sponsored Products', primary: false },
+            { label: 'Sponsored Brands', primary: false },
+            { label: 'Sponsored Display', primary: false },
+            { label: 'Custom Campaign', primary: true }
+          ]
+        };
+      }
+      
+      // Default response for other queries
+      else {
+        return {
+          role: 'assistant' as const,
+          content: "I'm here to help optimize your retail media campaigns. You can ask me about performance analytics, keyword optimization, budget allocation, or campaign creation.",
+          actionButtons: [
+            { label: 'Performance Analysis', primary: false },
+            { label: 'Keyword Optimization', primary: false },
+            { label: 'Budget Allocation', primary: false },
+            { label: 'Create Campaign', primary: true }
+          ]
+        };
+      }
+    } catch (error) {
+      console.error('Error generating response:', error);
       return {
         role: 'assistant' as const,
-        content: "Here's the performance data for your campaigns over the past 7 days:",
-        metrics: [
-          { label: 'Impressions', value: '142,587', improvement: true },
-          { label: 'Clicks', value: '3,842', improvement: true },
-          { label: 'CTR', value: '2.69%', improvement: true },
-          { label: 'ACOS', value: '15.8%', improvement: true },
-          { label: 'Spend', value: '$4,215', improvement: false },
-          { label: 'Sales', value: '$26,678', improvement: true }
-        ],
+        content: "I'm sorry, I encountered an error processing your request. Please try again later.",
         actionButtons: [
-          { label: 'View Detailed Report', primary: false },
-          { label: 'Optimize Campaigns', primary: true }
-        ]
-      };
-    }
-    
-    // Keyword optimization scenario
-    else if (messageLower.includes('keyword') || messageLower.includes('search terms')) {
-      return {
-        role: 'assistant' as const,
-        content: "Based on your campaign performance, I recommend the following keyword changes:",
-        metrics: [
-          { label: 'Under-performing Keywords', value: '8', improvement: false },
-          { label: 'Suggested New Keywords', value: '12', improvement: true },
-          { label: 'Potential CTR Increase', value: '23%', improvement: true },
-          { label: 'Estimated ACOS Impact', value: '-12%', improvement: true }
-        ],
-        actionButtons: [
-          { label: 'Review All Changes', primary: false },
-          { label: 'Apply Recommendations', primary: true }
-        ]
-      };
-    }
-    
-    // Budget allocation scenario
-    else if (messageLower.includes('budget') || messageLower.includes('spend') || messageLower.includes('allocation')) {
-      return {
-        role: 'assistant' as const,
-        content: "Based on ROAS analysis, I recommend the following budget allocation:",
-        metrics: [
-          { label: 'Amazon (current)', value: '65%', improvement: false },
-          { label: 'Amazon (recommended)', value: '50%', improvement: true },
-          { label: 'Walmart (current)', value: '25%', improvement: false },
-          { label: 'Walmart (recommended)', value: '30%', improvement: true },
-          { label: 'Instacart (current)', value: '10%', improvement: false },
-          { label: 'Instacart (recommended)', value: '20%', improvement: true }
-        ],
-        actionButtons: [
-          { label: 'Adjust Manually', primary: false },
-          { label: 'Apply Recommendations', primary: true }
-        ]
-      };
-    }
-    
-    // Campaign creation assistance
-    else if (messageLower.includes('create') || messageLower.includes('new campaign') || messageLower.includes('setup')) {
-      return {
-        role: 'assistant' as const,
-        content: "I'd be happy to help you set up a new campaign. What type of campaign are you looking to create?",
-        actionButtons: [
-          { label: 'Sponsored Products', primary: false },
-          { label: 'Sponsored Brands', primary: false },
-          { label: 'Sponsored Display', primary: false },
-          { label: 'Custom Campaign', primary: true }
-        ]
-      };
-    }
-    
-    // Default response for other queries
-    else {
-      return {
-        role: 'assistant' as const,
-        content: "I'm here to help optimize your retail media campaigns. You can ask me about performance analytics, keyword optimization, budget allocation, or campaign creation.",
-        actionButtons: [
-          { label: 'Performance Analysis', primary: false },
-          { label: 'Keyword Optimization', primary: false },
-          { label: 'Budget Allocation', primary: false },
           { label: 'Create Campaign', primary: true }
         ]
       };
@@ -131,12 +188,22 @@ const IndexContent = ({ isSidebarOpen, onNewCampaign }: IndexContentProps) => {
       const newMessages = [...messages, userMessage];
       setMessages(newMessages);
 
-      // Simulate AI processing delay
-      setTimeout(() => {
-        const assistantResponse = generateResponse(content);
-        setMessages([...newMessages, assistantResponse]);
-        setIsLoading(false);
-      }, 1000);
+      // Generate response with potential AI integration
+      setTimeout(async () => {
+        try {
+          const assistantResponse = await generateResponse(content);
+          setMessages([...newMessages, assistantResponse]);
+        } catch (error) {
+          console.error('Response generation error:', error);
+          toast({
+            title: "Error",
+            description: "Failed to generate response",
+            variant: "destructive"
+          });
+        } finally {
+          setIsLoading(false);
+        }
+      }, 500);
 
     } catch (error: any) {
       console.error('Chat error:', error);

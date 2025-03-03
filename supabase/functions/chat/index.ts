@@ -20,9 +20,9 @@ serve(async (req) => {
 
   try {
     // Get OpenAI API key from environment variable
-    const apiKey = Deno.env.get('OPENAI_API_KEY');
-    if (!apiKey) {
-      console.error('OpenAI API key not configured');
+    const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
+    if (!openaiApiKey) {
+      console.error('OpenAI API key not configured in Supabase secrets');
       throw new Error('OpenAI API key not configured');
     }
 
@@ -52,11 +52,11 @@ serve(async (req) => {
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
+        'Authorization': `Bearer ${openaiApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-3.5-turbo', // Use a stable model that's guaranteed to exist
+        model: 'gpt-4o-mini', // Use a stable model that's guaranteed to exist
         messages: allMessages,
         temperature: 0.7,
         max_tokens: 1000,

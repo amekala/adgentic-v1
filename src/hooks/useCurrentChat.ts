@@ -4,11 +4,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { BreadcrumbItem } from '@/components/Breadcrumb';
 
-interface Message {
+export interface Message {
   id?: string;
   role: 'user' | 'assistant' | 'system';
   content: string;
   created_at?: string;
+  metrics?: Array<{ label: string; value: string; improvement: boolean }>;
+  actionButtons?: Array<{ label: string; primary: boolean }>;
 }
 
 interface ChatData {
@@ -48,13 +50,15 @@ export const useCurrentChat = () => {
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   
   // Check if Supabase configuration is available
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-  
   useEffect(() => {
-    const isSupabaseConfigured = !!supabaseUrl && !!supabaseAnonKey;
-    if (!isSupabaseConfigured) {
-      console.error('Supabase configuration is missing. Check environment variables.');
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+    
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.error('Supabase configuration is missing. Check environment variables. Values:', {
+        url: supabaseUrl ? 'defined' : 'undefined',
+        key: supabaseAnonKey ? 'defined' : 'undefined'
+      });
       toast.error('API configuration missing. Contact administrator.');
     } else {
       console.log('Supabase is configured with URL:', supabaseUrl);
@@ -274,18 +278,8 @@ export const useCurrentChat = () => {
       console.log("Calling AI with messages:", formattedMessages);
       
       // Call the Supabase Edge Function with enhanced request options
-      const response = await fetch(`${supabaseUrl}/functions/v1/chat`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${supabaseKey}`,
-          'Accept': 'application/json',
-          'X-Client-Info': 'adgentic-web-app'
-        },
-        // Add CORS mode and credentials to handle CORS issues
-        mode: 'cors',
-        credentials: 'omit',
-        body: JSON.stringify({ messages: formattedMessages })
+      const response = await supabase.functions.invoke('chat', {
+        body: { messages: formattedMessages }
       });
       
       // Check if we received a response at all
@@ -293,31 +287,18 @@ export const useCurrentChat = () => {
         throw new Error('No response received from API');
       }
       
-      console.log('API Response Status:', response.status, response.statusText);
+      console.log('API Response status:', response.status);
+      console.log('API Response data:', response.data);
       
-      // Get response as text first for debugging
-      const responseText = await response.text();
-      console.log('Raw API response (first 100 chars):', responseText.substring(0, 100) + '...');
-      
-      // Handle non-success HTTP status codes
-      if (!response.ok) {
-        console.error("API response error:", response.status, responseText);
-        throw new Error(`API responded with status ${response.status}: ${responseText.substring(0, 100)}...`);
+      // Handle error status
+      if (response.error) {
+        console.error("API response error:", response.error);
+        throw new Error(`API error: ${response.error.message || response.error}`);
       }
       
-      // Try to parse the response as JSON
-      let aiResponse;
-      try {
-        aiResponse = JSON.parse(responseText);
-        console.log("Received AI response:", aiResponse);
-      } catch (parseError) {
-        console.error('Failed to parse JSON response:', parseError);
-        console.error('Response text (first 200 chars):', responseText.substring(0, 200));
-        throw new Error('Invalid JSON response from API');
-      }
-      
-      // Validate the response structure and extract content, handling different response formats
+      // Get the response content
       let responseContent = "I couldn't generate a response.";
+      const aiResponse = response.data;
       
       if (aiResponse) {
         // Simple case - we got a direct content string
@@ -530,4 +511,4 @@ export const useCurrentChat = () => {
   };
 };
 
-export type { Message, ChatData, Campaign };
+export type { ChatData, Campaign };

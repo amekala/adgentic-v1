@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Home, ChevronRight, FolderOpen, MessageSquare } from 'lucide-react';
@@ -7,7 +6,7 @@ import { Home, ChevronRight, FolderOpen, MessageSquare } from 'lucide-react';
 export interface BreadcrumbItem {
   label: string;
   href: string;
-  type: 'home' | 'campaign' | 'chat'; // Updated to allow more type values
+  type: 'home' | 'campaign' | 'chat' | string;
   id: string;
 }
 
