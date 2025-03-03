@@ -38,7 +38,7 @@ const ChatInputArea: React.FC<ChatInputAreaProps> = ({
   });
 
   return (
-    <div className="border-t border-adgentic-border bg-white p-2 sm:p-4 fixed bottom-0 left-0 right-0">
+    <div className="border-t border-adgentic-border bg-white p-4">
       <div className="max-w-4xl mx-auto relative">
         <Textarea
           ref={textareaRef}
@@ -46,7 +46,7 @@ const ChatInputArea: React.FC<ChatInputAreaProps> = ({
           onChange={onInputChange}
           onKeyDown={handleKeyDown}
           placeholder="Type your message..."
-          className="resize-none pr-12 min-h-[40px] sm:min-h-[60px] max-h-[150px] sm:max-h-[200px] overflow-y-auto text-sm sm:text-base"
+          className="resize-none pr-12 min-h-[60px] max-h-[200px] overflow-y-auto"
           disabled={isSending}
         />
         <Button
@@ -61,9 +61,6 @@ const ChatInputArea: React.FC<ChatInputAreaProps> = ({
             <Send className="h-4 w-4" />
           )}
         </Button>
-      </div>
-      <div className="h-12 w-full md:hidden">
-        {/* Extra space at bottom for mobile to avoid floating action button overlap */}
       </div>
     </div>
   );
