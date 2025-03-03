@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -50,22 +49,6 @@ export const useCurrentChat = () => {
   const [chatData, setChatData] = useState<ChatData | null>(null);
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   
-  // Check if Supabase configuration is available
-  useEffect(() => {
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-    
-    if (!supabaseUrl || !supabaseAnonKey) {
-      console.error('Supabase configuration is missing. Check environment variables. Values:', {
-        url: supabaseUrl ? 'defined' : 'undefined',
-        key: supabaseAnonKey ? 'defined' : 'undefined'
-      });
-      toast.error('API configuration missing. Contact administrator.');
-    } else {
-      console.log('Supabase is configured with URL:', supabaseUrl);
-    }
-  }, []);
-
   // Fetch chat data and messages
   useEffect(() => {
     const fetchChatData = async () => {
@@ -269,20 +252,6 @@ export const useCurrentChat = () => {
         content: msg.content
       }));
       
-      // Extract Supabase URL and key for clarity
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-      
-      // Sanity check configuration
-      if (!supabaseUrl || !supabaseKey) {
-        throw new Error('Missing Supabase configuration. Check environment variables.');
-      }
-      
-      // Enhanced logging for debugging
-      console.log(`Trying to get AI response from Edge Function...`);
-      console.log(`Campaign ID: ${campaignId || 'none'}`);
-      console.log(`Campaign Name: ${campaign?.campaign_name || 'none'}`);
-      
       // System message that will be prepended
       const systemMessage = {
         role: 'system' as const,
@@ -455,8 +424,6 @@ export const useCurrentChat = () => {
       // Add actionbuttons if available
       if (assistantResponse.actionButtons && assistantResponse.actionButtons.length > 0) {
         try {
-          // Convert to string for storage
-          const actionButtonsString = JSON.stringify(assistantResponse.actionButtons);
           // @ts-ignore - actionbuttons is available in the DB but not typed
           dbMessage.actionbuttons = assistantResponse.actionButtons;
         } catch (e) {
@@ -471,7 +438,7 @@ export const useCurrentChat = () => {
         
       if (error) throw error;
       
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error getting AI response:', error);
       
       // Provide more detailed error message to the user
