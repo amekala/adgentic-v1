@@ -9,8 +9,9 @@ export interface Message {
   role: 'user' | 'assistant' | 'system';
   content: string;
   created_at?: string;
-  metrics?: Array<{ label: string; value: string; improvement: boolean }>;
-  actionButtons?: Array<{ label: string; primary: boolean }>;
+  title?: string;
+  metrics?: Array<{ label: string; value: string; improvement?: boolean }>;
+  actionButtons?: Array<{ label: string; primary?: boolean }>;
 }
 
 interface ChatData {
