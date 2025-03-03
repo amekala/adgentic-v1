@@ -1,7 +1,19 @@
-import { serve } from 'std/server';
-import { OpenAI } from 'openai';
+
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { OpenAI } from 'https://deno.land/x/openai@v4.23.0/mod.ts';
+
+// Set up CORS headers
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
 
 serve(async (req) => {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
   try {
     const apiKey = Deno.env.get('OPENAI_API_KEY');
     if (!apiKey) {
@@ -9,7 +21,10 @@ serve(async (req) => {
     }
 
     if (req.method !== 'POST') {
-      return new Response('Method Not Allowed', { status: 405 });
+      return new Response('Method Not Allowed', { 
+        status: 405,
+        headers: corsHeaders
+      });
     }
 
     const requestData = await req.json();
@@ -21,27 +36,29 @@ serve(async (req) => {
 
     const aiResponse = await generateAIResponse(messages);
     return new Response(JSON.stringify(aiResponse), {
-      headers: { 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (error) {
     console.error('Server Error:', error);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 });
 
 // Update OpenAI model configuration
-const generateAIResponse = async (messages: OpenAI.Chat.ChatCompletionMessageParam[]) => {
+const generateAIResponse = async (messages) => {
   try {
     const openai = new OpenAI({
       apiKey: Deno.env.get('OPENAI_API_KEY')
     });
 
+    console.log('Sending request to OpenAI with model: gpt-4o');
+    
     const completion = await openai.chat.completions.create({
-      model: "gpt-4o", // Changed from gpt-4o-mini to gpt-4o
+      model: "gpt-4o", // Updated from gpt-4o-mini to gpt-4o as requested
       messages: messages,
       temperature: 0.7,
       max_tokens: 800,
@@ -59,6 +76,7 @@ const generateAIResponse = async (messages: OpenAI.Chat.ChatCompletionMessagePar
       throw new Error('No content returned from OpenAI API');
     }
 
+    console.log('Successfully received response from OpenAI');
     return { content: responseContent };
   } catch (error) {
     console.error('OpenAI API Error:', error);

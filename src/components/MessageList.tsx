@@ -37,18 +37,23 @@ const MessageList = ({ messages, onActionClick, onPillClick }: MessageListProps)
               <h2 className="text-lg sm:text-xl font-semibold text-adgentic-text-primary mb-2">Welcome to Adgentic Assistant</h2>
               <p className="text-sm sm:text-base text-adgentic-text-secondary">Your AI-powered advertising campaign assistant</p>
             </div>
-            <ChatActionPills onPillClick={onPillClick} className="mb-6 sm:mb-8" />
+            <ChatActionPills 
+              onPillClick={onPillClick} 
+              className="mb-6 sm:mb-8"
+            />
           </div>
         ) : (
-          messages.map((message, index) => (
-            <Message 
-              key={index} 
-              {...message} 
-              onActionClick={onActionClick}
-            />
-          ))
+          <div className="space-y-1">
+            {messages.map((message, index) => (
+              <Message 
+                key={index} 
+                {...message} 
+                onActionClick={onActionClick}
+              />
+            ))}
+          </div>
         )}
-        <div ref={messagesEndRef} />
+        <div ref={messagesEndRef} className="h-4" />
       </div>
     </div>
   );
