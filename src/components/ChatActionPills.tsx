@@ -47,6 +47,13 @@ const ChatActionPills = ({ onPillClick, className = '' }: ChatActionPillsProps) 
     }
   ];
 
+  const handleClick = (message: string) => {
+    console.log('Action pill clicked with message:', message);
+    if (onPillClick) {
+      onPillClick(message);
+    }
+  };
+
   return (
     <div className={`w-full max-w-3xl mx-auto ${className}`}>
       <div className="space-y-3">
@@ -57,8 +64,8 @@ const ChatActionPills = ({ onPillClick, className = '' }: ChatActionPillsProps) 
           {suggestions.map((suggestion) => (
             <button
               key={suggestion.id}
-              onClick={() => onPillClick?.(suggestion.message)}
-              className={`flex items-center gap-3 px-4 py-3 rounded-lg ${suggestion.color || 'bg-white text-adgentic-text-primary'} border border-current hover:border-adgentic-border shadow-sm transition-all text-sm`}
+              onClick={() => handleClick(suggestion.message)}
+              className={`flex items-center gap-3 px-4 py-3 rounded-lg ${suggestion.color || 'bg-white text-adgentic-text-primary'} border border-current hover:border-adgentic-border shadow-sm transition-all text-sm cursor-pointer`}
             >
               <div className={`p-2 rounded-md ${suggestion.iconBg || 'bg-white'} ${suggestion.iconColor || 'text-adgentic-accent'}`}>
                 {suggestion.icon}

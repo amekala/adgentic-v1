@@ -28,6 +28,14 @@ const MessageList = ({ messages, onActionClick, onPillClick }: MessageListProps)
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // Handler for action pills
+  const handlePillClick = (message: string) => {
+    console.log('Pill clicked with message:', message);
+    if (onPillClick) {
+      onPillClick(message);
+    }
+  };
+
   return (
     <div className="flex-1 overflow-y-auto bg-adgentic-lightGray">
       <div className="w-full">
@@ -38,7 +46,7 @@ const MessageList = ({ messages, onActionClick, onPillClick }: MessageListProps)
               <p className="text-sm sm:text-base text-adgentic-text-secondary">Your AI-powered advertising campaign assistant</p>
             </div>
             <ChatActionPills 
-              onPillClick={onPillClick} 
+              onPillClick={handlePillClick} 
               className="mb-6 sm:mb-8"
             />
           </div>
