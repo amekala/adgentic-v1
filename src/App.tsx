@@ -10,6 +10,7 @@ import Chat from "./pages/Chat";
 import Account from "./pages/Account";
 import Pricing from "./pages/Pricing";
 import Marketing from "./pages/Marketing";
+import About from "./pages/About";
 
 // Placeholder components for new routes
 const CampaignSettings = () => <Campaign />;
@@ -36,6 +37,7 @@ const App = () => (
             <Route path="/campaign/:campaignId/report" element={<CampaignReport />} />
             <Route path="/account" element={<Account />} />
             <Route path="/pricing" element={<Pricing />} />
+            <Route path="/about" element={<About />} />
             {/* Add a catch-all redirect to ensure users land on Marketing */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
