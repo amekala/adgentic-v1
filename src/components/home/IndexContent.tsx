@@ -29,6 +29,11 @@ const IndexContent = ({ isSidebarOpen, onNewCampaign }: IndexContentProps) => {
       try {
         console.log("Trying to get AI response from Edge Function...");
         
+        // Log the Supabase URL and key status to ensure configuration is correct
+        const supabaseUrl = supabase.supabaseUrl;
+        const hasKey = supabase.supabaseKey ? "Key is present" : "Key is missing";
+        console.log(`Supabase Configuration: URL=${supabaseUrl}, ${hasKey}`);
+        
         // Try to get a response from the Supabase Edge Function
         const response = await supabase.functions.invoke('chat', {
           body: { 
@@ -44,8 +49,14 @@ const IndexContent = ({ isSidebarOpen, onNewCampaign }: IndexContentProps) => {
         
         console.log("Edge Function response:", response);
         
+        if (response.error) {
+          console.error("Edge Function error:", response.error);
+          throw new Error(`Edge Function error: ${response.error.message || JSON.stringify(response.error)}`);
+        }
+        
         if (response.data && response.data.content) {
           // If we get a successful response from the AI
+          console.log("Successfully received AI response:", response.data.content.substring(0, 100) + "...");
           return {
             role: 'assistant' as const,
             content: response.data.content,
@@ -57,10 +68,39 @@ const IndexContent = ({ isSidebarOpen, onNewCampaign }: IndexContentProps) => {
             ]
           };
         } else {
-          console.log("No content in response, falling back to scenario-based responses");
+          console.log("No content in response, structure:", JSON.stringify(response.data));
+          
+          // If there's no content property but there's a message or text property
+          if (response.data) {
+            if (response.data.message) {
+              return {
+                role: 'assistant' as const,
+                content: response.data.message,
+                actionButtons: [
+                  { label: 'Create Campaign', primary: true }
+                ]
+              };
+            } else if (response.data.choices && response.data.choices[0]?.message?.content) {
+              return {
+                role: 'assistant' as const,
+                content: response.data.choices[0].message.content,
+                actionButtons: [
+                  { label: 'Create Campaign', primary: true }
+                ]
+              };
+            }
+          }
+          
+          console.log("No recognizable content in response, falling back to scenario-based responses");
         }
       } catch (error) {
         console.error('Error calling AI service:', error);
+        // Toast the error to make it visible to the user
+        toast({
+          title: "AI Service Error",
+          description: error.message || "Failed to get AI response",
+          variant: "destructive"
+        });
         // Fall back to scenario-based responses
       }
       
