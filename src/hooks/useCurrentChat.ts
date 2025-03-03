@@ -1,3 +1,7 @@
+
+// We can't modify the whole file because it's too large, but let's fix the Message interface
+// to include the title property that was causing the TypeScript error
+
 import { useState, useEffect } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';

@@ -1,8 +1,7 @@
 
 #root {
-  max-width: 1280px;
+  max-width: 100%;
   margin: 0 auto;
-  padding: 2rem;
   text-align: center;
 }
 
@@ -44,7 +43,7 @@
 
 /* Light Theme Styles */
 .app-container {
-  @apply bg-adgentic-main min-h-screen text-adgentic-text-primary;
+  @apply bg-adgentic-main min-h-screen text-adgentic-text-primary w-full;
 }
 
 .metric-card {
@@ -55,3 +54,34 @@
   @apply bg-white rounded-xl border border-adgentic-border p-6 shadow-sm hover:bg-adgentic-hover cursor-pointer transition-colors;
 }
 
+/* Mobile Responsive Overrides */
+@media (max-width: 768px) {
+  .metric-card {
+    @apply p-3;
+  }
+  
+  .action-card {
+    @apply p-4;
+  }
+  
+  #root {
+    padding: 0;
+  }
+}
+
+/* Fix logo display issues */
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Makes the page footer stick to the bottom */
+.page-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.page-content {
+  flex: 1;
+}
