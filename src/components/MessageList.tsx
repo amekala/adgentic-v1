@@ -32,12 +32,12 @@ const MessageList = ({ messages, onActionClick, onPillClick }: MessageListProps)
     <div className="flex-1 overflow-y-auto bg-adgentic-lightGray">
       <div className="w-full">
         {messages.length === 0 ? (
-          <div className="pt-8 px-4">
-            <div className="text-center mb-8">
-              <h2 className="text-xl font-semibold text-adgentic-text-primary mb-2">Welcome to Adgentic Assistant</h2>
-              <p className="text-adgentic-text-secondary">Your AI-powered advertising campaign assistant</p>
+          <div className="pt-4 sm:pt-8 px-3 sm:px-4">
+            <div className="text-center mb-6 sm:mb-8">
+              <h2 className="text-lg sm:text-xl font-semibold text-adgentic-text-primary mb-2">Welcome to Adgentic Assistant</h2>
+              <p className="text-sm sm:text-base text-adgentic-text-secondary">Your AI-powered advertising campaign assistant</p>
             </div>
-            <ChatActionPills onPillClick={onPillClick} className="mb-8" />
+            <ChatActionPills onPillClick={onPillClick} className="mb-6 sm:mb-8" />
           </div>
         ) : (
           messages.map((message, index) => (

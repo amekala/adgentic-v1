@@ -6,6 +6,12 @@
   text-align: center;
 }
 
+@media (max-width: 768px) {
+  #root {
+    padding: 1rem;
+  }
+}
+
 .logo {
   height: 6em;
   padding: 1.5em;
@@ -55,3 +61,17 @@
   @apply bg-white rounded-xl border border-adgentic-border p-6 shadow-sm hover:bg-adgentic-hover cursor-pointer transition-colors;
 }
 
+/* Mobile-friendly improvements */
+@media (max-width: 768px) {
+  .metric-card, .action-card {
+    @apply p-3;
+  }
+  
+  .sidebar-item {
+    @apply py-2;
+  }
+  
+  .action-button {
+    @apply text-xs px-2;
+  }
+}

@@ -79,3 +79,68 @@ body {
 .card-gradient {
   @apply bg-gradient-to-br from-white to-adgentic-secondary/80 backdrop-blur-sm;
 }
+
+/* Mobile responsiveness improvements */
+@media (max-width: 768px) {
+  .sidebar-item {
+    @apply py-2 px-2 gap-2 text-xs;
+  }
+  
+  .action-button {
+    @apply py-1.5 px-2 text-xs gap-1;
+  }
+  
+  .metric-card {
+    @apply p-3;
+  }
+  
+  .h1, h1 {
+    @apply text-xl;
+  }
+  
+  .h2, h2 {
+    @apply text-lg;
+  }
+  
+  .chat-message {
+    @apply p-3;
+  }
+  
+  .input-area {
+    @apply px-2 py-2;
+  }
+}
+
+/* Improved mobile navigation */
+.mobile-menu-overlay {
+  @apply fixed inset-0 bg-black/50 z-40 lg:hidden;
+}
+
+.mobile-friendly-input {
+  @apply text-base p-2;
+}
+
+/* Input adjustments for mobile */
+input, textarea, select {
+  @apply max-w-full;
+  font-size: 16px !important; /* Prevents iOS zoom on focus */
+}
+
+/* Menu transition for mobile */
+.menu-slide-in {
+  animation: slideIn 0.3s forwards;
+}
+
+.menu-slide-out {
+  animation: slideOut 0.3s forwards;
+}
+
+@keyframes slideIn {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+
+@keyframes slideOut {
+  from { transform: translateX(0); }
+  to { transform: translateX(-100%); }
+}

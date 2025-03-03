@@ -11,6 +11,23 @@ import { toast } from "sonner";
 const Chat = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [diagnosisRun, setDiagnosisRun] = useState(false);
+  
+  // Check if device is mobile for initial sidebar state
+  useEffect(() => {
+    const checkIsMobile = () => {
+      setIsSidebarOpen(window.innerWidth > 768);
+    };
+    
+    // Set initial state
+    checkIsMobile();
+    
+    // Add resize listener
+    window.addEventListener('resize', checkIsMobile);
+    
+    // Cleanup
+    return () => window.removeEventListener('resize', checkIsMobile);
+  }, []);
+  
   const {
     chatData,
     messages,
@@ -115,6 +132,7 @@ const Chat = () => {
       handleSendMessage();
     }
   };
+  
   // Function to manually run the diagnostic test
   const runManualDiagnostic = () => {
     setDiagnosisRun(false); // Reset so it will run again
@@ -176,7 +194,7 @@ const Chat = () => {
           <Breadcrumb items={getBreadcrumbItems()} />
           
           {/* Chat messages */}
-          <div className="flex flex-col h-[calc(100vh-180px)] overflow-hidden">
+          <div className="flex flex-col h-[calc(100vh-160px)] sm:h-[calc(100vh-180px)] overflow-hidden">
             <ChatMessagesArea 
               messages={messages}
               isLoading={isLoading}

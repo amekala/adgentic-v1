@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -8,7 +7,6 @@ import Breadcrumb from '@/components/Breadcrumb';
 import NewCampaignModal from '@/components/NewCampaignModal';
 import { Button } from '@/components/ui/button';
 
-// Import the new components
 import NewChatInput from '@/components/campaign/NewChatInput';
 import ActionsGrid from '@/components/campaign/ActionsGrid';
 import MetricsSection from '@/components/campaign/MetricsSection';
@@ -26,7 +24,6 @@ const Campaign = () => {
   const [loading, setLoading] = useState(true);
   const [isNewCampaignModalOpen, setIsNewCampaignModalOpen] = useState(false);
 
-  // Fetch campaign data and chats in parallel
   useEffect(() => {
     const fetchData = async () => {
       if (campaignId === 'new') {
@@ -39,16 +36,13 @@ const Campaign = () => {
       setLoading(true);
       
       try {
-        // Use Promise.all to fetch campaign data and chats in parallel
         const [campaignResponse, chatsResponse] = await Promise.all([
-          // Fetch campaign details
           supabase
             .from('campaigns')
             .select('*')
             .eq('id', campaignId)
             .single(),
             
-          // Fetch chats for this campaign
           supabase
             .from('chats')
             .select('*')
@@ -56,7 +50,6 @@ const Campaign = () => {
             .order('created_at', { ascending: false })
         ]);
         
-        // Handle campaign data
         if (campaignResponse.error) {
           throw campaignResponse.error;
         }
@@ -67,7 +60,6 @@ const Campaign = () => {
           setCampaignStatus(campaignResponse.data.campaign_status || 'draft');
         }
         
-        // Handle chats data
         if (chatsResponse.error) {
           console.error('Error fetching chats:', chatsResponse.error);
         } else if (chatsResponse.data) {
@@ -85,16 +77,13 @@ const Campaign = () => {
     fetchData();
   }, [campaignId]);
 
-  // Handle creating a new chat for this campaign
   const createNewChat = async (initialMessage = '') => {
     try {
-      // For new campaigns, navigate to the chat directly
       if (campaignId === 'new') {
         navigate('/chat/new');
         return;
       }
       
-      // Create a new chat
       const title = initialMessage ? 
         (initialMessage.length > 30 ? initialMessage.substring(0, 30) + '...' : initialMessage) :
         'New Chat';
@@ -113,7 +102,6 @@ const Campaign = () => {
         throw error;
       }
       
-      // If we have an initial message, also create that message
       if (initialMessage && data) {
         const { error: messageError } = await supabase
           .from('chat_messages')
@@ -125,7 +113,8 @@ const Campaign = () => {
           
         if (messageError) {
           console.error('Error creating initial message:', messageError);
-          // Continue anyway since the chat was created
+          toast.success('New chat created');
+          navigate(`/chat/${data.id}?campaign_id=${campaignId}`);
         }
       }
       
@@ -147,7 +136,6 @@ const Campaign = () => {
   
   const handleCreateCampaign = async (data: { name: string; goals: string; notes: string }) => {
     if (campaignId === 'new') {
-      // For new campaigns, this is handled by NewCampaignModal
       return;
     }
     
@@ -171,7 +159,6 @@ const Campaign = () => {
     }
   };
 
-  // Sample metrics
   const metrics = [
     { id: '1', label: 'Impressions', value: '143,892', timeframe: 'Last 30 days' },
     { id: '2', label: 'Clicks', value: '12,453', timeframe: 'Last 30 days' },
@@ -179,7 +166,6 @@ const Campaign = () => {
     { id: '4', label: 'ACOS', value: '15.2%', timeframe: 'Last 30 days' }
   ];
 
-  // Breadcrumb items with proper type information
   const breadcrumbItems = [
     { 
       label: "Home", 
@@ -205,13 +191,12 @@ const Campaign = () => {
       />
       
       <main className={`flex-1 transition-all duration-300 ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}>
-        {/* Header with breadcrumb */}
-        <header className="fixed top-0 left-0 right-0 z-10 h-[60px] border-b border-adgentic-border bg-white bg-opacity-80 backdrop-blur-md px-4">
+        <header className="fixed top-0 left-0 right-0 z-10 h-[60px] border-b border-adgentic-border bg-white bg-opacity-80 backdrop-blur-md px-3 sm:px-4">
           <div className={`flex items-center h-full transition-all duration-300 ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}>
-            <h1 className="text-lg font-semibold text-adgentic-text-primary truncate">
+            <h1 className="text-base sm:text-lg font-semibold text-adgentic-text-primary truncate">
               {campaignName}
             </h1>
-            <span className={`ml-2 text-sm font-normal px-2 py-0.5 rounded-md ${
+            <span className={`ml-2 text-xs sm:text-sm font-normal px-1.5 sm:px-2 py-0.5 rounded-md ${
               campaignStatus === 'live' ? 'bg-green-100 text-green-800' : 
               campaignStatus === 'paused' ? 'bg-yellow-100 text-yellow-800' : 
               'bg-gray-100 text-gray-800'
@@ -222,48 +207,46 @@ const Campaign = () => {
         </header>
         
         <div className="pt-[60px]">
-          {/* Breadcrumb navigation */}
           <Breadcrumb items={breadcrumbItems} />
           
           {loading ? (
-            <div className="flex items-center justify-center h-full p-10">
+            <div className="flex items-center justify-center h-full p-6 sm:p-10">
               <div className="animate-pulse flex flex-col items-center justify-center space-y-4">
-                <div className="h-8 w-64 bg-gray-200 rounded-md"></div>
-                <div className="h-4 w-32 bg-gray-200 rounded-md"></div>
-                <div className="mt-4 text-adgentic-text-secondary">Loading campaign data...</div>
+                <div className="h-6 sm:h-8 w-48 sm:w-64 bg-gray-200 rounded-md"></div>
+                <div className="h-3 sm:h-4 w-24 sm:w-32 bg-gray-200 rounded-md"></div>
+                <div className="mt-4 text-sm sm:text-base text-adgentic-text-secondary">Loading campaign data...</div>
               </div>
             </div>
           ) : (
-            <div className="p-6 max-w-7xl mx-auto">
-              {/* Hero section with campaign overview */}
-              <div className="bg-white rounded-xl p-6 border border-adgentic-border shadow-sm mb-8">
-                <div className="flex justify-between items-start mb-6">
+            <div className="p-3 sm:p-6 max-w-7xl mx-auto">
+              <div className="bg-white rounded-xl p-4 sm:p-6 border border-adgentic-border shadow-sm mb-4 sm:mb-8">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 sm:mb-6">
                   <div>
                     <div className="flex items-center gap-2 mb-2">
-                      <div className={`w-3 h-3 rounded-full ${
+                      <div className={`w-2 sm:w-3 h-2 sm:h-3 rounded-full ${
                         campaignStatus === 'live' ? 'bg-green-500' : 
                         campaignStatus === 'paused' ? 'bg-yellow-500' : 'bg-gray-400'
                       }`}></div>
-                      <span className="text-sm font-medium text-adgentic-text-secondary">
+                      <span className="text-xs sm:text-sm font-medium text-adgentic-text-secondary">
                         {campaignStatus === 'live' ? 'Active Campaign' : 
                          campaignStatus === 'paused' ? 'Paused Campaign' : 'Draft Campaign'}
                       </span>
                     </div>
-                    <h1 className="text-2xl font-bold text-adgentic-text-primary">{campaignName}</h1>
-                    <p className="text-adgentic-text-secondary mt-1 max-w-xl">
+                    <h1 className="text-xl sm:text-2xl font-bold text-adgentic-text-primary">{campaignName}</h1>
+                    <p className="text-xs sm:text-sm text-adgentic-text-secondary mt-1 max-w-xl">
                       {campaignData?.goals_description || 'No campaign description provided. Add goals and notes in campaign settings.'}
                     </p>
                   </div>
-                  <div className="flex gap-3">
+                  <div className="flex gap-2 sm:gap-3 mt-2 sm:mt-0">
                     <Button
                       variant="outline"
-                      className="rounded-full border-adgentic-border text-adgentic-text-primary"
+                      className="text-xs sm:text-sm py-1 sm:py-2 px-2 sm:px-3 rounded-full border-adgentic-border text-adgentic-text-primary"
                       onClick={handleCampaignSettings}
                     >
                       Edit Campaign
                     </Button>
                     <Button
-                      className="rounded-full bg-adgentic-accent text-white hover:bg-adgentic-accent/90"
+                      className="text-xs sm:text-sm py-1 sm:py-2 px-2 sm:px-3 rounded-full bg-adgentic-accent text-white hover:bg-adgentic-accent/90"
                       onClick={() => createNewChat()}
                     >
                       Start New Chat
@@ -272,17 +255,14 @@ const Campaign = () => {
                 </div>
               </div>
               
-              {/* New Chat input section */}
               <NewChatInput 
                 onCreateChat={createNewChat} 
                 campaignId={campaignId as string} 
                 campaignName={campaignName}
               />
               
-              {/* Campaign Performance */}
               <MetricsSection metrics={metrics} />
               
-              {/* Action Cards Grid */}
               <ActionsGrid
                 onChatClick={() => createNewChat()}
                 onReportClick={() => navigate(`/campaign/${campaignId}/report`)}
@@ -292,13 +272,11 @@ const Campaign = () => {
                 campaignStatus={campaignStatus}
               />
               
-              {/* Chats in this campaign */}
               <ChatsList 
                 chats={chats} 
                 campaignId={campaignId as string}
               />
               
-              {/* Ad Creatives Section */}
               <CreativesSection />
             </div>
           )}
