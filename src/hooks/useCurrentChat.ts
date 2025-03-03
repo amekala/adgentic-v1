@@ -320,15 +320,24 @@ export const useCurrentChat = () => {
       let responseContent = "I couldn't generate a response.";
       
       if (aiResponse) {
+        // Simple case - we got a direct content string
         if (typeof aiResponse.content === 'string') {
           responseContent = aiResponse.content;
-        } else if (aiResponse.error && typeof aiResponse.content === 'string') {
-          // If there's an error but also content (from our fallback)
+        } 
+        // Error case but with content (from fallback)
+        else if (aiResponse.error && typeof aiResponse.content === 'string') {
           responseContent = aiResponse.content;
-        } else if (aiResponse.choices && aiResponse.choices[0]?.message?.content) {
-          // Handle direct OpenAI response format
+        } 
+        // Standard OpenAI API direct response format
+        else if (aiResponse.choices && aiResponse.choices[0]?.message?.content) {
           responseContent = aiResponse.choices[0].message.content;
-        } else {
+        }
+        // Our Edge Function returns OpenAI's message directly
+        else if (aiResponse.role === 'assistant' && typeof aiResponse.content === 'string') {
+          responseContent = aiResponse.content;
+        }
+        // Unexpected format
+        else {
           console.warn('Unexpected response format:', aiResponse);
           responseContent = "Received an unexpected response format from the server. Please try again.";
         }
