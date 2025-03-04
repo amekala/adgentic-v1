@@ -50,15 +50,15 @@
 
 /* Light Theme Styles */
 .app-container {
-  @apply bg-adgentic-main min-h-screen text-adgentic-text-primary;
+  @apply bg-adspirer-main min-h-screen text-adspirer-text-primary;
 }
 
 .metric-card {
-  @apply rounded-xl border border-adgentic-border p-4 bg-white shadow-sm transition-all hover:shadow-md;
+  @apply rounded-xl border border-adspirer-border p-4 bg-white shadow-sm transition-all hover:shadow-md;
 }
 
 .action-card {
-  @apply bg-white rounded-xl border border-adgentic-border p-6 shadow-sm hover:bg-adgentic-hover cursor-pointer transition-colors;
+  @apply bg-white rounded-xl border border-adspirer-border p-6 shadow-sm hover:bg-adspirer-hover cursor-pointer transition-colors;
 }
 
 /* Mobile-friendly improvements */

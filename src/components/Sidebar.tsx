@@ -49,26 +49,26 @@ const Sidebar = ({ isOpen, onToggle, onApiKeyChange, onNewCampaign }: SidebarPro
         <div className="fixed top-4 left-4 z-50">
           <button
             onClick={onToggle}
-            className="h-10 w-10 rounded-md flex items-center justify-center bg-white shadow-sm border border-adgentic-border hover:bg-adgentic-hover"
+            className="h-10 w-10 rounded-md flex items-center justify-center bg-white shadow-sm border border-adspirer-border hover:bg-adspirer-hover"
           >
-            <Menu className="h-5 w-5 text-adgentic-text-primary" />
+            <Menu className="h-5 w-5 text-adspirer-text-primary" />
           </button>
         </div>
       )}
       <div className={cn(
-        "fixed top-0 left-0 z-40 h-screen bg-adgentic-sidebar border-r border-adgentic-border transition-all duration-300 flex flex-col",
+        "fixed top-0 left-0 z-40 h-screen bg-adspirer-sidebar border-r border-adspirer-border transition-all duration-300 flex flex-col",
         isOpen ? "w-64" : "w-0 overflow-hidden"
       )}>
         <SidebarHeader isOpen={isOpen} onToggle={onToggle} onNewCampaign={onNewCampaign} />
 
         <div className="px-3 pb-2">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-adgentic-text-light" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-adspirer-text-light" />
             <Input
               placeholder="Search campaigns..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 bg-white border-adgentic-border text-adgentic-text-primary placeholder-adgentic-text-light h-9"
+              className="pl-9 bg-white border-adspirer-border text-adspirer-text-primary placeholder-adspirer-text-light h-9"
             />
           </div>
         </div>

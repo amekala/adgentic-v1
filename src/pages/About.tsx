@@ -25,7 +25,7 @@ const About = () => {
           <div className="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center text-white">
             <span className="font-bold">A</span>
           </div>
-          <span className="font-semibold text-xl">Adgentic</span>
+          <span className="font-semibold text-xl">Adspirer</span>
         </div>
         <div className="hidden md:flex items-center gap-8">
           <Link to="/" className="text-sm hover:text-blue-600 transition-colors">Home</Link>
@@ -167,7 +167,7 @@ const About = () => {
                 <div className="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center">
                   <span className="font-bold">A</span>
                 </div>
-                <span className="font-semibold text-xl">Adgentic</span>
+                <span className="font-semibold text-xl">Adspirer</span>
               </div>
               <p className="max-w-xs">AI-powered retail media management that simplifies campaign creation and optimization.</p>
             </div>

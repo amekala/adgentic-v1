@@ -105,7 +105,7 @@ const ExampleChat = ({ title, conversation, icon: Icon, iconColor }) => {
             key={index} 
             className={`${message.sender === 'assistant' ? 'bg-white' : 'bg-blue-50'} rounded p-3 shadow-sm mb-3 ${message.sender === 'user' ? 'ml-8' : ''}`}
           >
-            <p className="text-gray-700 text-sm font-medium">{message.sender === 'assistant' ? 'Adgentic Assistant:' : 'You:'}</p>
+            <p className="text-gray-700 text-sm font-medium">{message.sender === 'assistant' ? 'Adspirer Assistant:' : 'You:'}</p>
             <p className={`text-sm ${message.sender === 'user' ? 'text-blue-600' : 'text-gray-600'}`}>{message.content}</p>
             {message.actionButtons && (
               <div className="mt-3 flex gap-2">
@@ -291,7 +291,7 @@ const Marketing = () => {
           <div className="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center text-white">
             <span className="font-bold">A</span>
           </div>
-          <span className="font-semibold text-xl">Adgentic</span>
+          <span className="font-semibold text-xl">Adspirer</span>
         </div>
         <div className="hidden md:flex items-center gap-8">
           <a href="#features" className="text-sm hover:text-blue-600 transition-colors">Features</a>
@@ -387,7 +387,7 @@ const Marketing = () => {
 
       <section id="features" className="py-16 bg-gray-50">
         <div className="px-6 md:px-16 max-w-6xl mx-auto">
-          <h2 className="text-3xl md:text-4xl font-bold mb-16 text-center">See Adgentic in Action</h2>
+          <h2 className="text-3xl md:text-4xl font-bold mb-16 text-center">See Adspirer in Action</h2>
           
           <div className="grid md:grid-cols-2 gap-16 items-center mb-24">
             <div>
@@ -526,7 +526,7 @@ const Marketing = () => {
           <div className="grid md:grid-cols-3 gap-8">
             <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
               <div className="mb-4">★★★★★</div>
-              <p className="text-gray-600 mb-6">"Adgentic has transformed how we manage our retail media. The AI suggestions have improved our ROAS by 32% in just two months."</p>
+              <p className="text-gray-600 mb-6">"Adspirer has transformed how we manage our retail media. The AI suggestions have improved our ROAS by 32% in just two months."</p>
               <div>
                 <p className="font-semibold">Sarah Johnson</p>
                 <p className="text-sm text-gray-500">Digital Marketing Director, HomeGoods Direct</p>
@@ -544,7 +544,7 @@ const Marketing = () => {
             
             <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
               <div className="mb-4">★★★★★</div>
-              <p className="text-gray-600 mb-6">"Managing campaigns across Amazon, Walmart and Instacart used to be a nightmare. Adgentic has unified our strategy and improved our results."</p>
+              <p className="text-gray-600 mb-6">"Managing campaigns across Amazon, Walmart and Instacart used to be a nightmare. Adspirer has unified our strategy and improved our results."</p>
               <div>
                 <p className="font-semibold">Jessica Miller</p>
                 <p className="text-sm text-gray-500">CMO, TechAccessories Inc.</p>
@@ -561,7 +561,7 @@ const Marketing = () => {
               Ready to <span className="text-blue-500">Transform</span> Your Retail Media Strategy?
             </h2>
             <p className="text-gray-600 text-lg max-w-3xl mx-auto">
-              Get in touch with our team to schedule a personalized demo and see how Adgentic can help you achieve your retail media goals.
+              Get in touch with our team to schedule a personalized demo and see how Adspirer can help you achieve your retail media goals.
             </p>
           </div>
           
@@ -612,7 +612,7 @@ const Marketing = () => {
                 <div className="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center">
                   <span className="font-bold">A</span>
                 </div>
-                <span className="font-semibold text-xl">Adgentic</span>
+                <span className="font-semibold text-xl">Adspirer</span>
               </div>
               <p className="max-w-xs">AI-powered retail media management that simplifies campaign creation and optimization.</p>
             </div>
