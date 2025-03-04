@@ -1,10 +1,9 @@
 
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { useAuth } from '@/context/AuthContext';
-import { useToast } from '@/components/ui/use-toast';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { toast } from 'sonner';
 import { 
   Card, 
   CardContent, 
@@ -13,58 +12,74 @@ import {
   CardHeader, 
   CardTitle 
 } from '@/components/ui/card';
-import { Loader2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/context/AuthContext';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
   const { signIn } = useAuth();
-  const { toast } = useToast();
+  
+  // Get the intended destination from location state, or default to '/app'
+  const from = location.state?.from?.pathname || '/app';
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
-
+    
+    if (!email || !password) {
+      toast.error('Please fill in all fields');
+      return;
+    }
+    
+    setIsLoading(true);
+    
     try {
       const { error } = await signIn(email, password);
       
       if (error) {
-        toast({
-          title: "Login failed",
-          description: error.message || "Please check your credentials and try again.",
-          variant: "destructive"
-        });
+        throw error;
+      }
+      
+      // On successful login, navigate to the app
+      navigate(from, { replace: true });
+    } catch (error: any) {
+      console.error('Login error:', error);
+      
+      // More descriptive error messages based on error type
+      if (error.message?.includes('Invalid login credentials')) {
+        toast.error('Invalid email or password');
+      } else if (error.message?.includes('Email not confirmed')) {
+        toast.error('Please confirm your email before logging in');
       } else {
-        toast({
-          title: "Login successful",
-          description: "Welcome back to Adspirer!",
-        });
+        toast.error(error.message || 'Failed to sign in');
       }
     } finally {
-      setIsSubmitting(false);
+      setIsLoading(false);
     }
   };
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-900 to-slate-800 p-4">
       <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1 text-center">
-          <CardTitle className="text-2xl font-bold">Login to Adspirer</CardTitle>
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-2xl font-bold">Sign in</CardTitle>
           <CardDescription>
             Enter your email and password to access your account
           </CardDescription>
         </CardHeader>
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleLogin}>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium" htmlFor="email">
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
                 Email
               </label>
               <Input
                 id="email"
                 type="email"
-                placeholder="name@example.com"
+                placeholder="your@email.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -72,10 +87,10 @@ export default function Login() {
             </div>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <label className="text-sm font-medium" htmlFor="password">
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700">
                   Password
                 </label>
-                <Link to="/auth/reset-password" className="text-sm text-blue-500 hover:text-blue-600">
+                <Link to="/auth/reset-password" className="text-sm text-blue-600 hover:text-blue-500">
                   Forgot password?
                 </Link>
               </div>
@@ -90,24 +105,24 @@ export default function Login() {
             </div>
           </CardContent>
           <CardFooter className="flex flex-col space-y-4">
-            <Button 
-              type="submit" 
-              className="w-full" 
-              disabled={isSubmitting}
+            <Button
+              type="submit"
+              className="w-full bg-blue-600 hover:bg-blue-700"
+              disabled={isLoading}
             >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Logging in...
-                </>
+              {isLoading ? (
+                <div className="flex items-center">
+                  <div className="animate-spin mr-2 h-4 w-4 border-t-2 border-b-2 border-white rounded-full"></div>
+                  Signing in...
+                </div>
               ) : (
-                "Login"
+                'Sign In'
               )}
             </Button>
             <div className="text-center text-sm">
-              Don't have an account?{" "}
-              <Link to="/auth/register" className="text-blue-500 hover:text-blue-600">
-                Sign up
+              Don't have an account?{' '}
+              <Link to="/auth/register" className="text-blue-600 hover:text-blue-500 font-medium">
+                Sign Up
               </Link>
             </div>
           </CardFooter>

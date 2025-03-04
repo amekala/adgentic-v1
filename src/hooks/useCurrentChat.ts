@@ -3,6 +3,7 @@ import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { BreadcrumbItem } from '@/components/Breadcrumb';
+import { useAuth } from '@/integrations/auth';
 
 export interface Message {
   id?: string;
@@ -28,7 +29,6 @@ interface Campaign {
   campaign_status: string;
 }
 
-// Helper function to ensure role is valid
 const ensureValidRole = (role: string): 'user' | 'assistant' | 'system' => {
   if (role === 'user' || role === 'assistant' || role === 'system') {
     return role;
@@ -42,6 +42,7 @@ export const useCurrentChat = () => {
   const [searchParams] = useSearchParams();
   const campaignId = searchParams.get('campaign_id');
   const navigate = useNavigate();
+  const { user } = useAuth();
   
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
@@ -50,7 +51,6 @@ export const useCurrentChat = () => {
   const [chatData, setChatData] = useState<ChatData | null>(null);
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   
-  // Fetch chat data and messages
   useEffect(() => {
     const fetchChatData = async () => {
       if (chatId === 'new') {
@@ -67,7 +67,6 @@ export const useCurrentChat = () => {
       setIsLoading(true);
       
       try {
-        // Fetch chat data
         const { data: chatData, error: chatError } = await supabase
           .from('chats')
           .select('*')
@@ -77,7 +76,6 @@ export const useCurrentChat = () => {
         if (chatError) throw chatError;
         setChatData(chatData);
         
-        // If this is a campaign chat, fetch campaign data
         if (chatData.campaign_id) {
           const { data: campaignData, error: campaignError } = await supabase
             .from('campaigns')
@@ -90,7 +88,6 @@ export const useCurrentChat = () => {
           }
         }
         
-        // Fetch messages
         const { data: messagesData, error: messagesError } = await supabase
           .from('chat_messages')
           .select('*')
@@ -100,7 +97,6 @@ export const useCurrentChat = () => {
         if (messagesError) throw messagesError;
         
         if (messagesData && messagesData.length > 0) {
-          // Convert DB messages to valid Message objects with type assertion
           const validMessages: Message[] = messagesData.map(msg => ({
             id: msg.id,
             role: ensureValidRole(msg.role),
@@ -135,12 +131,10 @@ export const useCurrentChat = () => {
     
     setInputValue('');
     
-    // For new chats, create the chat first
     if (chatId === 'new') {
       try {
         setIsSending(true);
         
-        // Create a new chat
         const { data: newChat, error: chatError } = await supabase
           .from('chats')
           .insert({
@@ -148,14 +142,14 @@ export const useCurrentChat = () => {
               ? userMessage.content.substring(0, 30) + '...' 
               : userMessage.content,
             chat_type: campaignId ? 'campaign' : 'general',
-            campaign_id: campaignId || null
+            campaign_id: campaignId || null,
+            created_by: user?.id
           })
           .select()
           .single();
           
         if (chatError) throw chatError;
         
-        // Add the message to the new chat
         const { data: newMessage, error: messageError } = await supabase
           .from('chat_messages')
           .insert({
@@ -168,10 +162,8 @@ export const useCurrentChat = () => {
           
         if (messageError) throw messageError;
         
-        // Navigate to the new chat
         navigate(`/chat/${newChat.id}${campaignId ? `?campaign_id=${campaignId}` : ''}`);
         
-        // Update local state
         setChatData(newChat);
         setMessages([{
           id: newMessage.id,
@@ -180,7 +172,6 @@ export const useCurrentChat = () => {
           created_at: newMessage.created_at
         }]);
         
-        // Send to AI
         await sendToAI(newChat.id, [{
           id: newMessage.id,
           role: ensureValidRole(newMessage.role),
@@ -193,12 +184,10 @@ export const useCurrentChat = () => {
         setIsSending(false);
       }
     } else {
-      // For existing chats, just add the message
       try {
         setIsSending(true);
         setMessages(prev => [...prev, userMessage]);
         
-        // Save message to database
         const { data: newMessage, error } = await supabase
           .from('chat_messages')
           .insert({
@@ -211,7 +200,6 @@ export const useCurrentChat = () => {
           
         if (error) throw error;
         
-        // Convert DB message to valid Message object
         const validMessage: Message = {
           id: newMessage.id,
           role: ensureValidRole(newMessage.role),
@@ -219,14 +207,12 @@ export const useCurrentChat = () => {
           created_at: newMessage.created_at
         };
         
-        // Update messages with the saved message
         setMessages(prev => 
           prev.map(msg => 
             msg === userMessage ? validMessage : msg
           )
         );
         
-        // Send to AI
         await sendToAI(chatId as string, [...messages, validMessage]);
       } catch (error) {
         console.error('Error sending message:', error);
@@ -237,23 +223,19 @@ export const useCurrentChat = () => {
   };
 
   const sendToAI = async (chatId: string, messageHistory: Message[]) => {
-    // Add thinking message
     const thinkingMessage: Message = { role: 'assistant', content: '...' };
     setMessages(prev => [...prev, thinkingMessage]);
     
     try {
-      // Ensure all messages are valid
       const filteredHistory = messageHistory.filter(msg => 
         msg && msg.role && msg.content
       );
       
-      // Format messages for the AI
       const formattedMessages = filteredHistory.map(msg => ({
         role: msg.role,
         content: msg.content
       }));
       
-      // System message that will be prepended
       const systemMessage = {
         role: 'system' as const,
         content: campaignId 
@@ -261,13 +243,11 @@ export const useCurrentChat = () => {
           : `You are Adgentic, an AI assistant specialized in advertising and marketing campaigns.`
       };
       
-      // Add system message and context
       const completeMessages = [
         systemMessage,
         ...formattedMessages
       ];
       
-      // Add context about whether this is a campaign chat
       const requestData = { 
         messages: completeMessages,
         context: campaignId ? {
@@ -277,30 +257,25 @@ export const useCurrentChat = () => {
         } : undefined
       };
       
-      // Determine which edge function to call based on chat type
       const functionName = campaignId ? 'campaign_chat' : 'chat';
       console.log(`Invoking Supabase Edge Function: ${functionName}`);
       console.log(`With data:`, JSON.stringify(requestData, null, 2));
       
-      // Call the appropriate Supabase Edge Function
       const response = await supabase.functions.invoke(functionName, {
         body: requestData
       });
       
       console.log('Edge Function response received:', response);
       
-      // Check if we received a response at all
       if (!response) {
         throw new Error('No response received from API');
       }
       
-      // Handle error case
       if (response.error) {
         console.error("API response error:", response.error);
         throw new Error(`API error: ${response.error.message || response.error}`);
       }
       
-      // The raw AI response data
       const responseData = response.data;
       console.log('Raw response data:', responseData);
       
@@ -308,41 +283,32 @@ export const useCurrentChat = () => {
         throw new Error('No data in API response');
       }
       
-      // Initialize with defaults
       let responseContent = "I couldn't generate a response.";
       let actionButtons: any[] = [];
       let responseTitle: string | undefined = undefined;
       
-      // Handle different response formats
       if (typeof responseData === 'string') {
-        // Plain string response
         responseContent = responseData;
       } 
       else if (responseData.content && typeof responseData.content === 'string') {
-        // Object with content field ({content: "..."})
         responseContent = responseData.content;
         
-        // Check for action buttons in the response
         if (responseData.actionButtons && Array.isArray(responseData.actionButtons)) {
           actionButtons = responseData.actionButtons;
         }
         
-        // Check for title in the response
         if (responseData.title) {
           responseTitle = responseData.title;
         }
       }
       else if (responseData.role === 'assistant' && responseData.content) {
-        // Format from campaign_chat edge function: {role: "assistant", content: "..."}
         responseContent = responseData.content;
         
-        // Campaign chat includes action buttons
         if (responseData.actionButtons && Array.isArray(responseData.actionButtons)) {
           actionButtons = responseData.actionButtons;
         }
       }
       else if (responseData.choices && responseData.choices[0] && responseData.choices[0].message) {
-        // Raw OpenAI API format
         responseContent = responseData.choices[0].message.content;
       }
       else {
@@ -350,58 +316,47 @@ export const useCurrentChat = () => {
         responseContent = "Received an unexpected response format. Please try again.";
       }
       
-      // Extract structured data from response if it contains JSON
       if (typeof responseContent === 'string' && 
          (responseContent.includes('```json') || responseContent.includes('```'))) {
         try {
-          // Look for JSON blocks in the response
           const jsonMatch = responseContent.match(/```json\n([\s\S]*?)\n```/) || 
                           responseContent.match(/```([\s\S]*?)```/);
                           
           if (jsonMatch && jsonMatch[1]) {
-            // Parse the JSON
             const jsonString = jsonMatch[1].trim();
             const structuredData = JSON.parse(jsonString);
             
             console.log('Found structured data in response:', structuredData);
             
-            // Extract parts from the structured data
             if (structuredData.title) {
               responseTitle = structuredData.title;
             }
             
             if (structuredData.content) {
-              // Replace content with the cleaned version from JSON
               responseContent = structuredData.content;
             } else {
-              // Remove the JSON block from the content
               responseContent = responseContent.replace(/```json\n[\s\S]*?\n```/, '').trim() || 
                               responseContent.replace(/```[\s\S]*?```/, '').trim();
             }
             
-            // Use action buttons from structured data if available
             if (structuredData.actionButtons && Array.isArray(structuredData.actionButtons)) {
               actionButtons = structuredData.actionButtons;
             }
           }
         } catch (e) {
           console.error('Error parsing JSON from response:', e);
-          // If parsing fails, use the full content
         }
       }
       
-      // Ensure the content is not empty
       if (!responseContent || responseContent.trim() === '') {
         responseContent = "I received an empty response from the server. Please try again.";
       }
       
-      // Build the complete assistant message
       const assistantResponse: Message = {
         role: 'assistant',
         content: responseContent.trim()
       };
       
-      // Add optional properties if available
       if (responseTitle) {
         assistantResponse.title = responseTitle;
       }
@@ -410,29 +365,22 @@ export const useCurrentChat = () => {
         assistantResponse.actionButtons = actionButtons;
       }
       
-      console.log('Final assistant response:', assistantResponse);
-      
-      // Replace thinking message with actual response
       setMessages(prev => prev.map(msg => msg === thinkingMessage ? assistantResponse : msg));
       
-      // Prepare the message for database storage
       const dbMessage = {
         chat_id: chatId,
         role: 'assistant',
         content: assistantResponse.content
       };
       
-      // Add actionbuttons if available
       if (assistantResponse.actionButtons && assistantResponse.actionButtons.length > 0) {
         try {
-          // @ts-ignore - actionbuttons is available in the DB but not typed
           dbMessage.actionbuttons = assistantResponse.actionButtons;
         } catch (e) {
           console.error('Error serializing action buttons:', e);
         }
       }
       
-      // Save AI response to database
       const { error } = await supabase
         .from('chat_messages')
         .insert(dbMessage);
@@ -442,7 +390,6 @@ export const useCurrentChat = () => {
     } catch (error: any) {
       console.error('Error getting AI response:', error);
       
-      // Provide more detailed error message to the user
       const errorMessage = error.message || 'Unknown error';
       const detailMessage = errorMessage.includes('Invalid JSON') 
         ? 'API returned invalid data format. Check Edge Function deployment.'
@@ -454,10 +401,8 @@ export const useCurrentChat = () => {
       
       toast.error(`Failed to get AI response: ${detailMessage}`);
       
-      // Fallback mechanism - generate a basic response without calling API
       console.log('Using fallback response mechanism');
       
-      // Generate a basic fallback response
       const userMessage = messageHistory[messageHistory.length - 1]?.content || '';
       let fallbackResponse = "I'm sorry, I couldn't connect to the AI service. Here is a basic response:";
       let fallbackButtons = [];
@@ -475,7 +420,6 @@ export const useCurrentChat = () => {
         fallbackResponse += "\n\nI'm operating in fallback mode due to connection issues. Please try again later or check your network connection. You may need to check that your Supabase Edge Function is properly deployed.";
       }
       
-      // Replace thinking message with fallback response
       setMessages(prev => 
         prev.map(msg => 
           msg.content === '...' ? {
@@ -486,7 +430,6 @@ export const useCurrentChat = () => {
         )
       );
       
-      // Save fallback response to database
       try {
         const dbMessage = {
           chat_id: chatId,
@@ -494,9 +437,7 @@ export const useCurrentChat = () => {
           content: fallbackResponse
         };
         
-        // Add actionbuttons if available
         if (fallbackButtons.length > 0) {
-          // @ts-ignore
           dbMessage.actionbuttons = fallbackButtons;
         }
         
@@ -520,7 +461,6 @@ export const useCurrentChat = () => {
     if (!confirm('Are you sure you want to delete this chat?')) return;
     
     try {
-      // Delete all messages first (due to foreign key constraints)
       const { error: messagesError } = await supabase
         .from('chat_messages')
         .delete()
@@ -528,7 +468,6 @@ export const useCurrentChat = () => {
         
       if (messagesError) throw messagesError;
       
-      // Then delete the chat
       const { error: chatError } = await supabase
         .from('chats')
         .delete()
@@ -538,7 +477,6 @@ export const useCurrentChat = () => {
       
       toast.success('Chat deleted');
       
-      // Navigate back to campaign or home
       if (campaignId) {
         navigate(`/campaign/${campaignId}`);
       } else {
@@ -558,7 +496,6 @@ export const useCurrentChat = () => {
     }
   };
 
-  // Breadcrumb items with proper type information
   const getBreadcrumbItems = () => {
     const items: BreadcrumbItem[] = [
       { 
@@ -569,7 +506,6 @@ export const useCurrentChat = () => {
       },
     ];
 
-    // For campaign chats, add the campaign breadcrumb
     if (campaign) {
       items.push({ 
         label: campaign.campaign_name, 
@@ -578,8 +514,6 @@ export const useCurrentChat = () => {
         id: campaignId as string 
       });
       
-      // For campaign chats, ensure we include the campaign ID in the chat URL
-      // Always add the chat breadcrumb for the current chat
       items.push({ 
         label: chatData?.title || 'New Chat', 
         href: `/chat/${chatId}${campaignId ? `?campaign_id=${campaignId}` : ''}`,
@@ -587,7 +521,6 @@ export const useCurrentChat = () => {
         id: chatId || 'new'
       });
     } else {
-      // For general chats, just include the chat without campaign context
       items.push({ 
         label: chatData?.title || 'New Chat', 
         href: `/chat/${chatId}`,

@@ -3,6 +3,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 
 type AuthContextType = {
   user: User | null;
@@ -11,6 +12,8 @@ type AuthContextType = {
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signUp: (email: string, password: string, firstName: string, lastName: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
+  resetPassword: (email: string) => Promise<{ error: any }>;
+  updatePassword: (password: string) => Promise<{ error: any }>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -53,6 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (!error) {
+        toast.success('Signed in successfully');
         navigate('/app');
       }
       return { error };
@@ -76,6 +80,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
       
       if (!error) {
+        toast.success('Registration successful! Please check your email to confirm your account.');
         navigate('/auth/confirm');
       }
       return { error };
@@ -88,14 +93,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = async () => {
     try {
       await supabase.auth.signOut();
+      toast.success('Signed out successfully');
       navigate('/');
     } catch (error) {
       console.error('Sign out error:', error);
+      toast.error('Failed to sign out');
+    }
+  };
+
+  const resetPassword = async (email: string) => {
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth/update-password`,
+      });
+      return { error };
+    } catch (error) {
+      console.error('Reset password error:', error);
+      return { error };
+    }
+  };
+
+  const updatePassword = async (password: string) => {
+    try {
+      const { error } = await supabase.auth.updateUser({ password });
+      return { error };
+    } catch (error) {
+      console.error('Update password error:', error);
+      return { error };
     }
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, isLoading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      session, 
+      isLoading, 
+      signIn, 
+      signUp, 
+      signOut,
+      resetPassword,
+      updatePassword
+    }}>
       {children}
     </AuthContext.Provider>
   );

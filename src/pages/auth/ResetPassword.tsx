@@ -1,10 +1,9 @@
 
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { toast } from 'sonner';
 import { 
   Card, 
   CardContent, 
@@ -13,117 +12,125 @@ import {
   CardHeader, 
   CardTitle 
 } from '@/components/ui/card';
-import { Loader2 } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
 
 export default function ResetPassword() {
   const [email, setEmail] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const { toast } = useToast();
+  const { resetPassword } = useAuth();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
-
+    
+    if (!email) {
+      toast.error('Please enter your email');
+      return;
+    }
+    
+    setIsLoading(true);
+    
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/update-password`,
-      });
+      const { error } = await resetPassword(email);
       
       if (error) {
-        toast({
-          title: "Reset failed",
-          description: error.message || "Please check your email and try again.",
-          variant: "destructive"
-        });
-      } else {
-        setIsSubmitted(true);
-        toast({
-          title: "Reset email sent",
-          description: "Check your email for a password reset link.",
-        });
+        throw error;
       }
+      
+      setIsSubmitted(true);
+      toast.success('Password reset link sent to your email');
+    } catch (error: any) {
+      console.error('Reset password error:', error);
+      toast.error(error.message || 'Failed to send reset link');
     } finally {
-      setIsSubmitting(false);
+      setIsLoading(false);
     }
   };
-
-  if (isSubmitted) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-900 to-slate-800 p-4">
-        <Card className="w-full max-w-md text-center">
-          <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl font-bold">Check your email</CardTitle>
-            <CardDescription>
-              We've sent a password reset link to your email
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-sm text-gray-500">
-              Please check your email inbox and click on the reset link to set a new password. 
-              If you don't see it, check your spam folder.
-            </p>
-          </CardContent>
-          <CardFooter className="flex flex-col space-y-4">
-            <Link to="/auth/login" className="w-full">
-              <Button variant="outline" className="w-full">
-                Back to Login
-              </Button>
-            </Link>
-          </CardFooter>
-        </Card>
-      </div>
-    );
-  }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-900 to-slate-800 p-4">
       <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1 text-center">
-          <CardTitle className="text-2xl font-bold">Reset Password</CardTitle>
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-2xl font-bold">Reset your password</CardTitle>
           <CardDescription>
-            Enter your email and we'll send you a reset link
+            Enter your email address and we'll send you a link to reset your password
           </CardDescription>
         </CardHeader>
-        <form onSubmit={handleSubmit}>
+        {!isSubmitted ? (
+          <form onSubmit={handleResetPassword}>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                  Email
+                </label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="your@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </div>
+            </CardContent>
+            <CardFooter className="flex flex-col space-y-4">
+              <Button
+                type="submit"
+                className="w-full bg-blue-600 hover:bg-blue-700"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <div className="flex items-center">
+                    <div className="animate-spin mr-2 h-4 w-4 border-t-2 border-b-2 border-white rounded-full"></div>
+                    Sending link...
+                  </div>
+                ) : (
+                  'Send Reset Link'
+                )}
+              </Button>
+              <div className="text-center text-sm">
+                Remember your password?{' '}
+                <Link to="/auth/login" className="text-blue-600 hover:text-blue-500 font-medium">
+                  Back to login
+                </Link>
+              </div>
+            </CardFooter>
+          </form>
+        ) : (
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium" htmlFor="email">
-                Email
-              </label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="name@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
+            <div className="p-4 bg-green-50 border border-green-200 rounded-md">
+              <div className="flex items-start">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-green-800">
+                    Reset link sent
+                  </h3>
+                  <div className="mt-2 text-sm text-green-700">
+                    <p>
+                      Please check your email for a link to reset your password. If it doesn't appear within a few minutes, check your spam folder.
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
-          </CardContent>
-          <CardFooter className="flex flex-col space-y-4">
-            <Button 
-              type="submit" 
-              className="w-full" 
-              disabled={isSubmitting}
+            <Button
+              onClick={() => setIsSubmitted(false)}
+              variant="outline"
+              className="w-full"
             >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Sending...
-                </>
-              ) : (
-                "Send Reset Link"
-              )}
+              Try again
             </Button>
             <div className="text-center text-sm">
-              Remember your password?{" "}
-              <Link to="/auth/login" className="text-blue-500 hover:text-blue-600">
+              <Link to="/auth/login" className="text-blue-600 hover:text-blue-500 font-medium">
                 Back to login
               </Link>
             </div>
-          </CardFooter>
-        </form>
+          </CardContent>
+        )}
       </Card>
     </div>
   );
