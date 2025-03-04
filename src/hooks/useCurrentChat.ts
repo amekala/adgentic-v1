@@ -29,18 +29,11 @@ interface Campaign {
   campaign_status: string;
 }
 
-interface ChatMessage {
+interface DbMessage {
   chat_id: string;
   role: string;
   content: string;
-  actionbuttons?: any[];
-}
-
-interface DbChatMessage {
-  chat_id: string;
-  role: string;
-  content: string;
-  actionbuttons?: any[];
+  actionbuttons?: Array<{ label: string; primary?: boolean }>;
 }
 
 const ensureValidRole = (role: string): 'user' | 'assistant' | 'system' => {
@@ -381,7 +374,7 @@ export const useCurrentChat = () => {
       
       setMessages(prev => prev.map(msg => msg === thinkingMessage ? assistantResponse : msg));
       
-      const dbMessage: DbChatMessage = {
+      const dbMessage: DbMessage = {
         chat_id: chatId,
         role: 'assistant',
         content: assistantResponse.content
@@ -445,7 +438,7 @@ export const useCurrentChat = () => {
       );
       
       try {
-        const dbMessage: DbChatMessage = {
+        const dbMessage: DbMessage = {
           chat_id: chatId,
           role: 'assistant',
           content: fallbackResponse
