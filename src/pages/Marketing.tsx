@@ -22,11 +22,15 @@ const PLATFORM_LOGOS = [
   },
   {
     name: "Instacart",
-    url: "https://upload.wikimedia.org/wikipedia/commons/6/68/Instacart_logo_2022.svg"
+    url: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/68/Instacart_logo_2022.svg/512px-Instacart_logo_2022.svg.png"
   },
   {
     name: "Target",
     url: "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9a/Target_logo.svg/512px-Target_logo.svg.png"
+  },
+  {
+    name: "Kroger",
+    url: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/69/Kroger_logo.svg/512px-Kroger_logo.svg.png"
   }
 ];
 
@@ -450,13 +454,13 @@ const Marketing = () => {
 
       <section className="py-12 px-6 md:px-16 max-w-6xl mx-auto">
         <h3 className="text-sm uppercase tracking-wider text-gray-500 mb-8 text-center">Leading Retail Media Platforms</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 justify-items-center items-center">
+        <div className="grid grid-cols-2 lg:grid-cols-5 md:grid-cols-3 gap-4 justify-items-center items-center">
           {PLATFORM_LOGOS.map((platform, index) => (
-            <div key={index} className="p-4 flex items-center justify-center">
+            <div key={index} className="p-4 w-full h-24 flex items-center justify-center bg-white rounded-lg shadow-sm">
               <img 
                 src={platform.url} 
                 alt={platform.name} 
-                className="h-12 max-w-full object-contain" 
+                className="h-10 max-h-16 max-w-[80%] object-contain" 
               />
             </div>
           ))}
@@ -735,10 +739,10 @@ const Marketing = () => {
               <div>
                 <h4 className="text-white font-medium mb-4">Quick Links</h4>
                 <ul className="space-y-2">
-                  <li><a href="#features" className="hover:text-white transition-colors">Features</a></li>
-                  <li><a href="#pricing" className="hover:text-white transition-colors">Pricing</a></li>
+                  <li><button onClick={handleFeaturesClick} className="hover:text-white transition-colors text-left">Features</button></li>
+                  <li><button onClick={handlePricingClick} className="hover:text-white transition-colors text-left">Pricing</button></li>
                   <li><button onClick={handleContactClick} className="hover:text-white transition-colors text-left">Contact Us</button></li>
-                  <li><a href="/about" className="hover:text-white transition-colors">About Us</a></li>
+                  <li><button onClick={handleAboutClick} className="hover:text-white transition-colors text-left">About Us</button></li>
                 </ul>
               </div>
             </div>
