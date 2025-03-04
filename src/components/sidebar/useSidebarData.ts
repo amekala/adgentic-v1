@@ -4,7 +4,6 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Chat } from "@/types/chat";
-import { useAuth } from "@/context/AuthContext";
 
 interface Campaign {
   id: string;
@@ -17,7 +16,6 @@ const useSidebarData = () => {
   const [expandedSection, setExpandedSection] = useState<string>("live");
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useAuth();
   const [campaigns, setCampaigns] = useState<{
     live: Campaign[];
     paused: Campaign[];
@@ -32,12 +30,9 @@ const useSidebarData = () => {
 
   useEffect(() => {
     const fetchCampaigns = async () => {
-      if (!user) return;
-      
       const { data, error } = await supabase
         .from('campaigns')
-        .select('id, campaign_name, campaign_status')
-        .eq('created_by', user.id);
+        .select('id, campaign_name, campaign_status');
 
       if (error) {
         console.error('Error fetching campaigns:', error);
@@ -65,7 +60,6 @@ const useSidebarData = () => {
               .from('chats')
               .select('campaign_id')
               .eq('id', id)
-              .eq('created_by', user.id)
               .single();
               
             if (chatData?.campaign_id) {
@@ -86,12 +80,9 @@ const useSidebarData = () => {
     };
 
     const fetchChats = async () => {
-      if (!user) return;
-      
       const { data, error } = await supabase
         .from('chats')
         .select('*')
-        .eq('created_by', user.id)
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -116,10 +107,8 @@ const useSidebarData = () => {
       setCampaignChats(chatsByCampaign);
     };
 
-    if (user) {
-      fetchCampaigns();
-      fetchChats();
-    }
+    fetchCampaigns();
+    fetchChats();
 
     const campaignsChannel = supabase
       .channel('campaigns-changes')
@@ -135,23 +124,17 @@ const useSidebarData = () => {
       supabase.removeChannel(campaignsChannel);
       supabase.removeChannel(chatsChannel);
     };
-  }, [location.pathname, user]);
+  }, [location.pathname]);
 
   const createNewChatForCampaign = async (campaignId: string) => {
     try {
-      if (!user) {
-        toast.error("You must be logged in to create a chat");
-        return;
-      }
-      
       // Create new chat for campaign
       const { data, error } = await supabase
         .from('chats')
         .insert({
           title: 'New Chat',
           chat_type: 'campaign',
-          campaign_id: campaignId,
-          created_by: user.id
+          campaign_id: campaignId
         })
         .select()
         .single();

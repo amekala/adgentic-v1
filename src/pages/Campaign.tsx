@@ -12,7 +12,6 @@ import ActionsGrid from '@/components/campaign/ActionsGrid';
 import MetricsSection from '@/components/campaign/MetricsSection';
 import CreativesSection from '@/components/campaign/CreativesSection';
 import ChatsList from '@/components/campaign/ChatsList';
-import { useAuth } from '@/context/AuthContext';
 
 const Campaign = () => {
   const { id: campaignId } = useParams();
@@ -24,7 +23,6 @@ const Campaign = () => {
   const [chats, setChats] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isNewCampaignModalOpen, setIsNewCampaignModalOpen] = useState(false);
-  const { user } = useAuth();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -43,14 +41,12 @@ const Campaign = () => {
             .from('campaigns')
             .select('*')
             .eq('id', campaignId)
-            .eq('created_by', user?.id)
             .single(),
             
           supabase
             .from('chats')
             .select('*')
             .eq('campaign_id', campaignId)
-            .eq('created_by', user?.id)
             .order('created_at', { ascending: false })
         ]);
         
@@ -78,10 +74,8 @@ const Campaign = () => {
       }
     };
     
-    if (user) {
-      fetchData();
-    }
-  }, [campaignId, user]);
+    fetchData();
+  }, [campaignId]);
 
   const createNewChat = async (initialMessage = '') => {
     try {
@@ -99,8 +93,7 @@ const Campaign = () => {
         .insert({
           title: title,
           chat_type: 'campaign',
-          campaign_id: campaignId,
-          created_by: user?.id
+          campaign_id: campaignId
         })
         .select()
         .single();
@@ -154,8 +147,7 @@ const Campaign = () => {
           goals_description: data.goals.trim() || null,
           campaign_notes: data.notes.trim() || null,
         })
-        .eq('id', campaignId)
-        .eq('created_by', user?.id);
+        .eq('id', campaignId);
         
       if (error) throw error;
       

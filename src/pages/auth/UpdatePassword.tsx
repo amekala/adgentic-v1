@@ -1,9 +1,10 @@
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { toast } from 'sonner';
 import { 
   Card, 
   CardContent, 
@@ -12,81 +13,63 @@ import {
   CardHeader, 
   CardTitle 
 } from '@/components/ui/card';
-import { useAuth } from '@/context/AuthContext';
+import { Loader2 } from 'lucide-react';
 
 export default function UpdatePassword() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const { updatePassword, user } = useAuth();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { toast } = useToast();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    // Check if we have a valid hash fragment in the URL
-    // This indicates the user came from a password reset link
-    const hasHashFragment = window.location.hash && window.location.hash.length > 0;
-    
-    // If no hash fragment and no authenticated user, redirect to login
-    if (!hasHashFragment && !user) {
-      toast.error('Invalid or expired password reset link');
-      navigate('/auth/login');
-    }
-  }, [user, navigate]);
-
-  const validatePassword = (password: string): boolean => {
-    return password.length >= 6;
-  };
-
-  const handleUpdatePassword = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!password || !confirmPassword) {
-      toast.error('Please fill in all fields');
-      return;
-    }
-    
+    setIsSubmitting(true);
+
     if (password !== confirmPassword) {
-      toast.error('Passwords do not match');
+      toast({
+        title: "Passwords don't match",
+        description: "Please make sure your passwords match.",
+        variant: "destructive"
+      });
+      setIsSubmitting(false);
       return;
     }
-    
-    if (!validatePassword(password)) {
-      toast.error('Password must be at least 6 characters long');
-      return;
-    }
-    
-    setIsLoading(true);
-    
+
     try {
-      const { error } = await updatePassword(password);
+      const { error } = await supabase.auth.updateUser({ password });
       
       if (error) {
-        throw error;
+        toast({
+          title: "Update failed",
+          description: error.message || "Please try again.",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Password updated",
+          description: "Your password has been updated successfully.",
+        });
+        navigate('/auth/login');
       }
-      
-      toast.success('Password updated successfully');
-      navigate('/auth/login');
-    } catch (error: any) {
-      console.error('Update password error:', error);
-      toast.error(error.message || 'Failed to update password');
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-900 to-slate-800 p-4">
       <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold">Update your password</CardTitle>
+        <CardHeader className="space-y-1 text-center">
+          <CardTitle className="text-2xl font-bold">Set New Password</CardTitle>
           <CardDescription>
-            Enter a new password for your account
+            Create a new password for your account
           </CardDescription>
         </CardHeader>
-        <form onSubmit={handleUpdatePassword}>
+        <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+              <label className="text-sm font-medium" htmlFor="password">
                 New Password
               </label>
               <Input
@@ -99,7 +82,7 @@ export default function UpdatePassword() {
               />
             </div>
             <div className="space-y-2">
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
+              <label className="text-sm font-medium" htmlFor="confirmPassword">
                 Confirm New Password
               </label>
               <Input
@@ -112,19 +95,19 @@ export default function UpdatePassword() {
               />
             </div>
           </CardContent>
-          <CardFooter className="flex flex-col">
-            <Button
-              type="submit"
-              className="w-full bg-blue-600 hover:bg-blue-700"
-              disabled={isLoading}
+          <CardFooter className="flex flex-col space-y-4">
+            <Button 
+              type="submit" 
+              className="w-full" 
+              disabled={isSubmitting}
             >
-              {isLoading ? (
-                <div className="flex items-center">
-                  <div className="animate-spin mr-2 h-4 w-4 border-t-2 border-b-2 border-white rounded-full"></div>
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Updating...
-                </div>
+                </>
               ) : (
-                'Update Password'
+                "Update Password"
               )}
             </Button>
           </CardFooter>

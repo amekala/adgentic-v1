@@ -48,14 +48,6 @@ export default {
             light: "#94a3b8", // slate-400
           }
         },
-        adspirer: {
-          main: "#f8fafc",  // Adding the missing color - using same as adgentic.main
-          border: "#e5e5e5",
-          text: {
-            primary: "#343541",
-          },
-          hover: "#f1f5f9",
-        },
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",

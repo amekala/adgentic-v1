@@ -94,7 +94,7 @@ const Sidebar = ({ isOpen, onToggle, onApiKeyChange, onNewCampaign }: SidebarPro
           />
         </div>
 
-        <SidebarFooter isOpen={isOpen} />
+        <SidebarFooter />
       </div>
     </>
   );

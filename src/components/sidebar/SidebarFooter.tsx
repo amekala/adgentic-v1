@@ -1,75 +1,94 @@
 
-import { User, LogOut, Settings } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
+import {
+  LifeBuoy,
+  LogOut,
+  Settings,
+  UserCircle
+} from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
-import { toast } from 'sonner';
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
-interface SidebarFooterProps {
-  isOpen: boolean;
-}
-
-const SidebarFooter = ({ isOpen }: SidebarFooterProps) => {
-  const navigate = useNavigate();
+const SidebarFooter = () => {
   const { user, signOut } = useAuth();
+  const [showSignOutDialog, setShowSignOutDialog] = useState(false);
   
-  const handleAccountClick = () => {
-    navigate('/account');
-  };
-  
-  const handleSignOut = async () => {
-    await signOut();
-  };
-  
-  const displayName = user?.user_metadata?.first_name 
+  const userDisplayName = user?.user_metadata?.first_name 
     ? `${user.user_metadata.first_name} ${user.user_metadata.last_name || ''}`
-    : user?.email;
+    : user?.email || 'User';
 
   return (
-    <div className={`mt-auto p-3 border-t border-adgentic-border ${!isOpen ? 'flex justify-center' : ''}`}>
-      {isOpen && (
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-full bg-adgentic-accent text-white flex items-center justify-center">
-              <User className="h-4 w-4" />
-            </div>
-            <div className="truncate">
-              <div className="text-sm font-medium text-adgentic-text-primary truncate" title={displayName}>
-                {displayName}
+    <div className="px-3 py-2 border-t border-slate-800">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" className="w-full justify-start px-2 text-left hover:bg-slate-800">
+            <div className="flex items-center gap-3">
+              <div className="h-8 w-8 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-500">
+                <UserCircle size={18} />
               </div>
-              <div className="text-xs text-adgentic-text-secondary truncate" title={user?.email}>
-                {user?.email}
+              <div className="flex-1 truncate">
+                <div className="font-medium text-sm truncate">{userDisplayName}</div>
+                <div className="text-xs text-slate-400 truncate">{user?.email}</div>
               </div>
             </div>
-          </div>
-        </div>
-      )}
-      
-      <div className={`flex ${isOpen ? 'gap-2' : 'flex-col gap-3'}`}>
-        <Button
-          onClick={handleAccountClick}
-          variant="ghost"
-          size="sm"
-          className={`text-adgentic-text-secondary hover:text-adgentic-accent hover:bg-adgentic-hover ${
-            !isOpen ? 'w-8 h-8 p-0 flex justify-center' : 'w-full justify-start'
-          }`}
-        >
-          <Settings className="h-4 w-4 min-w-4" />
-          {isOpen && <span className="ml-2">Settings</span>}
-        </Button>
-        
-        <Button
-          onClick={handleSignOut}
-          variant="ghost"
-          size="sm"
-          className={`text-adgentic-text-secondary hover:text-red-500 hover:bg-adgentic-hover ${
-            !isOpen ? 'w-8 h-8 p-0 flex justify-center' : 'w-full justify-start'
-          }`}
-        >
-          <LogOut className="h-4 w-4 min-w-4" />
-          {isOpen && <span className="ml-2">Sign Out</span>}
-        </Button>
-      </div>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-56">
+          <DropdownMenuLabel>My Account</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <Link to="/account">
+            <DropdownMenuItem>
+              <Settings className="mr-2 h-4 w-4" />
+              <span>Account Settings</span>
+            </DropdownMenuItem>
+          </Link>
+          <Link to="/help">
+            <DropdownMenuItem>
+              <LifeBuoy className="mr-2 h-4 w-4" />
+              <span>Help & Support</span>
+            </DropdownMenuItem>
+          </Link>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={() => setShowSignOutDialog(true)}>
+            <LogOut className="mr-2 h-4 w-4" />
+            <span>Sign out</span>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <AlertDialog open={showSignOutDialog} onOpenChange={setShowSignOutDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Sign out from Adspirer?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You will need to sign in again to access your account.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={signOut}>Sign Out</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

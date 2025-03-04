@@ -16,7 +16,6 @@ export type Database = {
           campaign_status: Database["public"]["Enums"]["campaign_status"]
           clicks_last_7_days: number | null
           created_at: string
-          created_by: string | null
           ctr_last_7_days: number | null
           daily_budget: number
           goals_description: string | null
@@ -36,7 +35,6 @@ export type Database = {
           campaign_status?: Database["public"]["Enums"]["campaign_status"]
           clicks_last_7_days?: number | null
           created_at?: string
-          created_by?: string | null
           ctr_last_7_days?: number | null
           daily_budget?: number
           goals_description?: string | null
@@ -56,7 +54,6 @@ export type Database = {
           campaign_status?: Database["public"]["Enums"]["campaign_status"]
           clicks_last_7_days?: number | null
           created_at?: string
-          created_by?: string | null
           ctr_last_7_days?: number | null
           daily_budget?: number
           goals_description?: string | null
@@ -115,7 +112,6 @@ export type Database = {
           campaign_id: string | null
           chat_type: string
           created_at: string | null
-          created_by: string | null
           id: string
           title: string
         }
@@ -123,7 +119,6 @@ export type Database = {
           campaign_id?: string | null
           chat_type: string
           created_at?: string | null
-          created_by?: string | null
           id?: string
           title: string
         }
@@ -131,7 +126,6 @@ export type Database = {
           campaign_id?: string | null
           chat_type?: string
           created_at?: string | null
-          created_by?: string | null
           id?: string
           title?: string
         }
@@ -187,33 +181,6 @@ export type Database = {
           retailers?: string[] | null
           solutions_of_interest?: string[] | null
           work_email?: string
-        }
-        Relationships: []
-      }
-      profiles: {
-        Row: {
-          avatar_url: string | null
-          email: string
-          first_name: string | null
-          id: string
-          last_name: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          avatar_url?: string | null
-          email: string
-          first_name?: string | null
-          id: string
-          last_name?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          avatar_url?: string | null
-          email?: string
-          first_name?: string | null
-          id?: string
-          last_name?: string | null
-          updated_at?: string | null
         }
         Relationships: []
       }
