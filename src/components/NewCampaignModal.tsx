@@ -18,9 +18,10 @@ interface NewCampaignModalProps {
   isOpen: boolean;
   onClose: () => void;
   onCreateCampaign: (data: { name: string; goals: string; notes: string }) => void;
+  isSubmitting?: boolean;
 }
 
-const NewCampaignModal = ({ isOpen, onClose, onCreateCampaign }: NewCampaignModalProps) => {
+const NewCampaignModal = ({ isOpen, onClose, onCreateCampaign, isSubmitting = false }: NewCampaignModalProps) => {
   const [name, setName] = useState("");
   const [goals, setGoals] = useState("");
   const [notes, setNotes] = useState("");
@@ -121,17 +122,17 @@ const NewCampaignModal = ({ isOpen, onClose, onCreateCampaign }: NewCampaignModa
           <Button
             variant="outline"
             onClick={onClose}
-            disabled={isLoading}
+            disabled={isLoading || isSubmitting}
             className="rounded-full px-6 bg-white border-adgentic-border text-adgentic-text-primary hover:bg-adgentic-lightGray"
           >
             Cancel
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={isLoading}
+            disabled={isLoading || isSubmitting}
             className="rounded-full px-6 bg-adgentic-accent hover:bg-blue-700 text-white"
           >
-            {isLoading ? "Creating..." : "Create campaign"}
+            {isLoading || isSubmitting ? "Creating..." : "Create campaign"}
           </Button>
         </div>
       </DialogContent>

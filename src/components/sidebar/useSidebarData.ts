@@ -1,9 +1,10 @@
+
 import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Chat } from "@/types/chat";
-import { useAuth } from "@/auth";
+import { useAuth } from "@/context/AuthContext";
 
 interface Campaign {
   id: string;

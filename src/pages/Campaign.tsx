@@ -12,7 +12,7 @@ import ActionsGrid from '@/components/campaign/ActionsGrid';
 import MetricsSection from '@/components/campaign/MetricsSection';
 import CreativesSection from '@/components/campaign/CreativesSection';
 import ChatsList from '@/components/campaign/ChatsList';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/context/AuthContext';
 
 const Campaign = () => {
   const { id: campaignId } = useParams();

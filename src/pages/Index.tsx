@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import Sidebar from '@/components/Sidebar';
 import NewCampaignModal from '@/components/NewCampaignModal';
@@ -87,7 +86,6 @@ export default function Index() {
         isOpen={isNewCampaignModalOpen}
         onClose={() => setIsNewCampaignModalOpen(false)}
         onCreateCampaign={handleCreateCampaign}
-        isSubmitting={isLoading}
       />
     </div>
   );
