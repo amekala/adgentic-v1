@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -31,6 +30,13 @@ interface Campaign {
 }
 
 interface ChatMessage {
+  chat_id: string;
+  role: string;
+  content: string;
+  actionbuttons?: any[];
+}
+
+interface DbChatMessage {
   chat_id: string;
   role: string;
   content: string;
@@ -375,7 +381,7 @@ export const useCurrentChat = () => {
       
       setMessages(prev => prev.map(msg => msg === thinkingMessage ? assistantResponse : msg));
       
-      const dbMessage = {
+      const dbMessage: DbChatMessage = {
         chat_id: chatId,
         role: 'assistant',
         content: assistantResponse.content
@@ -439,7 +445,7 @@ export const useCurrentChat = () => {
       );
       
       try {
-        const dbMessage = {
+        const dbMessage: DbChatMessage = {
           chat_id: chatId,
           role: 'assistant',
           content: fallbackResponse
