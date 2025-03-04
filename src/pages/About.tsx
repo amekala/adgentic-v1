@@ -28,10 +28,10 @@ const About = () => {
           <span className="font-semibold text-xl">Adgentic</span>
         </div>
         <div className="hidden md:flex items-center gap-8">
+          <a href="/" className="text-sm hover:text-blue-600 transition-colors">Home</a>
           <a href="/#features" className="text-sm hover:text-blue-600 transition-colors">Features</a>
           <a href="/#benefits" className="text-sm hover:text-blue-600 transition-colors">Benefits</a>
           <a href="/#pricing" className="text-sm hover:text-blue-600 transition-colors">Pricing</a>
-          <a href="/#contact" className="text-sm hover:text-blue-600 transition-colors">Contact Us</a>
           <a href="/about" className="text-sm text-blue-600 font-medium">About Us</a>
         </div>
         <Button 
@@ -149,7 +149,7 @@ const About = () => {
                 <a href="mailto:abhi@adspirer.com" className="text-blue-600 font-medium">abhi@adspirer.com</a>
               </div>
               <Button 
-                onClick={() => navigate('/#contact')} 
+                onClick={() => navigate('/')} 
                 className="bg-blue-600 hover:bg-blue-700 text-white"
               >
                 Contact Us <ArrowRight className="ml-2 h-4 w-4" />
@@ -176,9 +176,9 @@ const About = () => {
               <div>
                 <h4 className="text-white font-medium mb-4">Quick Links</h4>
                 <ul className="space-y-2">
+                  <li><a href="/" className="hover:text-white transition-colors">Home</a></li>
                   <li><a href="/#features" className="hover:text-white transition-colors">Features</a></li>
                   <li><a href="/#pricing" className="hover:text-white transition-colors">Pricing</a></li>
-                  <li><a href="/#contact" className="hover:text-white transition-colors">Contact Us</a></li>
                   <li><a href="/about" className="hover:text-white transition-colors">About Us</a></li>
                 </ul>
               </div>
