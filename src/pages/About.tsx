@@ -3,7 +3,6 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ChevronRight, Heart, Users, Zap, Target, Lightbulb, Mail, ArrowRight } from 'lucide-react';
-import { SpeedInsights } from '@vercel/speed-insights/react';
 
 const About = () => {
   const navigate = useNavigate();
@@ -18,7 +17,6 @@ const About = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 text-slate-900">
-      <SpeedInsights />
       
       <nav className="flex items-center justify-between py-6 px-8 md:px-16">
         <div className="flex items-center gap-2 cursor-pointer" onClick={handleHomeClick}>

@@ -1,9 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ChevronRight, Check, Globe, BarChart2, Zap, ArrowRight, Search, PieChart, TrendingUp, Tag, AlertCircle, Plus } from 'lucide-react';
+import { ChevronRight, Check, Globe, BarChart2, Zap, ArrowRight, Search, PieChart, TrendingUp, Tag, AlertCircle, Plus, Menu, X, Home, Phone, Info, DollarSign } from 'lucide-react';
 import ContactForm from '@/components/ContactForm';
-import { SpeedInsights } from '@vercel/speed-insights/react';
 
 const FEATURED_LOGOS = [
   "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b9/TechCrunch_logo.svg/512px-TechCrunch_logo.svg.png",
@@ -153,6 +152,9 @@ const Marketing = () => {
   const navigate = useNavigate();
   const pricingSectionRef = useRef<HTMLDivElement>(null);
   const contactSectionRef = useRef<HTMLDivElement>(null);
+  const featuresSectionRef = useRef<HTMLDivElement>(null);
+  const benefitsSectionRef = useRef<HTMLDivElement>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
   const handleLoginClick = () => {
     navigate('/app');
@@ -160,10 +162,31 @@ const Marketing = () => {
 
   const handlePricingClick = () => {
     pricingSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
+    setMobileMenuOpen(false);
   };
 
   const handleContactClick = () => {
     contactSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
+    setMobileMenuOpen(false);
+  };
+  
+  const handleFeaturesClick = () => {
+    featuresSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
+    setMobileMenuOpen(false);
+  };
+  
+  const handleBenefitsClick = () => {
+    benefitsSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
+    setMobileMenuOpen(false);
+  };
+  
+  const handleAboutClick = () => {
+    navigate('/about');
+    setMobileMenuOpen(false);
+  };
+  
+  const toggleMobileMenu = () => {
+    setMobileMenuOpen(!mobileMenuOpen);
   };
 
   const campaignCreationChat = [
@@ -284,7 +307,6 @@ const Marketing = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 text-slate-900">
-      <SpeedInsights />
       
       <nav className="flex items-center justify-between py-6 px-8 md:px-16">
         <div className="flex items-center gap-2">
@@ -294,20 +316,112 @@ const Marketing = () => {
           <span className="font-semibold text-xl">Adspirer</span>
         </div>
         <div className="hidden md:flex items-center gap-8">
-          <a href="#features" className="text-sm hover:text-blue-600 transition-colors">Features</a>
-          <a href="#benefits" className="text-sm hover:text-blue-600 transition-colors">Benefits</a>
+          <button onClick={handleFeaturesClick} className="text-sm hover:text-blue-600 transition-colors">Features</button>
+          <button onClick={handleBenefitsClick} className="text-sm hover:text-blue-600 transition-colors">Benefits</button>
           <button onClick={handlePricingClick} className="text-sm hover:text-blue-600 transition-colors">Pricing</button>
           <button onClick={handleContactClick} className="text-sm hover:text-blue-600 transition-colors">Contact Us</button>
-          <a href="/about" className="text-sm hover:text-blue-600 transition-colors">About Us</a>
+          <button onClick={handleAboutClick} className="text-sm hover:text-blue-600 transition-colors">About Us</button>
         </div>
-        <Button 
-          onClick={handleLoginClick} 
-          variant="default" 
-          className="bg-gray-900 hover:bg-gray-800 text-white rounded-md px-4 py-2"
-        >
-          Login <ChevronRight className="h-4 w-4 ml-1" />
-        </Button>
+        <div className="flex items-center gap-3">
+          <Button 
+            onClick={handleLoginClick} 
+            variant="default" 
+            className="bg-gray-900 hover:bg-gray-800 text-white rounded-md px-4 py-2"
+          >
+            Login <ChevronRight className="h-4 w-4 ml-1" />
+          </Button>
+          <button 
+            onClick={toggleMobileMenu} 
+            className="md:hidden bg-blue-100 text-blue-600 p-2 rounded-full hover:bg-blue-200 transition-colors"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
+        </div>
       </nav>
+      
+      {/* Mobile Menu Overlay */}
+      {mobileMenuOpen && (
+        <div className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-end">
+          <div className="bg-white w-64 h-full shadow-xl p-5 transform transition-transform duration-300 ease-in-out">
+            <div className="flex justify-between items-center mb-8">
+              <div className="flex items-center gap-2">
+                <div className="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center text-white">
+                  <span className="font-bold">A</span>
+                </div>
+                <span className="font-semibold">Adspirer</span>
+              </div>
+              <button 
+                onClick={toggleMobileMenu}
+                className="text-gray-500 hover:text-gray-800"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            
+            <div className="flex flex-col space-y-5">
+              <button 
+                onClick={handleFeaturesClick}
+                className="flex items-center gap-3 text-gray-700 hover:text-blue-600 py-2 transition-colors"
+              >
+                <Zap className="h-5 w-5" />
+                <span>Features</span>
+              </button>
+              
+              <button 
+                onClick={handleBenefitsClick}
+                className="flex items-center gap-3 text-gray-700 hover:text-blue-600 py-2 transition-colors"
+              >
+                <Check className="h-5 w-5" />
+                <span>Benefits</span>
+              </button>
+              
+              <button 
+                onClick={handlePricingClick}
+                className="flex items-center gap-3 text-gray-700 hover:text-blue-600 py-2 transition-colors"
+              >
+                <DollarSign className="h-5 w-5" />
+                <span>Pricing</span>
+              </button>
+              
+              <button 
+                onClick={handleContactClick}
+                className="flex items-center gap-3 text-gray-700 hover:text-blue-600 py-2 transition-colors"
+              >
+                <Phone className="h-5 w-5" />
+                <span>Contact Us</span>
+              </button>
+              
+              <button 
+                onClick={handleAboutClick}
+                className="flex items-center gap-3 text-gray-700 hover:text-blue-600 py-2 transition-colors"
+              >
+                <Info className="h-5 w-5" />
+                <span>About Us</span>
+              </button>
+              
+              <hr className="my-2" />
+              
+              <Button 
+                onClick={handleLoginClick} 
+                variant="default" 
+                className="bg-blue-600 hover:bg-blue-700 text-white rounded-md w-full"
+              >
+                Login <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Floating mobile menu button (visible when scrolled) */}
+      <div className="md:hidden fixed bottom-6 right-6 z-40">
+        <button 
+          onClick={toggleMobileMenu}
+          className="bg-blue-600 text-white p-3 rounded-full shadow-lg hover:bg-blue-700 transition-colors"
+        >
+          <Menu className="h-6 w-6" />
+        </button>
+      </div>
 
       <section className="py-16 md:py-24 px-6 md:px-16 max-w-6xl mx-auto text-center">
         <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
@@ -350,7 +464,7 @@ const Marketing = () => {
         <p className="text-gray-600 mt-8 text-center">Manage your retail media presence across all major retailers from a single platform.</p>
       </section>
 
-      <section id="benefits" className="py-16 px-6 md:px-16 max-w-6xl mx-auto text-center">
+      <section id="benefits" ref={benefitsSectionRef} className="py-16 px-6 md:px-16 max-w-6xl mx-auto text-center">
         <h2 className="text-3xl md:text-4xl font-bold mb-12">
           For 🛍️ brands, 🛒 retailers and 🏭 CPG companies
         </h2>
@@ -385,7 +499,7 @@ const Marketing = () => {
         </div>
       </section>
 
-      <section id="features" className="py-16 bg-gray-50">
+      <section id="features" ref={featuresSectionRef} className="py-16 bg-gray-50">
         <div className="px-6 md:px-16 max-w-6xl mx-auto">
           <h2 className="text-3xl md:text-4xl font-bold mb-16 text-center">See Adspirer in Action</h2>
           
