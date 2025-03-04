@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ChevronRight, Heart, Users, Zap, Target, Lightbulb, Mail, ArrowRight } from 'lucide-react';
 import { SpeedInsights } from '@vercel/speed-insights/react';
@@ -28,11 +28,11 @@ const About = () => {
           <span className="font-semibold text-xl">Adgentic</span>
         </div>
         <div className="hidden md:flex items-center gap-8">
-          <a href="/" className="text-sm hover:text-blue-600 transition-colors">Home</a>
-          <a href="/#features" className="text-sm hover:text-blue-600 transition-colors">Features</a>
-          <a href="/#benefits" className="text-sm hover:text-blue-600 transition-colors">Benefits</a>
-          <a href="/#pricing" className="text-sm hover:text-blue-600 transition-colors">Pricing</a>
-          <a href="/about" className="text-sm text-blue-600 font-medium">About Us</a>
+          <Link to="/" className="text-sm hover:text-blue-600 transition-colors">Home</Link>
+          <Link to="/" className="text-sm hover:text-blue-600 transition-colors">Features</Link>
+          <Link to="/" className="text-sm hover:text-blue-600 transition-colors">Benefits</Link>
+          <Link to="/" className="text-sm hover:text-blue-600 transition-colors">Pricing</Link>
+          <Link to="/about" className="text-sm text-blue-600 font-medium">About Us</Link>
         </div>
         <Button 
           onClick={handleLoginClick} 
@@ -176,10 +176,10 @@ const About = () => {
               <div>
                 <h4 className="text-white font-medium mb-4">Quick Links</h4>
                 <ul className="space-y-2">
-                  <li><a href="/" className="hover:text-white transition-colors">Home</a></li>
-                  <li><a href="/#features" className="hover:text-white transition-colors">Features</a></li>
-                  <li><a href="/#pricing" className="hover:text-white transition-colors">Pricing</a></li>
-                  <li><a href="/about" className="hover:text-white transition-colors">About Us</a></li>
+                  <li><Link to="/" className="hover:text-white transition-colors">Home</Link></li>
+                  <li><Link to="/" className="hover:text-white transition-colors">Features</Link></li>
+                  <li><Link to="/" className="hover:text-white transition-colors">Pricing</Link></li>
+                  <li><Link to="/about" className="hover:text-white transition-colors">About Us</Link></li>
                 </ul>
               </div>
             </div>

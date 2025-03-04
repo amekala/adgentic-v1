@@ -38,7 +38,7 @@ const App = () => (
             <Route path="/account" element={<Account />} />
             <Route path="/pricing" element={<Pricing />} />
             <Route path="/about" element={<About />} />
-            {/* Add a catch-all redirect to ensure users land on Marketing */}
+            {/* This catch-all redirects any unknown routes to the Marketing page */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </BrowserRouter>
