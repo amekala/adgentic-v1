@@ -56,7 +56,7 @@ function Dashboard() {
     try {
       // For testing purposes, we'll use a hardcoded advertiser
       setAdvertiser({
-        id: '12345', // Fake ID for testing
+        id: '123e4567-e89b-12d3-a456-426614174000', // Using proper UUID format
         name: 'Test Advertiser Account',
         company_email: 'abhilashreddi@gmail.com'
       });
@@ -73,7 +73,7 @@ function Dashboard() {
       setTestMessage('Initiating Amazon Ads API connection test...');
       
       // Use the test advertiser ID
-      const advertiserId = '12345';
+      const advertiserId = '123e4567-e89b-12d3-a456-426614174000';
       
       const { data, error } = await supabase.functions.invoke('amazon-auth', {
         body: { 
