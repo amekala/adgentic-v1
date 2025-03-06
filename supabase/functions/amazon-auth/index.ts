@@ -20,22 +20,22 @@ serve(async (req) => {
       // Validate advertiser ID
       if (!advertiserId) throw new Error("Advertiser ID is required");
       
-      // Build the authorization URL with state parameter containing advertiser ID
-      const redirectUri = "http://localhost:8086/api/amazon-callback";
-      const scopes = ["advertising::campaign_management"];
-      const state = btoa(JSON.stringify({ advertiserId })); // Base64 encode for safety
+      // Build the auth URL with state
+      const oauthUrl = new URL("https://www.amazon.com/ap/oa");
+      oauthUrl.searchParams.append("client_id", clientId);
+      oauthUrl.searchParams.append("scope", "advertising::campaign_management");
+      oauthUrl.searchParams.append("response_type", "code");
+      oauthUrl.searchParams.append("redirect_uri", "https://www.adspirer.com/api/amazon-callback");
       
-      const authUrl = new URL("https://www.amazon.com/ap/oa");
-      authUrl.searchParams.append("client_id", clientId);
-      authUrl.searchParams.append("scope", scopes.join(" "));
-      authUrl.searchParams.append("response_type", "code");
-      authUrl.searchParams.append("redirect_uri", redirectUri);
-      authUrl.searchParams.append("state", state);
+      // Create state with advertiser ID to use after callback
+      const state = JSON.stringify({ advertiserId });
+      // Use base64 encoding for safety
+      oauthUrl.searchParams.append("state", btoa(state));
       
       return new Response(
         JSON.stringify({ 
           success: true, 
-          authUrl: authUrl.toString() 
+          authUrl: oauthUrl.toString() 
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
