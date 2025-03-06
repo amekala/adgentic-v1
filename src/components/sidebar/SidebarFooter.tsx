@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
@@ -6,7 +5,8 @@ import {
   LifeBuoy,
   LogOut,
   Settings,
-  UserCircle
+  UserCircle,
+  LayoutDashboard
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -59,6 +59,12 @@ const SidebarFooter = () => {
             <DropdownMenuItem>
               <Settings className="mr-2 h-4 w-4" />
               <span>Account Settings</span>
+            </DropdownMenuItem>
+          </Link>
+          <Link to="/dashboard" relative="path">
+            <DropdownMenuItem>
+              <LayoutDashboard className="mr-2 h-4 w-4" />
+              <span>Dashboard</span>
             </DropdownMenuItem>
           </Link>
           <Link to="/help">

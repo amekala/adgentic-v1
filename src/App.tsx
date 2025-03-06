@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -12,6 +11,7 @@ import Index from "./pages/Index";
 import Campaign from "./pages/Campaign";
 import Chat from "./pages/Chat";
 import Account from "./pages/Account";
+import Dashboard from "./pages/dashboard"; 
 import Pricing from "./pages/Pricing";
 import Marketing from "./pages/Marketing";
 import About from "./pages/About";
@@ -90,6 +90,11 @@ const App = () => (
               <Route path="/account" element={
                 <ProtectedRoute>
                   <Account />
+                </ProtectedRoute>
+              } />
+              <Route path="/dashboard" element={
+                <ProtectedRoute>
+                  <Dashboard />
                 </ProtectedRoute>
               } />
               

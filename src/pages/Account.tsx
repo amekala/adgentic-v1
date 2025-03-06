@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useToast } from "@/components/ui/use-toast";
 import Sidebar from '@/components/Sidebar';
 import ChatHeader from '@/components/ChatHeader';
@@ -9,6 +9,8 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import AdvertiserIntegrations from '@/components/AdvertiserIntegrations';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Section {
   id: string;
@@ -31,6 +33,60 @@ const Account = () => {
   const [websiteUrl, setWebsiteUrl] = useState('');
   const [isExtracting, setIsExtracting] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [loadingAdvertiser, setLoadingAdvertiser] = useState(true);
+  const [advertiser, setAdvertiser] = useState<any>(null);
+
+  useEffect(() => {
+    fetchAdvertiserData();
+  }, []);
+  
+  const fetchAdvertiserData = async () => {
+    setLoadingAdvertiser(true);
+    try {
+      // For testing purposes, we'll "fake" having found an advertiser account
+      // This simplifies the flow until proper advertiser account creation is implemented
+      setAdvertiser({
+        id: '12345', // Fake ID for testing
+        name: 'Test Advertiser Account',
+        company_email: 'abhilashreddi@gmail.com'
+      });
+    } catch (error) {
+      console.error('Error fetching advertiser:', error);
+    } finally {
+      setLoadingAdvertiser(false);
+    }
+  };
+  
+  const connectAmazonAds = async () => {
+    try {
+      // Use the fake advertiser ID for testing
+      const advertiserId = '12345';
+      
+      const { data, error } = await supabase.functions.invoke('amazon-auth', {
+        body: { 
+          operation: 'get_auth_url',
+          advertiserId
+        }
+      });
+      
+      if (error) throw error;
+      
+      // Open in a new window
+      window.open(data.authUrl, 'AmazonAdsAuth', 'width=600,height=800');
+      
+      toast({
+        title: 'Connecting...',
+        description: 'Please complete the authentication in the popup window',
+      });
+    } catch (error) {
+      console.error('Error initiating connection:', error);
+      toast({
+        title: 'Connection Failed',
+        description: error.message || 'Failed to connect to Amazon Ads',
+        variant: 'destructive'
+      });
+    }
+  };
 
   const sections: Section[] = [
     {
@@ -443,35 +499,25 @@ const Account = () => {
       case 'connected':
         return (
           <div className="mt-6 space-y-6">
-            <div className="flex items-center justify-between p-4 bg-[#383737] rounded-lg">
-              <div className="flex items-center gap-3">
-                <div className="h-8 w-8 rounded-full bg-green-500/10 flex items-center justify-center">
-                  <Check className="h-4 w-4 text-green-500" />
-                </div>
-                <div>
-                  <div className="text-white font-medium">Amazon Ads - Store ID 12345</div>
-                  <div className="text-sm text-green-500">Connected</div>
-                </div>
+            {loadingAdvertiser ? (
+              <div className="text-center p-4">
+                <p className="text-gray-400">Loading integrations...</p>
               </div>
-              <button className="px-3 py-1 text-sm text-white bg-red-500/20 hover:bg-red-500/30 rounded-md transition-colors">
-                Disconnect
-              </button>
-            </div>
-
-            <div className="flex items-center justify-between p-4 bg-[#383737] rounded-lg">
-              <div className="flex items-center gap-3">
-                <div className="h-8 w-8 rounded-full bg-red-500/10 flex items-center justify-center">
-                  <AlertCircle className="h-4 w-4 text-red-500" />
-                </div>
-                <div>
-                  <div className="text-white font-medium">Amazon Ads</div>
-                  <div className="text-sm text-red-500">Not Connected</div>
-                </div>
+            ) : advertiser ? (
+              <AdvertiserIntegrations advertiserId={advertiser.id} />
+            ) : (
+              <div className="bg-[#383737] p-4 rounded-lg text-center">
+                <AlertCircle className="h-6 w-6 mx-auto mb-2 text-yellow-500" />
+                <p className="text-white mb-1">Ready to connect your ad accounts</p>
+                <p className="text-sm text-gray-400 mb-4">Connect your Amazon Ads account to get started</p>
+                <Button 
+                  onClick={connectAmazonAds}
+                  className="bg-blue-500 hover:bg-blue-600"
+                >
+                  Connect to Amazon Ads
+                </Button>
               </div>
-              <button className="px-3 py-1 text-sm text-white bg-blue-500 hover:bg-blue-600 rounded-md transition-colors">
-                Connect Account
-              </button>
-            </div>
+            )}
           </div>
         );
       default:
