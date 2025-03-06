@@ -21,7 +21,7 @@ serve(async (req) => {
       if (!advertiserId) throw new Error("Advertiser ID is required");
       
       // Build the authorization URL with state parameter containing advertiser ID
-      const redirectUri = "https://www.adspirer.com/api/amazon-callback";
+      const redirectUri = "http://localhost:8086/api/amazon-callback";
       const scopes = ["advertising::campaign_management"];
       const state = btoa(JSON.stringify({ advertiserId })); // Base64 encode for safety
       

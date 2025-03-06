@@ -36,7 +36,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Get Amazon API credentials
     const clientId = process.env.AMAZON_ADS_CLIENT_ID;
     const clientSecret = process.env.AMAZON_ADS_CLIENT_SECRET;
-    const redirectUri = 'https://www.adspirer.com/api/amazon-callback';
+    const redirectUri = 'http://localhost:8086/api/amazon-callback';
     
     if (!clientId || !clientSecret) {
       return res.redirect('/dashboard?error=Missing+API+credentials');
