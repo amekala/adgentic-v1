@@ -84,60 +84,62 @@ const IndexContent = ({ isSidebarOpen, onNewCampaign }: IndexContentProps) => {
         <ChatInterface onActionClick={handleActionClick} />
       </div>
       
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold">Recent Campaigns</h2>
-        <Button onClick={onNewCampaign} size="sm" className="bg-blue-600 hover:bg-blue-700">
-          <PlusCircle className="h-4 w-4 mr-2" />
-          New Campaign
-        </Button>
-      </div>
-      
-      {isLoading ? (
-        <div className="flex justify-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-semibold">Recent Campaigns</h2>
+          <Button onClick={onNewCampaign} size="sm" className="bg-blue-600 hover:bg-blue-700">
+            <PlusCircle className="h-4 w-4 mr-2" />
+            New Campaign
+          </Button>
         </div>
-      ) : recentCampaigns.length > 0 ? (
-        <div className="space-y-4">
-          {recentCampaigns.map((campaign) => (
-            <Card 
-              key={campaign.id}
-              className="cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-              onClick={() => handleCampaignClick(campaign.id)}
-            >
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg">{campaign.campaign_name}</CardTitle>
-                <CardDescription>Created on {formatDate(campaign.created_at)}</CardDescription>
-              </CardHeader>
-              <CardContent className="pb-2">
-                <div className="flex items-center justify-between">
-                  <div className="text-sm text-gray-500">{campaign.platform}</div>
-                  <div className="px-2 py-1 rounded-full text-xs capitalize bg-blue-100 text-blue-800">
-                    {campaign.campaign_status}
+        
+        {isLoading ? (
+          <div className="flex justify-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+          </div>
+        ) : recentCampaigns.length > 0 ? (
+          <div className="space-y-4">
+            {recentCampaigns.map((campaign) => (
+              <Card 
+                key={campaign.id}
+                className="cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                onClick={() => handleCampaignClick(campaign.id)}
+              >
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg">{campaign.campaign_name}</CardTitle>
+                  <CardDescription>Created on {formatDate(campaign.created_at)}</CardDescription>
+                </CardHeader>
+                <CardContent className="pb-2">
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm text-gray-500">{campaign.platform}</div>
+                    <div className="px-2 py-1 rounded-full text-xs capitalize bg-blue-100 text-blue-800">
+                      {campaign.campaign_status}
+                    </div>
                   </div>
-                </div>
-              </CardContent>
-              <CardFooter>
-                <Button variant="ghost" size="sm" className="ml-auto">
-                  View Details
-                </Button>
-              </CardFooter>
-            </Card>
-          ))}
-        </div>
-      ) : (
-        <Card className="border-dashed border-2">
-          <CardHeader className="text-center">
-            <CardTitle className="text-lg">No campaigns yet</CardTitle>
-            <CardDescription>Create your first campaign to get started</CardDescription>
-          </CardHeader>
-          <CardContent className="flex justify-center pb-6">
-            <Button onClick={onNewCampaign} className="bg-blue-600 hover:bg-blue-700">
-              <PlusCircle className="h-4 w-4 mr-2" />
-              Create Campaign
-            </Button>
-          </CardContent>
-        </Card>
-      )}
+                </CardContent>
+                <CardFooter>
+                  <Button variant="ghost" size="sm" className="ml-auto">
+                    View Details
+                  </Button>
+                </CardFooter>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <Card className="border-dashed border-2">
+            <CardHeader className="text-center">
+              <CardTitle className="text-lg">No campaigns yet</CardTitle>
+              <CardDescription>Create your first campaign to get started</CardDescription>
+            </CardHeader>
+            <CardContent className="flex justify-center pb-6">
+              <Button onClick={onNewCampaign} className="bg-blue-600 hover:bg-blue-700">
+                <PlusCircle className="h-4 w-4 mr-2" />
+                Create Campaign
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+      </div>
     </div>
   );
 };
