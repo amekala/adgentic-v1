@@ -46,7 +46,7 @@ const Account = () => {
       // For testing purposes, we'll "fake" having found an advertiser account
       // This simplifies the flow until proper advertiser account creation is implemented
       setAdvertiser({
-        id: '12345', // Fake ID for testing
+        id: '123e4567-e89b-12d3-a456-426614174000', // Using proper UUID format
         name: 'Test Advertiser Account',
         company_email: 'abhilashreddi@gmail.com'
       });
@@ -59,8 +59,8 @@ const Account = () => {
   
   const connectAmazonAds = async () => {
     try {
-      // Use the fake advertiser ID for testing
-      const advertiserId = '12345';
+      // Use the advertiser ID for testing
+      const advertiserId = '123e4567-e89b-12d3-a456-426614174000';
       
       const { data, error } = await supabase.functions.invoke('amazon-auth', {
         body: { 

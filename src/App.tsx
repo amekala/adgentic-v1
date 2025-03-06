@@ -94,7 +94,7 @@ const App = () => (
               } />
               <Route path="/dashboard" element={
                 <ProtectedRoute>
-                  <Dashboard />
+                  <Navigate to="/account" replace />
                 </ProtectedRoute>
               } />
               

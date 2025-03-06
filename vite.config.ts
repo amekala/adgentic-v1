@@ -18,4 +18,12 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    outDir: 'dist',
+  },
+  preview: {
+    port: 8086,
+    host: true,
+    strictPort: true,
+  },
 }));
