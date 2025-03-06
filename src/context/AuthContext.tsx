@@ -3,6 +3,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 
 type AuthContextType = {
   user: User | null;
@@ -38,9 +39,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     fetchSession();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, newSession) => {
+      (event, newSession) => {
+        console.log('Auth state changed:', event);
         setSession(newSession);
         setUser(newSession?.user || null);
+        
+        // Handle auth events
+        if (event === 'SIGNED_IN') {
+          toast.success('Signed in successfully');
+        } else if (event === 'SIGNED_OUT') {
+          toast.info('Signed out');
+        }
       }
     );
 
@@ -53,11 +62,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (!error) {
+        toast.success('Signed in successfully');
         navigate('/app');
+      } else {
+        toast.error(`Sign in failed: ${error.message}`);
       }
       return { error };
     } catch (error) {
       console.error('Sign in error:', error);
+      toast.error('An unexpected error occurred during sign in');
       return { error };
     }
   };
@@ -76,11 +89,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
       
       if (!error) {
+        toast.success('Account created successfully. Please check your email to confirm your account.');
         navigate('/auth/confirm');
+      } else {
+        toast.error(`Sign up failed: ${error.message}`);
       }
       return { error };
     } catch (error) {
       console.error('Sign up error:', error);
+      toast.error('An unexpected error occurred during sign up');
       return { error };
     }
   };
@@ -88,9 +105,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = async () => {
     try {
       await supabase.auth.signOut();
+      toast.info('Signed out successfully');
       navigate('/');
     } catch (error) {
       console.error('Sign out error:', error);
+      toast.error('Error signing out');
     }
   };
 
