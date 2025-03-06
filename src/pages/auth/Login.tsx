@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
@@ -38,7 +37,7 @@ export default function Login() {
       } else {
         toast({
           title: "Login successful",
-          description: "Welcome back to Adspirer!",
+          description: "Welcome back to Adgentic!",
         });
       }
     } finally {
@@ -50,7 +49,7 @@ export default function Login() {
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-900 to-slate-800 p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1 text-center">
-          <CardTitle className="text-2xl font-bold">Login to Adspirer</CardTitle>
+          <CardTitle className="text-2xl font-bold">Login to Adgentic</CardTitle>
           <CardDescription>
             Enter your email and password to access your account
           </CardDescription>
