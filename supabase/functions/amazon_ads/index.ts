@@ -1,4 +1,5 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.5.0';
 
 // Set up CORS headers
 const corsHeaders = {
@@ -6,21 +7,36 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Test campaign data from your Amazon Advertising API
-const TEST_CAMPAIGN = {
-  campaignId: 306693373344074,
-  name: "Test Campaign",
-  tactic: "T00020",
-  startDate: "20250308",
-  endDate: "20251231",
-  state: "enabled",
-  costType: "cpc",
-  budget: 10000.0,
-  budgetType: "daily",
-  deliveryProfile: "as_soon_as_possible"
-};
+// Create a response with the given data and status
+function createResponse(data: any, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  });
+}
 
-// Sample campaign metrics data
+// Gets a valid access token for Amazon Advertising API
+async function getAmazonToken(supabase: any, platformCredentialId: string) {
+  try {
+    // Call the token_manager function
+    const { data, error } = await supabase.functions.invoke('token_manager', {
+      body: {
+        operation: 'get_token',
+        platformCredentialId
+      }
+    });
+    
+    if (error) throw new Error(`Token manager error: ${error.message}`);
+    if (!data?.access_token) throw new Error('No access token returned');
+    
+    return data.access_token;
+  } catch (error) {
+    console.error('Error getting Amazon token:', error);
+    throw error;
+  }
+}
+
+// Sample campaign metrics data (fallback)
 const TEST_CAMPAIGN_METRICS = {
   impressions: 142587,
   clicks: 3842,
@@ -32,7 +48,7 @@ const TEST_CAMPAIGN_METRICS = {
   roas: 6.33
 };
 
-// Sample product data
+// Sample product data (fallback)
 const TEST_PRODUCTS = [
   { asin: "B0ABCD1234", title: "Premium Wireless Headphones" },
   { asin: "B0EFGH5678", title: "Ergonomic Office Chair" },
@@ -49,133 +65,200 @@ serve(async (req) => {
 
   try {
     if (req.method !== 'POST') {
-      return new Response('Method Not Allowed', { 
-        status: 405,
-        headers: corsHeaders
-      });
+      return createResponse({ error: 'Method not allowed' }, 405);
     }
+
+    // Create a Supabase client using the request authentication
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return createResponse({ error: 'Missing authorization header' }, 401);
+    }
+    
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
+    
+    if (!supabaseUrl || !supabaseAnonKey) {
+      return createResponse({ error: 'Supabase configuration missing' }, 500);
+    }
+    
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
 
     const requestData = await req.json();
-    const { operation } = requestData;
+    const { operation, platformCredentialId } = requestData;
 
     if (!operation) {
-      throw new Error('Missing operation parameter');
+      return createResponse({ error: 'Missing operation parameter' }, 400);
+    }
+    
+    if (!platformCredentialId) {
+      return createResponse({ error: 'Missing platformCredentialId parameter' }, 400);
     }
 
-    let responseData;
+    // Get platform credential details
+    const { data: credential, error: credentialError } = await supabase
+      .from('platform_credentials')
+      .select('profile_id, platform_id, advertiser_id')
+      .eq('id', platformCredentialId)
+      .single();
+      
+    if (credentialError || !credential) {
+      return createResponse({ 
+        error: `Failed to retrieve platform credential: ${credentialError?.message || 'Not found'}` 
+      }, 404);
+    }
+    
+    // Get Amazon client ID from environment
+    const clientId = Deno.env.get('AMAZON_ADS_CLIENT_ID');
+    if (!clientId) {
+      return createResponse({ error: 'Amazon Ads client ID not configured' }, 500);
+    }
+
+    // Get a valid token
+    let accessToken;
+    try {
+      accessToken = await getAmazonToken(supabase, platformCredentialId);
+    } catch (tokenError) {
+      return createResponse({ error: `Token error: ${tokenError.message}` }, 500);
+    }
 
     // Handle different operations
+    let responseData;
     switch (operation) {
-      case 'get_campaign':
-        responseData = await handleGetCampaign(requestData);
+      case 'get_campaign': {
+        const { campaignId } = requestData;
+        
+        if (!campaignId) {
+          return createResponse({ error: 'Missing campaignId parameter' }, 400);
+        }
+        
+        // Make Amazon API request to get campaign details
+        const apiUrl = `https://advertising-api.amazon.com/v2/sp/campaigns/${campaignId}`;
+        
+        const response = await fetch(apiUrl, {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Amazon-Advertising-API-ClientId': clientId,
+            'Amazon-Advertising-API-Scope': credential.profile_id,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (!response.ok) {
+          // For 404, the campaign might be deleted or not found
+          if (response.status === 404) {
+            return createResponse({ error: 'Campaign not found' }, 404);
+          }
+          
+          const errorData = await response.json();
+          return createResponse({ 
+            error: `Amazon API error: ${JSON.stringify(errorData)}` 
+          }, response.status);
+        }
+        
+        responseData = await response.json();
         break;
-      case 'create_campaign':
-        responseData = await handleCreateCampaign(requestData);
+      }
+      
+      case 'create_campaign': {
+        const { campaignData } = requestData;
+        
+        if (!campaignData) {
+          return createResponse({ error: 'Missing campaign data' }, 400);
+        }
+        
+        // Make Amazon API request to create campaign
+        const apiUrl = 'https://advertising-api.amazon.com/v2/sp/campaigns';
+        
+        const response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Amazon-Advertising-API-ClientId': clientId,
+            'Amazon-Advertising-API-Scope': credential.profile_id,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(campaignData)
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          return createResponse({ 
+            error: `Amazon API error: ${JSON.stringify(errorData)}` 
+          }, response.status);
+        }
+        
+        responseData = await response.json();
         break;
-      case 'update_campaign':
-        responseData = await handleUpdateCampaign(requestData);
+      }
+      
+      case 'update_campaign': {
+        const { campaignId, updateData } = requestData;
+        
+        if (!campaignId) {
+          return createResponse({ error: 'Missing campaign ID' }, 400);
+        }
+        
+        if (!updateData) {
+          return createResponse({ error: 'Missing update data' }, 400);
+        }
+        
+        // Make Amazon API request to update campaign
+        const apiUrl = `https://advertising-api.amazon.com/v2/sp/campaigns/${campaignId}`;
+        
+        const response = await fetch(apiUrl, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Amazon-Advertising-API-ClientId': clientId,
+            'Amazon-Advertising-API-Scope': credential.profile_id,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(updateData)
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          return createResponse({ 
+            error: `Amazon API error: ${JSON.stringify(errorData)}` 
+          }, response.status);
+        }
+        
+        responseData = await response.json();
         break;
-      case 'get_campaign_metrics':
-        responseData = await handleGetCampaignMetrics(requestData);
+      }
+      
+      case 'get_campaign_metrics': {
+        const { campaignId, timeframe } = requestData;
+        
+        // Fallback to test data when developing/testing
+        // In production, this should make a real API call to the Amazon reports endpoint
+        responseData = {
+          campaignId: campaignId,
+          timeframe: timeframe || 'last_7_days',
+          metrics: TEST_CAMPAIGN_METRICS
+        };
         break;
-      case 'get_products':
-        responseData = await handleGetProducts(requestData);
+      }
+      
+      case 'get_products': {
+        // Fallback to test data when developing/testing
+        // In production, this should make a real API call to the Amazon catalog/product API
+        responseData = {
+          products: TEST_PRODUCTS
+        };
         break;
+      }
+      
       default:
-        throw new Error(`Unsupported operation: ${operation}`);
+        return createResponse({ error: `Unsupported operation: ${operation}` }, 400);
     }
 
     // Return the response data
-    return new Response(JSON.stringify(responseData), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
-
+    return createResponse(responseData);
   } catch (error) {
     console.error('Amazon Ads API Error:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return createResponse({ error: error.message }, 500);
   }
-});
-
-// Handler for getting campaign data
-async function handleGetCampaign(requestData) {
-  const { campaignId } = requestData;
-  
-  // If campaignId is provided and matches our test campaign, return it
-  if (campaignId && campaignId.toString() === TEST_CAMPAIGN.campaignId.toString()) {
-    console.log(`Returning data for test campaign ID: ${campaignId}`);
-    return TEST_CAMPAIGN;
-  }
-  
-  // Otherwise return the test campaign anyway for demo purposes
-  console.log('Campaign ID not provided or not found, returning test campaign');
-  return TEST_CAMPAIGN;
-}
-
-// Handler for creating a new campaign
-async function handleCreateCampaign(requestData) {
-  const { campaignData } = requestData;
-  
-  if (!campaignData) {
-    throw new Error('Missing campaign data');
-  }
-  
-  console.log('Creating new campaign with data:', campaignData);
-  
-  // In a real implementation, we would make an API call to Amazon Ads
-  // For now, just return a success response with the test campaign ID
-  return {
-    success: true,
-    campaignId: TEST_CAMPAIGN.campaignId,
-    message: 'Campaign created successfully'
-  };
-}
-
-// Handler for updating an existing campaign
-async function handleUpdateCampaign(requestData) {
-  const { campaignId, updateData } = requestData;
-  
-  if (!campaignId) {
-    throw new Error('Missing campaign ID');
-  }
-  
-  if (!updateData) {
-    throw new Error('Missing update data');
-  }
-  
-  console.log(`Updating campaign ${campaignId} with data:`, updateData);
-  
-  // In a real implementation, we would make an API call to Amazon Ads
-  // For now, just return a success response
-  return {
-    success: true,
-    campaignId: campaignId,
-    message: 'Campaign updated successfully'
-  };
-}
-
-// Handler for getting campaign metrics
-async function handleGetCampaignMetrics(requestData) {
-  const { campaignId, timeframe } = requestData;
-  
-  console.log(`Getting metrics for campaign ${campaignId} with timeframe ${timeframe || 'last_7_days'}`);
-  
-  // For demo purposes, return the test metrics
-  return {
-    campaignId: campaignId || TEST_CAMPAIGN.campaignId,
-    timeframe: timeframe || 'last_7_days',
-    metrics: TEST_CAMPAIGN_METRICS
-  };
-}
-
-// Handler for getting product data
-async function handleGetProducts(requestData) {
-  console.log('Getting product data');
-  
-  // For demo purposes, return the test products
-  return {
-    products: TEST_PRODUCTS
-  };
-} 
+}); 
