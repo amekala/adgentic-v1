@@ -1,171 +1,145 @@
-
-import { useState } from 'react';
-import { ArrowUp, ArrowDown, ChevronDown, ChevronUp } from 'lucide-react';
-import MessageAvatar from './MessageAvatar';
-import MessageActions from './MessageActions';
+import React from 'react';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
+import { Bot, User } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import { Badge } from '@/components/ui/badge';
 
-type MetricItem = {
-  label: string;
-  value: string;
-  improvement?: boolean;
-};
-
-type ActionButton = {
-  label: string;
-  primary?: boolean;
-  onClick?: () => void;
-};
-
-export type MessageProps = {
+export interface MessageProps {
+  id?: string;
   role: 'user' | 'assistant' | 'system';
   content: string;
+  created_at?: string;
   title?: string;
-  metrics?: MetricItem[];
-  actionButtons?: ActionButton[];
+  actionButtons?: Array<{ label: string; primary?: boolean }>;
+  metrics?: Array<{ label: string; value: string; improvement?: boolean }>;
+  followupPrompts?: Array<{ text: string }>;
+  apiData?: any;
+}
+
+interface MessageComponentProps {
+  message: MessageProps;
   onActionClick?: (action: string) => void;
-};
+  onFollowupClick?: (prompt: string) => void;
+}
 
-const Message = ({ role, content, title, metrics, actionButtons, onActionClick }: MessageProps) => {
-  const [expanded, setExpanded] = useState(true);
-  const isAssistantMessage = role === 'assistant';
-
-  const handleActionClick = (label: string) => {
-    if (onActionClick) {
-      onActionClick(label);
-    }
-  };
-
-  // Enhanced function to format content with proper line breaks and markdown
-  const formattedContent = content.split('\n').map((line, index) => {
-    // Check for list items
-    const isListItem = line.trim().match(/^(\d+\.|-)/)
-    
-    // Check for headers and formatting
-    return (
-      <p key={index} className={cn(
-        "mb-2",
-        line.startsWith('#') && "font-bold text-lg",
-        line.startsWith('##') && "font-bold text-base",
-        line.startsWith('###') && "font-bold text-sm",
-        line.match(/^\d+\./) && "pl-4",
-        line.startsWith('-') && "pl-4",
-        line.startsWith('*') && line.endsWith('*') && "italic",
-        line.startsWith('**') && line.endsWith('**') && "font-bold",
-        isListItem && "flex"
-      )}>
-        {isListItem && <span className="mr-2">{line.match(/^(\d+\.|-)/)?.[0]}</span>}
-        <span>
-          {isListItem 
-            ? line.replace(/^(\d+\.|-)\s+/, '')
-            : line.replace(/^#+ /, '')
-                 .replace(/^\*\*(.*)\*\*$/, "$1")
-                 .replace(/^\*(.*)\*$/, "$1")}
-        </span>
-      </p>
-    );
-  });
-
+const Message: React.FC<MessageComponentProps> = ({ 
+  message, 
+  onActionClick,
+  onFollowupClick
+}) => {
+  const isUser = message.role === 'user';
+  const hasMetrics = message.metrics && message.metrics.length > 0;
+  const hasActionButtons = message.actionButtons && message.actionButtons.length > 0;
+  const hasFollowupPrompts = message.followupPrompts && message.followupPrompts.length > 0;
+  const hasApiData = message.apiData;
+  
   return (
     <div className={cn(
-      "py-6 px-4",
-      role === 'assistant' ? "bg-white border-b border-adgentic-border" : "bg-adgentic-lightGray"
+      "flex gap-3 px-4 py-6",
+      isUser ? "bg-adgentic-bg" : "bg-adgentic-bglight border-b border-adgentic-border",
     )}>
-      <div className="w-full max-w-3xl mx-auto">
-        {role === 'user' ? (
-          <div className="flex justify-end mb-2">
-            <div className="bg-adgentic-accent text-white px-4 py-3 rounded-2xl max-w-[80%]">
-              {content}
-            </div>
-          </div>
-        ) : (
-          <div>
-            <div className="flex items-start mb-2">
-              <MessageAvatar isAssistant={isAssistantMessage} />
-              <div className="ml-3 text-sm font-medium text-adgentic-text-secondary">
-                {role === 'assistant' ? 'Adgentic Assistant:' : role === 'system' ? 'System:' : 'You:'}
-              </div>
-            </div>
-            
-            {/* Title when available */}
-            {title && isAssistantMessage && (
-              <h2 className="text-xl font-bold mb-3 text-adgentic-text-primary">{title}</h2>
-            )}
-
-            {/* Collapsible content section */}
-            <div className={cn(
-              "transition-all duration-300 overflow-hidden ml-11",
-              !expanded && "max-h-20"
-            )}>
-              <div className="text-adgentic-text-primary space-y-1">
-                {formattedContent}
-              </div>
-              
-              {/* Display metrics in a grid when available */}
-              {metrics && metrics.length > 0 && (
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-4">
-                  {metrics.map((metric, index) => (
-                    <div key={index} className="bg-white shadow-sm p-3 rounded-lg border border-adgentic-border">
-                      <div className="text-xs text-adgentic-text-secondary">{metric.label}</div>
-                      <div className={`text-lg font-medium flex items-center ${
-                        metric.improvement === undefined ? 'text-adgentic-text-primary' :
-                        metric.improvement ? 'text-green-600' : 'text-red-500'
-                      }`}>
-                        {metric.value}
-                        {metric.improvement !== undefined && (
-                          metric.improvement ? 
-                            <ArrowUp className="h-4 w-4 ml-1" /> : 
-                            <ArrowDown className="h-4 w-4 ml-1" />
-                        )}
-                      </div>
+      <div className="flex-shrink-0">
+        <Avatar className={cn(
+          "h-8 w-8",
+          isUser ? "bg-adgentic-primary" : "bg-adgentic-accent"
+        )}>
+          <AvatarFallback>
+            {isUser ? <User className="h-5 w-5 text-white" /> : <Bot className="h-5 w-5 text-white" />}
+          </AvatarFallback>
+        </Avatar>
+      </div>
+      
+      <div className="flex-1 space-y-4 max-w-4xl">
+        {message.title && (
+          <h3 className="font-semibold text-lg">{message.title}</h3>
+        )}
+        
+        <div className="prose prose-sm max-w-none">
+          <ReactMarkdown 
+            remarkPlugins={[remarkGfm]}
+            components={{
+              p: ({node, ...props}) => <p className="text-gray-800 whitespace-pre-wrap break-words" {...props} />
+            }}
+          >
+            {message.content}
+          </ReactMarkdown>
+        </div>
+        
+        {/* Metrics Display */}
+        {hasMetrics && (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 gap-3 my-4">
+            {message.metrics.map((metric, index) => (
+              <Card key={index} className="bg-white border border-gray-100 shadow-sm">
+                <CardContent className="p-3">
+                  <div className="flex flex-col">
+                    <span className="text-sm text-gray-500">{metric.label}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-lg">{metric.value}</span>
+                      {metric.improvement !== undefined && (
+                        <Badge className={metric.improvement ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}>
+                          {metric.improvement ? "▲" : "▼"}
+                        </Badge>
+                      )}
                     </div>
-                  ))}
-                </div>
-              )}
-              
-              {/* Display action buttons when available */}
-              {actionButtons && actionButtons.length > 0 && (
-                <div className="flex flex-wrap gap-2 mt-4">
-                  {actionButtons.map((button, index) => (
-                    <button
-                      key={index}
-                      className={`px-4 py-2 rounded-full text-sm ${
-                        button.primary 
-                          ? 'bg-adgentic-accent hover:bg-blue-700 text-white' 
-                          : 'bg-gray-100 hover:bg-gray-200 text-adgentic-text-primary border border-adgentic-border'
-                      }`}
-                      onClick={() => handleActionClick(button.label)}
-                    >
-                      {button.label}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Show expand/collapse button for long messages */}
-            {content.length > 300 && (
-              <button 
-                onClick={() => setExpanded(!expanded)} 
-                className="flex items-center gap-1 text-sm text-adgentic-accent hover:text-blue-700 mt-2 ml-11 cursor-pointer"
-              >
-                {expanded ? (
-                  <>
-                    <ChevronUp className="h-4 w-4" /> Show less
-                  </>
-                ) : (
-                  <>
-                    <ChevronDown className="h-4 w-4" /> Show more
-                  </>
-                )}
-              </button>
-            )}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         )}
         
-        {role === 'assistant' && (
-          <div className="flex items-center gap-2 text-adgentic-text-secondary mt-2 ml-11">
-            <MessageActions />
+        {/* API Data Display */}
+        {hasApiData && (
+          <div className="mt-4 p-4 border border-blue-100 bg-blue-50 rounded-md">
+            <h4 className="font-medium text-blue-800 mb-2">Campaign Data</h4>
+            <div className="grid grid-cols-2 gap-2 text-sm">
+              {Object.entries(message.apiData).map(([key, value]) => (
+                <div key={key} className="flex flex-col">
+                  <span className="text-gray-500 capitalize">{key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}</span>
+                  <span className="font-medium">{String(value)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        
+        {/* Action Buttons */}
+        {hasActionButtons && (
+          <div className="flex flex-wrap gap-2 mt-2">
+            {message.actionButtons.map((button, index) => (
+              <Button
+                key={index}
+                onClick={() => onActionClick && onActionClick(button.label)}
+                variant={button.primary ? "default" : "outline"}
+                size="sm"
+                className={cn(
+                  button.primary 
+                    ? "bg-adgentic-accent hover:bg-adgentic-accent/90 text-white" 
+                    : "border border-adgentic-border hover:bg-adgentic-bglight"
+                )}
+              >
+                {button.label}
+              </Button>
+            ))}
+          </div>
+        )}
+        
+        {/* Followup Prompts */}
+        {hasFollowupPrompts && (
+          <div className="flex flex-wrap gap-2 mt-3">
+            {message.followupPrompts.map((prompt, index) => (
+              <button
+                key={index}
+                onClick={() => onFollowupClick && onFollowupClick(prompt.text)}
+                className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-full text-sm text-gray-700 transition-colors"
+              >
+                {prompt.text}
+              </button>
+            ))}
           </div>
         )}
       </div>

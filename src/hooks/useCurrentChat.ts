@@ -61,6 +61,24 @@ export const useCurrentChat = () => {
           campaign_id: campaignId || undefined,
           created_at: new Date().toISOString()
         });
+        
+        // Fetch campaign data for new campaign chats too
+        if (campaignId) {
+          try {
+            const { data: campaignData, error: campaignError } = await supabase
+              .from('campaigns')
+              .select('*')
+              .eq('id', campaignId)
+              .single();
+              
+            if (!campaignError && campaignData) {
+              setCampaign(campaignData);
+            }
+          } catch (err) {
+            console.error('Error fetching campaign data for new chat:', err);
+          }
+        }
+        
         return;
       }
       
@@ -125,15 +143,21 @@ export const useCurrentChat = () => {
     setInputValue(e.target.value);
   };
 
-  const handleSendMessage = async () => {
-    if (!inputValue.trim() || isSending) return;
+  const handleSendMessage = async (overrideMessage?: string) => {
+    // If overrideMessage is provided, use that instead of inputValue
+    const messageText = overrideMessage || inputValue.trim();
+    
+    if (!messageText || isSending) return;
     
     const userMessage: Message = {
       role: 'user',
-      content: inputValue.trim()
+      content: messageText
     };
     
-    setInputValue('');
+    // Only clear input field if we're using inputValue
+    if (!overrideMessage) {
+      setInputValue('');
+    }
     
     // For new chats, create the chat first
     if (chatId === 'new') {
@@ -570,19 +594,18 @@ export const useCurrentChat = () => {
     ];
 
     // For campaign chats, add the campaign breadcrumb
-    if (campaign) {
+    if (campaignId) {
       items.push({ 
-        label: campaign.campaign_name, 
+        label: campaign?.campaign_name || 'Campaign', 
         href: `/campaign/${campaignId}`,
         type: "campaign", 
-        id: campaignId as string 
+        id: campaignId
       });
       
-      // For campaign chats, ensure we include the campaign ID in the chat URL
       // Always add the chat breadcrumb for the current chat
       items.push({ 
         label: chatData?.title || 'New Chat', 
-        href: `/chat/${chatId}${campaignId ? `?campaign_id=${campaignId}` : ''}`,
+        href: `/chat/${chatId}?campaign_id=${campaignId}`,
         type: "chat",
         id: chatId || 'new'
       });

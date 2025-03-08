@@ -1,4 +1,3 @@
-
 project_id = "wllhsxoabzdzulomizzx"
 
 [api]
@@ -25,4 +24,10 @@ enabled = true
 verify_jwt = false
 
 [functions.campaign_chat]
+verify_jwt = false
+
+[functions.campaign_processor]
+verify_jwt = false
+
+[functions.amazon_ads]
 verify_jwt = false

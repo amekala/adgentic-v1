@@ -1,4 +1,3 @@
-
 import React, { useRef, useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 import ChatMessage from '@/components/ChatMessage';
@@ -7,11 +6,15 @@ import { Message } from '@/hooks/useCurrentChat';
 interface ChatMessagesAreaProps {
   messages: Message[];
   isLoading: boolean;
+  onActionClick?: (action: string) => void;
+  onFollowupClick?: (prompt: string) => void;
 }
 
 const ChatMessagesArea: React.FC<ChatMessagesAreaProps> = ({
   messages,
-  isLoading
+  isLoading,
+  onActionClick,
+  onFollowupClick
 }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -37,6 +40,8 @@ const ChatMessagesArea: React.FC<ChatMessagesAreaProps> = ({
             <ChatMessage 
               key={message.id || index}
               message={message}
+              onActionClick={onActionClick}
+              onFollowupClick={onFollowupClick}
             />
           ))}
           <div ref={messagesEndRef} />

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import Sidebar from '@/components/Sidebar';
 import Breadcrumb from '@/components/Breadcrumb';
@@ -39,8 +38,38 @@ const Chat = () => {
     handleDeleteChat,
     handleBackClick,
     getBreadcrumbItems,
-    setInputValue
+    setInputValue,
+    campaign,
+    campaignId
   } = useCurrentChat();
+  
+  // Debug logging for campaign data and breadcrumbs
+  useEffect(() => {
+    console.log('Campaign data:', campaign);
+    console.log('Campaign ID:', campaignId);
+    console.log('Breadcrumb items:', getBreadcrumbItems());
+  }, [campaign, campaignId, getBreadcrumbItems]);
+  
+  // Handle action button clicks
+  const handleActionClick = (action: string) => {
+    console.log('Action clicked:', action);
+    if (action === 'Performance Analysis') {
+      handleSendMessage('Show me performance analysis for this campaign');
+    } else if (action === 'Budget Optimization') {
+      handleSendMessage('Help me optimize my budget for this campaign');
+    } else if (action === 'Creative Review') {
+      handleSendMessage('Review my creative assets for this campaign');
+    } else {
+      // Process the action and send a message based on the action
+      handleSendMessage(`I want to ${action}`);
+    }
+  };
+
+  // Handle followup prompt clicks
+  const handleFollowupClick = (prompt: string) => {
+    console.log('Followup clicked:', prompt);
+    handleSendMessage(prompt);
+  };
   
   // Auto-run diagnostic test for Supabase Edge Function
   useEffect(() => {
@@ -198,6 +227,8 @@ const Chat = () => {
             <ChatMessagesArea 
               messages={messages}
               isLoading={isLoading}
+              onActionClick={handleActionClick}
+              onFollowupClick={handleFollowupClick}
             />
             
             {/* Input area */}

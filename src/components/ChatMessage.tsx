@@ -1,4 +1,3 @@
-
 import React from 'react';
 import Message from './Message';
 
@@ -11,19 +10,22 @@ interface ChatMessageProps {
     title?: string;
     actionButtons?: Array<{ label: string; primary?: boolean }>;
     metrics?: Array<{ label: string; value: string; improvement?: boolean }>;
+    followupPrompts?: Array<{ text: string }>;
   };
   onActionClick?: (action: string) => void;
+  onFollowupClick?: (prompt: string) => void;
 }
 
-const ChatMessage: React.FC<ChatMessageProps> = ({ message, onActionClick }) => {
+const ChatMessage: React.FC<ChatMessageProps> = ({ 
+  message, 
+  onActionClick,
+  onFollowupClick
+}) => {
   return (
     <Message
-      role={message.role}
-      content={message.content}
-      title={message.title}
-      actionButtons={message.actionButtons}
-      metrics={message.metrics}
+      message={message}
       onActionClick={onActionClick}
+      onFollowupClick={onFollowupClick}
     />
   );
 };
