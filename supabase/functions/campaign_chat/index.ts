@@ -1,3 +1,4 @@
+
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { OpenAI } from 'https://deno.land/x/openai@v4.23.0/mod.ts';
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.5.0";
@@ -34,8 +35,8 @@ serve(async (req) => {
       });
     }
     
-    const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
-    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') || '';
+    const supabaseUrl = Deno.env.get('PUBLIC_SUPABASE_URL') || '';
+    const supabaseAnonKey = Deno.env.get('PUBLIC_SUPABASE_ANON_KEY') || '';
     
     if (!supabaseUrl || !supabaseAnonKey) {
       return new Response(JSON.stringify({ error: 'Supabase configuration missing' }), { 
