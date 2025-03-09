@@ -326,50 +326,63 @@ Be concise and clear in your responses. Format responses with markdown for reada
       let response;
       let errorDetails = [];
       
-      // 1. Try using Netlify proxy
+      // SKIP Netlify proxy entirely - it's not working
+      console.log('Bypassing Netlify proxy and going directly to Supabase');
+      
+      // Try direct Supabase Edge Function call with proper CORS headers
       try {
-        console.log(`Trying Netlify proxy for function: ${functionName}`);
-        const authToken = session.access_token;
+        console.log('Making direct Supabase Edge Function call with custom fetch');
         
-        // Get the anon key from environment variables
-        const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 
-                                import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
+        // Get session for auth
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session || !session.access_token) {
+          throw new Error('No authenticated session found');
+        }
         
-        const proxyResponse = await fetch(`/api/supabase/${functionName}`, {
+        // Get the anon key
+        const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+        if (!supabaseAnonKey) {
+          console.error('Missing Supabase Anon Key');
+        }
+        
+        // Manually construct the request to have more control
+        const endpoint = `${import.meta.env.VITE_SUPABASE_URL || 'https://wllhsxoabzdzulomizzx.supabase.co'}/functions/v1/${functionName}`;
+        console.log(`Calling endpoint directly: ${endpoint}`);
+        
+        // Manual fetch with proper headers
+        const fetchResponse = await fetch(endpoint, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authToken}`,
+            'Authorization': `Bearer ${session.access_token}`,
             'apikey': supabaseAnonKey,
-            'x-client-info': 'adspirer-web-app',
+            'x-client-info': 'adspirer-client-browser'
           },
           body: JSON.stringify(requestData)
         });
         
-        if (proxyResponse.ok) {
-          const jsonResponse = await proxyResponse.json();
+        if (fetchResponse.ok) {
+          const jsonResponse = await fetchResponse.json();
           response = { data: jsonResponse, error: null };
-          console.log('Successfully used Netlify proxy');
+          console.log('Direct fetch successful');
         } else {
-          const errorText = await proxyResponse.text().catch(() => 'No response text');
-          const errorMsg = `Netlify proxy failed with status: ${proxyResponse.status}, ${errorText}`;
-          console.warn(errorMsg);
-          errorDetails.push(errorMsg);
-          // Continue to next approach - don't throw here
-        }
-      } catch (proxyError) {
-        const errorMsg = `Netlify proxy exception: ${proxyError.message || proxyError}`;
-        console.warn(errorMsg);
-        errorDetails.push(errorMsg);
-        // Continue to next approach
-      }
-      
-      // 2. If proxy failed, try direct Supabase Edge Function call
-      if (!response) {
-        try {
-          console.log('Trying direct Supabase Edge Function call');
+          const statusText = fetchResponse.statusText;
+          const responseText = await fetchResponse.text().catch(() => 'No response body');
           
-          // Set a timeout to prevent hanging indefinitely
+          const errorMsg = `Direct fetch failed with status: ${fetchResponse.status} ${statusText}, body: ${responseText}`;
+          console.error(errorMsg);
+          errorDetails.push(errorMsg);
+          
+          // No throw - we'll use fallback
+        }
+      } catch (directError) {
+        const errorMsg = `Direct fetch error: ${directError.message || directError}`;
+        console.error(errorMsg);
+        errorDetails.push(errorMsg);
+        
+        // Try one more time with supabase.functions
+        try {
+          console.log('Trying with supabase.functions as last resort');
           response = await Promise.race([
             supabase.functions.invoke(functionName, {
               body: requestData
@@ -379,12 +392,11 @@ Be concise and clear in your responses. Format responses with markdown for reada
             )
           ]);
           
-          console.log('Direct Supabase call response:', response);
+          console.log('supabase.functions response:', response);
         } catch (supabaseError) {
-          const errorMsg = `Direct Supabase error: ${supabaseError.message || supabaseError}`;
-          console.warn(errorMsg);
-          errorDetails.push(errorMsg);
-          // Continue to fallback
+          const fallbackErrorMsg = `Supabase functions error: ${supabaseError.message || supabaseError}`;
+          console.error(fallbackErrorMsg);
+          errorDetails.push(fallbackErrorMsg);
         }
       }
       

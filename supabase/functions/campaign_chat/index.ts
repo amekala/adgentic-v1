@@ -3,9 +3,14 @@ import { OpenAI } from 'https://deno.land/x/openai@v4.23.0/mod.ts';
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.5.0";
 import { corsHeaders } from '../_shared/cors.ts';
 
+// This must be at the top - immediately handle OPTIONS requests before any other code executes
 serve(async (req) => {
-  // Handle CORS preflight requests with enhanced headers
+  console.log(`[campaign_chat] Request received: ${req.method} ${new URL(req.url).pathname}`);
+  console.log(`[campaign_chat] User-Agent: ${req.headers.get("user-agent")}`);
+
+  // First thing: handle CORS preflight - must be at the top of the function
   if (req.method === "OPTIONS") {
+    console.log("[campaign_chat] Handling OPTIONS preflight request");
     return new Response(null, {
       status: 204,
       headers: corsHeaders
@@ -15,6 +20,7 @@ serve(async (req) => {
   try {
     // Validate request method
     if (req.method !== 'POST') {
+      console.log(`[campaign_chat] Method not allowed: ${req.method}`);
       return new Response(JSON.stringify({ error: 'Method Not Allowed' }), { 
         status: 405,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -24,7 +30,7 @@ serve(async (req) => {
     // Validate OpenAI API key
     const apiKey = Deno.env.get('OPENAI_API_KEY');
     if (!apiKey) {
-      console.error('Missing OpenAI API Key in environment variables');
+      console.error('[campaign_chat] Missing OpenAI API Key');
       return new Response(JSON.stringify({ 
         error: 'Server configuration error: Missing OpenAI API Key',
         code: 'missing_openai_key'
