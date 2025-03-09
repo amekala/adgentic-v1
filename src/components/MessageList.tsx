@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, MutableRefObject } from 'react';
 import Message, { MessageProps } from './Message';
 import ChatActionPills from './ChatActionPills';
 
@@ -6,17 +6,19 @@ interface MessageListProps {
   messages: MessageProps[];
   onActionClick?: (action: string) => void;
   onPillClick?: (message: string) => void;
+  messagesEndRef?: MutableRefObject<HTMLDivElement | null>;
 }
 
-const MessageList = ({ messages, onActionClick, onPillClick }: MessageListProps) => {
-  const messageEndRef = useRef<HTMLDivElement>(null);
+const MessageList = ({ messages, onActionClick, onPillClick, messagesEndRef }: MessageListProps) => {
+  const defaultEndRef = useRef<HTMLDivElement>(null);
+  const endRef = messagesEndRef || defaultEndRef;
 
-  // Scroll to bottom when messages change
+  // Scroll to bottom when messages change (only if not using external ref)
   useEffect(() => {
-    if (messageEndRef.current) {
-      messageEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    if (!messagesEndRef && defaultEndRef.current) {
+      defaultEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [messages]);
+  }, [messages, messagesEndRef]);
 
   const handleFollowupClick = (prompt: string) => {
     if (onPillClick) {
@@ -25,7 +27,7 @@ const MessageList = ({ messages, onActionClick, onPillClick }: MessageListProps)
   };
 
   return (
-    <div className="flex-1 overflow-y-auto">
+    <div className="flex-1">
       {messages.map((message, index) => (
         <Message
           key={index}
@@ -34,7 +36,7 @@ const MessageList = ({ messages, onActionClick, onPillClick }: MessageListProps)
           onFollowupClick={handleFollowupClick}
         />
       ))}
-      <div ref={messageEndRef} />
+      <div ref={endRef} />
     </div>
   );
 };
