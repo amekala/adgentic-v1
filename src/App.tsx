@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, HashRouter } from "react-router-dom";
 import { AuthProvider } from "@/context/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 
@@ -35,7 +35,7 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <BrowserRouter>
+      <HashRouter>
         <AuthProvider>
           <div className="app-container light">
             <Toaster />
@@ -103,15 +103,19 @@ const App = () => (
                 </ProtectedRoute>
               } />
               
-              {/* Special routes - needed for OAuth callbacks */}
+              {/* Special routes - needed for OAuth callbacks - multiple variants to ensure matching */}
               <Route path="/api/amazon-callback" element={<AmazonCallbackHandler />} />
+              <Route path="api/amazon-callback" element={<AmazonCallbackHandler />} />
+              {/* Explicitly match with * for query parameters */}
+              <Route path="/api/amazon-callback/*" element={<AmazonCallbackHandler />} />
+              <Route path="api/amazon-callback/*" element={<AmazonCallbackHandler />} />
 
               {/* This catch-all redirects any unknown routes to the Marketing page */}
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </div>
         </AuthProvider>
-      </BrowserRouter>
+      </HashRouter>
     </TooltipProvider>
   </QueryClientProvider>
 );

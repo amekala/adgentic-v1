@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Redirecting...</title>
+  <script>
+    // Preserve URL parameters when redirecting
+    const location = window.location;
+    const pathWithoutLeadingSlash = location.pathname.replace(/^\/+/, '');
+    const searchParams = location.search;
+    const hash = location.hash;
+    
+    // Create a new URL with preserved query params
+    const redirectURL = '/' + 
+                   (pathWithoutLeadingSlash ? '?' + encodeURIComponent('path=' + pathWithoutLeadingSlash) : '') + 
+                   (searchParams ? (pathWithoutLeadingSlash ? '&' : '?') + encodeURIComponent('query=' + searchParams.substring(1)) : '') +
+                   (hash ? '#' + hash : '');
+    
+    // If this is an Amazon callback request specifically, handle it differently
+    if (location.pathname.includes('/api/amazon-callback') || location.pathname.includes('api/amazon-callback')) {
+      // Special handling for Amazon callback - redirect directly with parameters preserved
+      window.location.href = '/#/api/amazon-callback' + location.search + location.hash;
+    } else {
+      // For all other pages, redirect to the app root
+      window.location.href = redirectURL;
+    }
+  </script>
+</head>
+<body>
+  <p>Redirecting...</p>
+</body>
+</html>

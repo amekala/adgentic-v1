@@ -1,0 +1,6 @@
+{
+  "rewrites": [
+    { "source": "/api/amazon-callback", "destination": "/index.html" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}

@@ -15,8 +15,9 @@ export default function AmazonCallbackHandler() {
         console.log("Amazon callback handler activated");
         console.log("Full URL:", window.location.href);
         
-        // Get query parameters from the URL
-        const searchParams = new URLSearchParams(location.search);
+        // Get query parameters from the URL - handle both location.search and full URL
+        const url = new URL(window.location.href);
+        const searchParams = new URLSearchParams(url.search || location.search);
         const code = searchParams.get('code');
         const state = searchParams.get('state');
         
