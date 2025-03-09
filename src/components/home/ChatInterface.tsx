@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { MessageProps } from '@/components/Message';
 import ChatInput from '@/components/ChatInput';
@@ -66,19 +65,28 @@ const ChatInterface = ({ onActionClick }: ChatInterfaceProps) => {
     }
   };
   
+  // Handle action clicks by directly sending the message
+  const handleAction = (action: string) => {
+    if (action === 'Create Campaign') {
+      onActionClick(action);
+    } else {
+      handleSendMessage(action);
+    }
+  };
+  
   return (
     <div className="flex h-full flex-col justify-between pt-[60px] pb-4">
       {messages.length === 0 ? (
         <div className="items-center justify-center flex h-full">
           <EmptyState 
             onSendMessage={handleSendMessage} 
-            onActionClick={onActionClick} 
+            onActionClick={handleAction} 
             isLoading={isLoading} 
           />
         </div>
       ) : (
         <>
-          <MessageList messages={messages} onActionClick={onActionClick} />
+          <MessageList messages={messages} onActionClick={handleAction} />
           <div className="space-y-4 mt-auto">
             <div className="w-full max-w-3xl mx-auto px-4">
               <ChatInput onSend={handleSendMessage} isLoading={isLoading} />

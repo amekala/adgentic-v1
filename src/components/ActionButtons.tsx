@@ -1,4 +1,3 @@
-
 import { Plus, BarChart2, Lightbulb, RotateCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -39,34 +38,8 @@ const ActionButtons = ({ onActionClick }: ActionButtonsProps) => {
     }
 
     if (action.message) {
-      try {
-        // Create a new chat
-        const { data: chat, error: chatError } = await supabase
-          .from('chats')
-          .insert([{
-            title: action.label,
-            chat_type: action.label.toLowerCase().replace(/\s+/g, '_')
-          }])
-          .select()
-          .single();
-
-        if (chatError) throw chatError;
-
-        // Add initial message
-        const { error: messageError } = await supabase
-          .from('chat_messages')
-          .insert([{
-            chat_id: chat.id,
-            role: 'user',
-            content: action.message
-          }]);
-
-        if (messageError) throw messageError;
-
-        onActionClick?.(action.message);
-      } catch (error) {
-        console.error('Error creating chat:', error);
-      }
+      // Directly send the message instead of just creating a chat
+      onActionClick?.(action.message);
     }
   };
 
