@@ -5,11 +5,17 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.5.0";
 import { corsHeaders } from '../_shared/cors.ts';
 
 serve(async (req) => {
-  // Handle CORS preflight requests
+  // Handle CORS preflight requests with enhanced headers
   if (req.method === "OPTIONS") {
     return new Response(null, {
       status: 204,
-      headers: corsHeaders
+      headers: {
+        ...corsHeaders,
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+        'Access-Control-Allow-Credentials': 'true'
+      }
     });
   }
 
@@ -57,6 +63,39 @@ serve(async (req) => {
 
     if (!messages || !Array.isArray(messages)) {
       throw new Error('Invalid messages format');
+    }
+    
+    // Validate campaign context if provided
+    if (context?.campaignId) {
+      // Get the Supabase client
+      const supabaseUrl = Deno.env.get('PUBLIC_SUPABASE_URL') || Deno.env.get('SUPABASE_URL') || '';
+      const supabaseAnonKey = Deno.env.get('PUBLIC_SUPABASE_ANON_KEY') || Deno.env.get('SUPABASE_ANON_KEY') || '';
+
+      // Verify the campaign exists
+      const supabaseAdmin = createClient(supabaseUrl, supabaseAnonKey, {
+        global: { headers: { Authorization: authHeader } },
+      });
+      
+      const { data: campaign, error: campaignError } = await supabaseAdmin
+        .from('campaigns')
+        .select('campaign_name')
+        .eq('id', context.campaignId)
+        .single();
+        
+      if (campaignError || !campaign) {
+        console.error('Campaign validation error:', campaignError || 'Campaign not found');
+        return new Response(JSON.stringify({ 
+          error: `Campaign validation failed: ${campaignError?.message || 'Campaign not found'}` 
+        }), { 
+          status: 404,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+      
+      // Update context with actual campaign name if needed
+      if (!context.campaignName && campaign.campaign_name) {
+        context.campaignName = campaign.campaign_name;
+      }
     }
 
     // Process the most recent user message to detect Amazon campaign queries
@@ -113,8 +152,27 @@ You MUST end EVERY response with a section titled "Follow-up Questions:" that co
     });
   } catch (error) {
     console.error('Error in campaign chat:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
+    
+    // Determine the appropriate status code based on the error
+    let statusCode = 500;
+    let errorMessage = error.message || 'Unknown error occurred';
+    
+    if (errorMessage.includes('Campaign not found') || 
+        errorMessage.includes('Campaign validation failed')) {
+      statusCode = 404;
+    } else if (errorMessage.includes('Authorization')) {
+      statusCode = 401;
+    } else if (errorMessage.includes('Missing OpenAI API Key') || 
+               errorMessage.includes('Supabase configuration missing')) {
+      statusCode = 503; // Service Unavailable
+    }
+    
+    return new Response(JSON.stringify({ 
+      error: errorMessage,
+      status: statusCode,
+      timestamp: new Date().toISOString()
+    }), {
+      status: statusCode,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
@@ -514,57 +572,108 @@ const generateAIResponse = async (messages, context) => {
       }
     }
     
-    // Continue with OpenAI call
-    const openAI = new OpenAI({
-      apiKey: Deno.env.get('OPENAI_API_KEY')
-    });
+    try {
+      // Continue with OpenAI call
+      const openAI = new OpenAI({
+        apiKey: Deno.env.get('OPENAI_API_KEY')
+      });
 
-    const response = await openAI.chat.completions.create({
-      model: "gpt-4o",
-      messages: messages,
-      temperature: 0.7,
-      max_tokens: 1500,
-      top_p: 1,
-      frequency_penalty: 0,
-      presence_penalty: 0
-    });
+      const response = await openAI.chat.completions.create({
+        model: "gpt-4o",
+        messages: messages,
+        temperature: 0.7,
+        max_tokens: 1500,
+        top_p: 1,
+        frequency_penalty: 0,
+        presence_penalty: 0
+      });
 
-    // Extract the response content
-    let aiContent = response.choices[0].message.content || "";
-    
-    // If we have Amazon campaign data, insert it
-    if (processedMessage.intent === 'provide_information' && processedMessage.amazonCampaignData?.campaignInfo) {
-      aiContent = `${aiContent}\n\n${processedMessage.amazonCampaignData.campaignInfo}`;
-    }
-    
-    // If we have a tool call, add it to response
-    if (toolCall) {
-      return { 
-        role: 'assistant', 
+      // Extract the response content
+      let aiContent = response.choices[0].message.content || "";
+      
+      // If we have Amazon campaign data, insert it
+      if (processedMessage.intent === 'provide_information' && processedMessage.amazonCampaignData?.campaignInfo) {
+        aiContent = `${aiContent}\n\n${processedMessage.amazonCampaignData.campaignInfo}`;
+      }
+      
+      // If we have a tool call, add it to response
+      if (toolCall) {
+        return { 
+          role: 'assistant', 
+          content: aiContent,
+          toolCall
+        };
+      }
+      
+      // Extract follow-up questions
+      const followups = extractFollowupPrompts(aiContent);
+      
+      // Add action buttons if applicable
+      const actionButtons = determineActionButtons(aiContent, context);
+      
+      // Return the formatted response
+      return {
+        role: 'assistant',
         content: aiContent,
-        toolCall
+        followupQuestions: followups.length > 0 ? followups : generateDefaultFollowups(context),
+        actionButtons: actionButtons
+      };
+    } catch (openaiError) {
+      console.error('OpenAI API error:', openaiError);
+      
+      // Create a fallback response based on the context
+      let fallbackContent = `I apologize, but I'm currently having trouble connecting to my AI service. Let me provide some basic information about your campaign.`;
+      
+      if (context?.campaignName) {
+        fallbackContent += `\n\nYou're currently working with the "${context.campaignName}" campaign. `;
+        fallbackContent += `When my full capabilities are restored, I can help you optimize this campaign and provide deeper insights.`;
+      }
+      
+      if (latestUserMessage.content.toLowerCase().includes('hello') || 
+          latestUserMessage.content.toLowerCase().includes('hi')) {
+        fallbackContent += `\n\nHello! I'm here to help with your advertising campaigns. Once my connection is restored, I can analyze performance, suggest optimizations, and answer specific questions about your campaigns.`;
+      } else if (latestUserMessage.content.toLowerCase().includes('performance') || 
+                latestUserMessage.content.toLowerCase().includes('metrics')) {
+        fallbackContent += `\n\nI understand you're interested in campaign performance. When my service is fully operational, I can provide detailed metrics, trend analysis, and actionable recommendations to improve your campaign results.`;
+      }
+      
+      // Add follow-up suggestions
+      fallbackContent += `\n\n## Follow-up Questions:
+1. Would you like to try reconnecting to the AI service?
+2. Can I help you with any other campaign management tasks?
+3. Would you like to review basic information about Amazon advertising best practices?
+4. Do you need help navigating the campaign dashboard?`;
+      
+      // Return fallback response with appropriate context
+      return {
+        role: 'assistant',
+        content: fallbackContent,
+        followupQuestions: generateDefaultFollowups(context),
+        actionButtons: [
+          { label: 'Retry Connection', action: 'retry_connection', primary: true },
+          { label: 'Campaign Dashboard', action: 'view_campaign', params: { campaignId: context?.campaignId } }
+        ]
       };
     }
-    
-    // Extract follow-up questions
-    const followups = extractFollowupPrompts(aiContent);
-    
-    // Add action buttons if applicable
-    const actionButtons = determineActionButtons(aiContent, context);
-    
-    // Return the formatted response
-    return {
-      role: 'assistant',
-      content: aiContent,
-      followupQuestions: followups.length > 0 ? followups : generateDefaultFollowups(context),
-      actionButtons: actionButtons
-    };
   } catch (error) {
     console.error('Error generating AI response:', error);
-    return { 
+    
+    // Create a meaningful error response
+    const errorResponse = { 
       role: 'assistant', 
-      content: "I apologize, but I encountered an error while processing your request. Please try again or rephrase your question." 
+      content: "I apologize, but I encountered an error while processing your request. This might be due to a temporary service disruption or configuration issue. Please try again in a few moments.",
+      followupQuestions: [
+        "Would you like to try a different question?",
+        "Can I help you with something else instead?",
+        "Would you like to check your campaign dashboard while I recover?"
+      ],
+      actionButtons: [
+        { label: 'Retry Request', action: 'retry_request', primary: true },
+        { label: 'Dashboard', action: 'view_dashboard' }
+      ]
     };
+    
+    return errorResponse;
   }
 };
 

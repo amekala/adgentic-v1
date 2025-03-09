@@ -30,7 +30,21 @@ const NewChatInput = ({ onCreateChat, campaignId, campaignName }: NewChatInputPr
     setIsSubmitting(true);
     
     try {
-      // 1. Create a new chat
+      // 0. First validate the campaign exists
+      const { data: campaignData, error: campaignValidationError } = await supabase
+        .from('campaigns')
+        .select('id, campaign_name')
+        .eq('id', campaignId)
+        .single();
+        
+      if (campaignValidationError || !campaignData) {
+        console.error('Campaign validation failed:', campaignValidationError);
+        throw new Error('Campaign validation failed: ' + 
+          (campaignValidationError?.message || 'Campaign not found'));
+      }
+      
+      // 1. Create a new chat with transaction-like approach
+      console.log('Creating new chat for campaign:', campaignId);
       const { data: chatData, error: chatError } = await supabase
         .from('chats')
         .insert({
@@ -42,8 +56,15 @@ const NewChatInput = ({ onCreateChat, campaignId, campaignName }: NewChatInputPr
         .single();
         
       if (chatError) {
+        console.error('Error creating chat:', chatError);
         throw chatError;
       }
+      
+      if (!chatData || !chatData.id) {
+        throw new Error('Failed to create chat: No chat ID returned');
+      }
+      
+      console.log('Created new chat with ID:', chatData.id);
       
       // 2. Add the initial message to this chat
       const { error: messageError } = await supabase
@@ -55,6 +76,9 @@ const NewChatInput = ({ onCreateChat, campaignId, campaignName }: NewChatInputPr
         });
         
       if (messageError) {
+        console.error('Error creating initial message:', messageError);
+        // If message creation fails, clean up the chat to avoid orphaned records
+        await supabase.from('chats').delete().eq('id', chatData.id);
         throw messageError;
       }
       
@@ -64,7 +88,7 @@ const NewChatInput = ({ onCreateChat, campaignId, campaignName }: NewChatInputPr
       navigate(`/chat/${chatData.id}?campaign_id=${campaignId}`);
     } catch (err) {
       console.error('Error creating chat with message:', err);
-      toast.error('Failed to create chat. Please try again.');
+      toast.error('Failed to create chat: ' + (err.message || 'Please try again.'));
     } finally {
       setIsSubmitting(false);
     }

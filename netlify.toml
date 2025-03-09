@@ -1,0 +1,16 @@
+[build]
+  publish = "dist"
+  command = "npm run build"
+
+# Specific rule for Amazon OAuth callback
+[[redirects]]
+  from = "/api/amazon-callback"
+  to = "/index.html"
+  status = 200
+  force = true
+
+# Handle all routes for SPA
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

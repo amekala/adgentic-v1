@@ -267,6 +267,32 @@ export const useCurrentChat = () => {
     setMessages(prev => [...prev, thinkingMessage]);
     
     try {
+      // Verify campaign exists first if this is a campaign chat
+      if (campaignId) {
+        console.log('Verifying campaign data before API call');
+        if (!campaign) {
+          // Fetch the campaign data first
+          try {
+            const { data: campaignData, error: campaignError } = await supabase
+              .from('campaigns')
+              .select('*')
+              .eq('id', campaignId)
+              .single();
+              
+            if (campaignError || !campaignData) {
+              throw new Error(`Campaign not found: ${campaignError?.message || 'Invalid campaign ID'}`);
+            }
+            
+            // Set the campaign data
+            setCampaign(campaignData);
+            console.log('Successfully verified campaign exists:', campaignData.campaign_name);
+          } catch (err) {
+            console.error('Error verifying campaign:', err);
+            throw new Error('Failed to validate campaign. Please try again.');
+          }
+        }
+      }
+      
       // Ensure all messages are valid
       const filteredHistory = messageHistory.filter(msg => 
         msg && msg.role && msg.content
@@ -304,10 +330,20 @@ export const useCurrentChat = () => {
       console.log(`Invoking Supabase Edge Function: ${functionName}`);
       console.log(`With data:`, JSON.stringify(requestData, null, 2));
       
-      // Call the appropriate Supabase Edge Function
-      const response = await supabase.functions.invoke(functionName, {
-        body: requestData
-      });
+      // Check for valid configuration before making the call
+      if (!supabase.functions) {
+        throw new Error('Missing Supabase configuration. Check environment variables.');
+      }
+      
+      // Call the appropriate Supabase Edge Function with timeout
+      const response = await Promise.race([
+        supabase.functions.invoke(functionName, {
+          body: requestData
+        }),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Supabase Edge Function timeout')), 20000)
+        )
+      ]);
       
       console.log('Edge Function response received:', response);
       

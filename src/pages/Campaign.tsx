@@ -84,10 +84,37 @@ const Campaign = () => {
         return;
       }
       
+      // First validate that the campaign exists
+      if (!campaignData) {
+        try {
+          const { data: campaign, error: campaignError } = await supabase
+            .from('campaigns')
+            .select('*')
+            .eq('id', campaignId)
+            .single();
+            
+          if (campaignError || !campaign) {
+            console.error('Campaign validation error:', campaignError);
+            throw new Error('Campaign not found with ID ' + campaignId);
+          }
+          
+          setCampaignData(campaign);
+        } catch (validationErr) {
+          console.error('Campaign validation failed:', validationErr);
+          toast.error('Cannot create a chat: Campaign not found');
+          return;
+        }
+      }
+      
+      console.log('Campaign data:', campaignData);
+      console.log('Campaign ID:', campaignId);
+      console.log('Breadcrumb items:', breadcrumbItems);
+      
       const title = initialMessage ? 
         (initialMessage.length > 30 ? initialMessage.substring(0, 30) + '...' : initialMessage) :
         'New Chat';
-        
+      
+      // Create chat with transaction-like approach  
       const { data, error } = await supabase
         .from('chats')
         .insert({
@@ -99,9 +126,15 @@ const Campaign = () => {
         .single();
         
       if (error) {
+        console.error('Error creating chat:', error);
         throw error;
       }
       
+      if (!data || !data.id) {
+        throw new Error('Failed to create chat: No chat ID returned');
+      }
+      
+      // Only try to add a message if one was provided
       if (initialMessage && data) {
         const { error: messageError } = await supabase
           .from('chat_messages')
@@ -113,8 +146,9 @@ const Campaign = () => {
           
         if (messageError) {
           console.error('Error creating initial message:', messageError);
-          toast.success('New chat created');
-          navigate(`/chat/${data.id}?campaign_id=${campaignId}`);
+          // If message creation fails, clean up to avoid orphaned chats
+          await supabase.from('chats').delete().eq('id', data.id);
+          throw messageError;
         }
       }
       
@@ -122,7 +156,7 @@ const Campaign = () => {
       navigate(`/chat/${data.id}?campaign_id=${campaignId}`);
     } catch (err) {
       console.error('Error in createNewChat:', err);
-      toast.error('Failed to create new chat');
+      toast.error('Failed to create new chat: ' + (err.message || 'Please try again'));
     }
   };
 
