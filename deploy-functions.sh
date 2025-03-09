@@ -1,3 +1,4 @@
+
 #!/bin/bash
 
 # Deploy Supabase Edge Functions
@@ -29,5 +30,7 @@ supabase secrets set --env production --project-ref wllhsxoabzdzulomizzx ENVIRON
 supabase secrets set --env production --project-ref wllhsxoabzdzulomizzx OPENAI_API_KEY=$OPENAI_API_KEY
 supabase secrets set --env production --project-ref wllhsxoabzdzulomizzx AMAZON_ADS_CLIENT_ID=$AMAZON_ADS_CLIENT_ID
 supabase secrets set --env production --project-ref wllhsxoabzdzulomizzx AMAZON_ADS_CLIENT_SECRET=$AMAZON_ADS_CLIENT_SECRET
+supabase secrets set --env production --project-ref wllhsxoabzdzulomizzx SUPABASE_URL=https://wllhsxoabzdzulomizzx.supabase.co
+supabase secrets set --env production --project-ref wllhsxoabzdzulomizzx SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY
 
 echo "Deployment complete!" 
