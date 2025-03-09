@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -72,92 +71,94 @@ const checkForOAuthRedirect = () => {
 // Check for redirects before rendering
 checkForOAuthRedirect();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <HashRouter>
-        <AuthProvider>
-          <div className="app-container light">
-            <Toaster />
-            <Sonner />
-            <Routes>
-              {/* Public routes */}
-              <Route path="/" element={<Marketing />} />
-              <Route path="/about" element={<About />} />
-              <Route path="/pricing" element={<Pricing />} />
-              
-              {/* Auth routes */}
-              <Route path="/auth/login" element={<Login />} />
-              <Route path="/auth/register" element={<Register />} />
-              <Route path="/auth/confirm" element={<ConfirmEmail />} />
-              <Route path="/auth/reset-password" element={<ResetPassword />} />
-              <Route path="/auth/update-password" element={<UpdatePassword />} />
-              
-              {/* Amazon OAuth Callback Handler */}
-              <Route path="/api/amazon-callback" element={<AmazonCallbackHandler />} />
-              
-              {/* Protected routes */}
-              <Route path="/app" element={
-                <ProtectedRoute>
-                  <Index />
-                </ProtectedRoute>
-              } />
-              <Route path="/campaign/:id" element={
-                <ProtectedRoute>
-                  <Campaign />
-                </ProtectedRoute>
-              } />
-              <Route path="/chat/:id" element={
-                <ProtectedRoute>
-                  <Chat />
-                </ProtectedRoute>
-              } />
-              <Route path="/chat/new" element={
-                <ProtectedRoute>
-                  <Chat />
-                </ProtectedRoute>
-              } />
-              <Route path="/campaign/:campaignId/settings" element={
-                <ProtectedRoute>
-                  <CampaignSettings />
-                </ProtectedRoute>
-              } />
-              <Route path="/campaign/:campaignId/chats" element={
-                <ProtectedRoute>
-                  <CampaignChats />
-                </ProtectedRoute>
-              } />
-              <Route path="/campaign/:campaignId/report" element={
-                <ProtectedRoute>
-                  <CampaignReport />
-                </ProtectedRoute>
-              } />
-              <Route path="/account" element={
-                <ProtectedRoute>
-                  <Account />
-                </ProtectedRoute>
-              } />
-              <Route path="/dashboard" element={
-                <ProtectedRoute>
-                  <Navigate to="/account" replace />
-                </ProtectedRoute>
-              } />
-              
-              {/* Special routes - needed for OAuth callbacks - multiple variants to ensure matching */}
-              <Route path="/api/amazon-callback" element={<AmazonCallbackHandler />} />
-              <Route path="api/amazon-callback" element={<AmazonCallbackHandler />} />
-              {/* Explicitly match with * for query parameters */}
-              <Route path="/api/amazon-callback/*" element={<AmazonCallbackHandler />} />
-              <Route path="api/amazon-callback/*" element={<AmazonCallbackHandler />} />
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <HashRouter>
+          <AuthProvider>
+            <div className="app-container light">
+              <Toaster />
+              <Sonner />
+              <Routes>
+                {/* Public routes */}
+                <Route path="/" element={<Marketing />} />
+                <Route path="/about" element={<About />} />
+                <Route path="/pricing" element={<Pricing />} />
+                
+                {/* Auth routes */}
+                <Route path="/auth/login" element={<Login />} />
+                <Route path="/auth/register" element={<Register />} />
+                <Route path="/auth/confirm" element={<ConfirmEmail />} />
+                <Route path="/auth/reset-password" element={<ResetPassword />} />
+                <Route path="/auth/update-password" element={<UpdatePassword />} />
+                
+                {/* Amazon OAuth Callback Handler */}
+                <Route path="/api/amazon-callback" element={<AmazonCallbackHandler />} />
+                
+                {/* Protected routes */}
+                <Route path="/app" element={
+                  <ProtectedRoute>
+                    <Index />
+                  </ProtectedRoute>
+                } />
+                <Route path="/campaign/:id" element={
+                  <ProtectedRoute>
+                    <Campaign />
+                  </ProtectedRoute>
+                } />
+                <Route path="/chat/:id" element={
+                  <ProtectedRoute>
+                    <Chat />
+                  </ProtectedRoute>
+                } />
+                <Route path="/chat/new" element={
+                  <ProtectedRoute>
+                    <Chat />
+                  </ProtectedRoute>
+                } />
+                <Route path="/campaign/:campaignId/settings" element={
+                  <ProtectedRoute>
+                    <CampaignSettings />
+                  </ProtectedRoute>
+                } />
+                <Route path="/campaign/:campaignId/chats" element={
+                  <ProtectedRoute>
+                    <CampaignChats />
+                  </ProtectedRoute>
+                } />
+                <Route path="/campaign/:campaignId/report" element={
+                  <ProtectedRoute>
+                    <CampaignReport />
+                  </ProtectedRoute>
+                } />
+                <Route path="/account" element={
+                  <ProtectedRoute>
+                    <Account />
+                  </ProtectedRoute>
+                } />
+                <Route path="/dashboard" element={
+                  <ProtectedRoute>
+                    <Navigate to="/account" replace />
+                  </ProtectedRoute>
+                } />
+                
+                {/* Special routes - needed for OAuth callbacks - multiple variants to ensure matching */}
+                <Route path="/api/amazon-callback" element={<AmazonCallbackHandler />} />
+                <Route path="api/amazon-callback" element={<AmazonCallbackHandler />} />
+                {/* Explicitly match with * for query parameters */}
+                <Route path="/api/amazon-callback/*" element={<AmazonCallbackHandler />} />
+                <Route path="api/amazon-callback/*" element={<AmazonCallbackHandler />} />
 
-              {/* This catch-all redirects any unknown routes to the Marketing page */}
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </div>
-        </AuthProvider>
-      </HashRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+                {/* This catch-all redirects any unknown routes to the Marketing page */}
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </div>
+          </AuthProvider>
+        </HashRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+}
 
 export default App;

@@ -1,3 +1,4 @@
+
 project_id = "wllhsxoabzdzulomizzx"
 
 [api]
@@ -30,4 +31,16 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.amazon_ads]
+verify_jwt = false
+
+[functions.token-exchange]
+verify_jwt = false
+
+[functions.token_manager]
+verify_jwt = false
+
+[functions.amazon-auth]
+verify_jwt = false
+
+[functions.amazon-callback]
 verify_jwt = false

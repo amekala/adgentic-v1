@@ -55,6 +55,39 @@ export default function AmazonCallbackHandler() {
           return;
         }
 
+        // Check if advertiser exists, create a test one if useTestAccount is true
+        if (useTestAccount) {
+          try {
+            // First check if advertiser exists
+            const { data: existingAdvertiser } = await supabase
+              .from('advertisers')
+              .select('id')
+              .eq('id', advertiserId)
+              .single();
+              
+            if (!existingAdvertiser) {
+              console.log("Creating test advertiser:", advertiserId);
+              const { error: createError } = await supabase
+                .from('advertisers')
+                .insert({
+                  id: advertiserId,
+                  name: 'Test Advertiser',
+                  status: 'active'
+                });
+                
+              if (createError) {
+                console.error("Failed to create test advertiser:", createError);
+                setStatus('error');
+                setMessage('Failed to create test advertiser');
+                setErrorDetails(createError.message);
+                return;
+              }
+            }
+          } catch (error) {
+            console.error("Error checking/creating advertiser:", error);
+          }
+        }
+
         console.log("Calling token-exchange function with:", {
           advertiserId,
           useTestAccount: !!useTestAccount,
@@ -97,6 +130,7 @@ export default function AmazonCallbackHandler() {
         console.error('Error in callback processing:', error);
         setStatus('error');
         setMessage(`Error: ${error.message}`);
+        setErrorDetails(JSON.stringify(error, null, 2));
       }
     }
 
