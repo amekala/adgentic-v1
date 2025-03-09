@@ -1,19 +1,23 @@
+
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/router';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 
 export default function AmazonCallbackHandler() {
-  const router = useRouter();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [message, setMessage] = useState('Processing your Amazon integration...');
 
   useEffect(() => {
     async function processCallback() {
       try {
-        // Make sure we have the necessary parameters
-        const { code, state } = router.query;
+        // Get query parameters from the URL
+        const searchParams = new URLSearchParams(location.search);
+        const code = searchParams.get('code');
+        const state = searchParams.get('state');
         
-        if (!code || !state || typeof code !== 'string' || typeof state !== 'string') {
+        if (!code || !state) {
           setStatus('error');
           setMessage('Missing required parameters');
           return;
@@ -56,7 +60,7 @@ export default function AmazonCallbackHandler() {
         
         // Redirect to the dashboard after a short delay
         setTimeout(() => {
-          router.push('/dashboard?success=amazon_connected');
+          navigate('/dashboard?success=amazon_connected');
         }, 2000);
       } catch (error) {
         console.error('Error in callback processing:', error);
@@ -66,10 +70,11 @@ export default function AmazonCallbackHandler() {
     }
 
     // Only process the callback if the code parameter is present
-    if (router.query.code) {
+    const searchParams = new URLSearchParams(location.search);
+    if (searchParams.get('code')) {
       processCallback();
     }
-  }, [router.query]);
+  }, [location.search, navigate]);
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center p-24">
@@ -89,7 +94,7 @@ export default function AmazonCallbackHandler() {
         )}
         {status === 'error' && (
           <button
-            onClick={() => router.push('/dashboard')}
+            onClick={() => navigate('/dashboard')}
             className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
           >
             Return to Dashboard
@@ -98,4 +103,4 @@ export default function AmazonCallbackHandler() {
       </div>
     </div>
   );
-} 
+}
