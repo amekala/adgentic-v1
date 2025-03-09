@@ -7,7 +7,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, {
       status: 204,
-      headers: corsHeaders(req)
+      headers: corsHeaders
     });
   }
   
@@ -45,7 +45,7 @@ serve(async (req) => {
       if (credential.access_token && tokenExpiresAt && currentTime < tokenExpiresAt) {
         return new Response(
           JSON.stringify({ access_token: credential.access_token }),
-          { headers: { ...corsHeaders(req), "Content-Type": "application/json" } }
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
       
@@ -122,7 +122,7 @@ serve(async (req) => {
       
       return new Response(
         JSON.stringify({ access_token: accessToken }),
-        { headers: { ...corsHeaders(req), "Content-Type": "application/json" } }
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     } else if (operation === "list_connected_platforms") {
       // Ensure an advertiser ID was provided
@@ -164,7 +164,7 @@ serve(async (req) => {
       
       return new Response(
         JSON.stringify({ platforms: formattedPlatforms }),
-        { headers: { ...corsHeaders(req), "Content-Type": "application/json" } }
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     } else {
       throw new Error("Invalid operation");
@@ -173,7 +173,7 @@ serve(async (req) => {
     console.error(`Token manager error: ${error.message}`);
     return new Response(
       JSON.stringify({ error: error.message }),
-      { status: 400, headers: { ...corsHeaders(req), "Content-Type": "application/json" } }
+      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });

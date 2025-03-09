@@ -3,10 +3,10 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.5.0';
 import { corsHeaders } from '../_shared/cors.ts';
 
 // Create a response with the given data and status
-function createResponse(data: any, req: Request, status = 200) {
+function createResponse(data: any, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { ...corsHeaders(req), 'Content-Type': 'application/json' },
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
   });
 }
 
@@ -102,7 +102,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, {
       status: 204, // Make sure we're returning a successful status code for OPTIONS
-      headers: corsHeaders(req)
+      headers: corsHeaders
     });
   }
 
@@ -688,10 +688,10 @@ serve(async (req) => {
     }
 
     // Return the response data
-    return createResponse(responseData, req);
+    return createResponse(responseData);
   } catch (error) {
     console.error('Amazon Ads API Error:', error);
-    return createResponse({ error: error.message }, req, 500);
+    return createResponse({ error: error.message }, 500);
   }
 });
 

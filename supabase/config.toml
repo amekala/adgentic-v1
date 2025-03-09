@@ -23,9 +23,11 @@ enabled = true
 
 [functions.chat]
 verify_jwt = false
+import_map = "./import_map.json"
 
 [functions.campaign_chat]
 verify_jwt = false
+import_map = "./import_map.json"
 
 [functions.campaign_processor]
 verify_jwt = false
