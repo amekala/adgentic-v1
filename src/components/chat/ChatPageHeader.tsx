@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { ArrowLeft, MoreVertical, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -36,15 +37,17 @@ const ChatPageHeader: React.FC<ChatPageHeaderProps> = ({
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
+          
           <Link to="/">
             <Button 
-              variant="ghost" 
-              size="icon" 
-              className="mr-2"
+              variant="ghost"
+              className="flex items-center mr-2 px-3 text-sm font-medium"
             >
-              <Home className="h-5 w-5" />
+              <Home className="h-5 w-5 mr-1.5" />
+              <span className="hidden sm:inline">Home</span>
             </Button>
           </Link>
+          
           <h1 className="text-lg font-semibold text-adspirer-text-primary truncate">
             {chatData?.title || 'New Chat'}
           </h1>
