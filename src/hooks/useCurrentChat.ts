@@ -53,7 +53,7 @@ export const useCurrentChat = () => {
   // Fetch chat data and messages
   useEffect(() => {
     const fetchChatData = async () => {
-      if (chatId === 'new') {
+      if (!chatId || chatId === 'new') {
         setChatData({
           id: 'new',
           title: 'New Chat',
@@ -85,6 +85,7 @@ export const useCurrentChat = () => {
       setIsLoading(true);
       
       try {
+        console.log('Fetching chat data for ID:', chatId);
         // Fetch chat data
         const { data: chatData, error: chatError } = await supabase
           .from('chats')

@@ -35,8 +35,11 @@ serve(async (req) => {
       });
     }
     
-    const supabaseUrl = Deno.env.get('PUBLIC_SUPABASE_URL') || '';
-    const supabaseAnonKey = Deno.env.get('PUBLIC_SUPABASE_ANON_KEY') || '';
+    const supabaseUrl = Deno.env.get('PUBLIC_SUPABASE_URL') || Deno.env.get('SUPABASE_URL') || '';
+    const supabaseAnonKey = Deno.env.get('PUBLIC_SUPABASE_ANON_KEY') || Deno.env.get('SUPABASE_ANON_KEY') || '';
+    
+    console.log('Supabase URL:', supabaseUrl);
+    console.log('Supabase Key available:', !!supabaseAnonKey);
     
     if (!supabaseUrl || !supabaseAnonKey) {
       return new Response(JSON.stringify({ error: 'Supabase configuration missing' }), { 
