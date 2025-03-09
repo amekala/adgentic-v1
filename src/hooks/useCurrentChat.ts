@@ -4,6 +4,17 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { BreadcrumbItem } from '@/components/Breadcrumb';
 
+// Utility function to get auth token safely
+async function getSupabaseAuthToken() {
+  try {
+    const { data } = await supabase.auth.getSession();
+    return data?.session?.access_token || '';
+  } catch (error) {
+    console.error('Error getting auth token:', error);
+    return '';
+  }
+}
+
 export interface Message {
   id?: string;
   role: 'user' | 'assistant' | 'system';
@@ -335,15 +346,41 @@ export const useCurrentChat = () => {
         throw new Error('Missing Supabase configuration. Check environment variables.');
       }
       
-      // Call the appropriate Supabase Edge Function with timeout
-      const response = await Promise.race([
-        supabase.functions.invoke(functionName, {
-          body: requestData
-        }),
-        new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Supabase Edge Function timeout')), 20000)
-        )
-      ]);
+      // Try calling through our Netlify proxy first to avoid CORS issues
+      let response;
+      try {
+        console.log(`Trying Netlify proxy for Supabase function: ${functionName}`);
+        const authToken = await getSupabaseAuthToken();
+        const proxyResponse = await fetch(`/api/supabase/${functionName}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`,
+            'apikey': supabase.supabaseKey || '' // Make sure we don't send undefined
+          },
+          body: JSON.stringify(requestData)
+        });
+        
+        if (proxyResponse.ok) {
+          response = { data: await proxyResponse.json(), error: null };
+          console.log('Successfully used Netlify proxy for edge function');
+        } else {
+          console.log('Netlify proxy failed with status:', proxyResponse.status);
+          throw new Error(`Proxy returned status ${proxyResponse.status}`);
+        }
+      } catch (proxyError) {
+        console.log('Netlify proxy failed, falling back to direct Supabase call:', proxyError);
+        
+        // Fall back to direct Supabase call with timeout
+        response = await Promise.race([
+          supabase.functions.invoke(functionName, {
+            body: requestData
+          }),
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Supabase Edge Function timeout')), 20000)
+          )
+        ]);
+      }
       
       console.log('Edge Function response received:', response);
       
@@ -508,9 +545,16 @@ export const useCurrentChat = () => {
           ? 'Edge Function not found. Check function deployment.'
           : errorMessage.includes('Missing Supabase configuration')
             ? 'API configuration missing. Check environment variables.'
-            : 'API connection failed. Check Supabase configuration.';
+            : errorMessage.includes('CORS')
+              ? 'CORS policy blocked request. Using fallback response.'
+              : 'API connection failed. Check Supabase configuration.';
       
       toast.error(`Failed to get AI response: ${detailMessage}`);
+      
+      // For CORS errors, add a special message about using the proxy in future
+      if (errorMessage.includes('CORS')) {
+        console.log('CORS error detected, consider deploying the Netlify proxy to resolve this issue');
+      }
       
       // Fallback mechanism - generate a basic response without calling API
       console.log('Using fallback response mechanism');
