@@ -1,21 +1,15 @@
 {
+  "framework": "vite",
+  "buildCommand": "npm run build",
   "rewrites": [
-    { "source": "/api/amazon-callback", "destination": "/index.html" },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
-  "routes": [
-    { 
-      "src": "/api/amazon-callback", 
-      "dest": "/index.html",
-      "status": 200,
-      "headers": {
-        "Cache-Control": "no-cache, no-store, must-revalidate"
-      }
-    },
-    { 
-      "src": "/api/(.*)", 
-      "dest": "/index.html",
-      "status": 200
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }
+      ]
     }
   ]
 }

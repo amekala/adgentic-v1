@@ -2,48 +2,70 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Redirecting...</title>
+  <title>AdGentic | Redirecting...</title>
   <script>
-    // Handle Amazon OAuth callback specifically
-    function handleAmazonCallback() {
+    // Save the URL params in session storage in case of any redirect issues
+    function saveUrlParams() {
       const urlParams = new URLSearchParams(window.location.search);
-      const code = urlParams.get('code');
-      const state = urlParams.get('state');
+      const path = window.location.pathname;
       
-      // Log for debugging
-      console.log("Amazon callback detected in 404.html");
-      console.log("Code present:", !!code);
-      console.log("State present:", !!state);
+      sessionStorage.setItem('lastRedirectPath', path);
+      sessionStorage.setItem('lastRedirectSearch', window.location.search);
+      sessionStorage.setItem('lastRedirectTime', new Date().toISOString());
       
-      if (code && state) {
-        // Preserve the Amazon callback parameters and redirect to our app route
-        window.location.replace('/#/api/amazon-callback' + window.location.search);
+      if (urlParams.has('code')) {
+        sessionStorage.setItem('oauth_code', urlParams.get('code'));
+      }
+      if (urlParams.has('state')) {
+        sessionStorage.setItem('oauth_state', urlParams.get('state'));
+      }
+    }
+    
+    // Handle Single Page App Navigation
+    function handleSPANavigation() {
+      // Save the current URL params
+      saveUrlParams();
+      
+      const path = window.location.pathname.toLowerCase();
+      const search = window.location.search;
+      
+      // If it's an API callback route
+      if (path.includes('/api/amazon-callback')) {
+        // Redirect to SPA with hash routing
+        window.location.href = '/' + search;
         return true;
       }
+      
+      // Default SPA routing
+      window.location.href = '/';
       return false;
     }
     
-    // Main redirect logic
-    function handleRedirect() {
-      const path = window.location.pathname;
-      
-      // Check if this is an Amazon callback
-      if (path.includes('/api/amazon-callback')) {
-        if (handleAmazonCallback()) {
-          return;
-        }
-      }
-      
-      // Default redirect to home page
-      window.location.replace('/');
-    }
-    
-    // Execute redirect
-    handleRedirect();
+    // Execute immediately
+    handleSPANavigation();
   </script>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+      padding: 20px;
+      text-align: center;
+      color: #333;
+      line-height: 1.5;
+    }
+    h1 { margin-bottom: 10px; }
+    p { margin-bottom: 20px; }
+    a { color: #0070f3; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+  </style>
 </head>
 <body>
-  <h2>Redirecting...</h2>
-  <p>We're redirecting you to the right place. If you aren't redirected automatically, <a href="/">click here</a>.</p>
+  <h1>Redirecting you...</h1>
+  <p>If you are not redirected automatically, <a href="/">click here</a> to return to the home page.</p>
 </body>
 </html>

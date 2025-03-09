@@ -32,6 +32,46 @@ const CampaignReport = () => <Campaign />;
 
 const queryClient = new QueryClient();
 
+// Check for OAuth parameters in URL or session storage
+const checkForOAuthRedirect = () => {
+  // Check URL search params first
+  const urlParams = new URLSearchParams(window.location.search);
+  const hasOAuthCode = urlParams.has('code') && urlParams.has('state');
+
+  if (hasOAuthCode) {
+    console.log("Detected OAuth parameters in URL, redirecting to callback handler");
+    // Redirect to the callback handler with params
+    const code = urlParams.get('code');
+    const state = urlParams.get('state');
+    const search = `?code=${code}&state=${state}`;
+    setTimeout(() => {
+      window.location.href = '/#/api/amazon-callback' + search;
+    }, 0);
+    return true;
+  }
+
+  // Check if we have saved OAuth params in session storage
+  const savedCode = sessionStorage.getItem('oauth_code');
+  const savedState = sessionStorage.getItem('oauth_state');
+  
+  if (savedCode && savedState) {
+    console.log("Found OAuth parameters in session storage, redirecting to callback handler");
+    const search = `?code=${savedCode}&state=${savedState}`;
+    // Clean up session storage
+    sessionStorage.removeItem('oauth_code');
+    sessionStorage.removeItem('oauth_state');
+    setTimeout(() => {
+      window.location.href = '/#/api/amazon-callback' + search;
+    }, 0);
+    return true;
+  }
+  
+  return false;
+};
+
+// Check for redirects before rendering
+checkForOAuthRedirect();
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
