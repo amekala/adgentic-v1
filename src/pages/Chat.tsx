@@ -189,7 +189,7 @@ const Chat = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-adgentic-white">
+    <div className="flex min-h-screen bg-adspirer-white">
       <Sidebar 
         isOpen={isSidebarOpen} 
         onToggle={() => setIsSidebarOpen(!isSidebarOpen)}

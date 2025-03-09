@@ -1,4 +1,3 @@
-
 import React, { useRef, useEffect } from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
@@ -38,20 +37,20 @@ const ChatInputArea: React.FC<ChatInputAreaProps> = ({
   });
 
   return (
-    <div className="border-t border-adgentic-border bg-white p-4">
+    <div className="border-t border-adspirer-border bg-white p-4">
       <div className="max-w-4xl mx-auto relative">
         <Textarea
           ref={textareaRef}
           value={inputValue}
           onChange={onInputChange}
           onKeyDown={handleKeyDown}
-          placeholder="Type your message..."
+          placeholder="Message Adspirer..."
           className="resize-none pr-12 min-h-[60px] max-h-[200px] overflow-y-auto"
           disabled={isSending}
         />
         <Button
           size="icon"
-          className="absolute right-2 bottom-2 h-8 w-8 rounded-full bg-adgentic-accent text-white hover:bg-adgentic-accent/90"
+          className="absolute right-2 bottom-2 h-8 w-8 rounded-full bg-adspirer-accent text-white hover:bg-adspirer-accent/90"
           onClick={onSendMessage}
           disabled={!inputValue.trim() || isSending}
         >

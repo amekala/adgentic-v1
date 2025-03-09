@@ -57,7 +57,7 @@ const ChatActionPills = ({ onPillClick, className = '' }: ChatActionPillsProps) 
             <button
               key={suggestion.id}
               onClick={() => onPillClick?.(suggestion.message)}
-              className={`flex items-center gap-3 px-4 py-3 rounded-lg ${suggestion.color || 'bg-white text-adspirer-text-primary'} border border-current hover:border-adspirer-border shadow-sm transition-all text-sm`}
+              className={`flex items-center gap-3 px-4 py-3 rounded-lg ${suggestion.color || 'bg-white text-adspirer-text-primary'} border border-current hover:border-adspirer-border hover:bg-opacity-75 shadow-sm transition-all text-sm`}
             >
               <div className={`p-2 rounded-md ${suggestion.iconBg || 'bg-white'} ${suggestion.iconColor || 'text-adspirer-accent'}`}>
                 {suggestion.icon}

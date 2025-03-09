@@ -1,6 +1,5 @@
-
 import React from 'react';
-import { ArrowLeft, MoreVertical } from 'lucide-react';
+import { ArrowLeft, MoreVertical, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { 
   DropdownMenu,
@@ -10,6 +9,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Trash2 } from 'lucide-react';
 import { ChatData } from '@/hooks/useCurrentChat';
+import { Link } from 'react-router-dom';
 
 interface ChatPageHeaderProps {
   chatData: ChatData | null;
@@ -25,7 +25,7 @@ const ChatPageHeader: React.FC<ChatPageHeaderProps> = ({
   isSidebarOpen
 }) => {
   return (
-    <header className="fixed top-0 left-0 right-0 z-10 h-[60px] border-b border-adgentic-border bg-white bg-opacity-80 backdrop-blur-md px-4">
+    <header className="fixed top-0 left-0 right-0 z-10 h-[60px] border-b border-adspirer-border bg-white bg-opacity-80 backdrop-blur-md px-4">
       <div className={`flex items-center justify-between h-full transition-all duration-300 ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}>
         <div className="flex items-center">
           <Button 
@@ -36,7 +36,16 @@ const ChatPageHeader: React.FC<ChatPageHeaderProps> = ({
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <h1 className="text-lg font-semibold text-adgentic-text-primary truncate">
+          <Link to="/">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="mr-2"
+            >
+              <Home className="h-5 w-5" />
+            </Button>
+          </Link>
+          <h1 className="text-lg font-semibold text-adspirer-text-primary truncate">
             {chatData?.title || 'New Chat'}
           </h1>
         </div>
