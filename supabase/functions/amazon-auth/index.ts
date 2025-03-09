@@ -6,6 +6,12 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Available redirect URIs that can be used for the OAuth flow
+const ALLOWED_REDIRECT_URIS = {
+  supabase: "https://wllhsxoabzdzulomizzx.functions.supabase.co/amazon-callback",
+  adspirer: "https://www.adspirer.com/api/amazon-callback"
+};
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -13,7 +19,7 @@ serve(async (req) => {
   }
 
   try {
-    const { operation, advertiserId, useTestAccount } = await req.json();
+    const { operation, advertiserId, useTestAccount, redirectUri } = await req.json();
 
     const clientId = Deno.env.get("AMAZON_ADS_CLIENT_ID");
     if (!clientId) throw new Error("Client ID not configured");
@@ -35,15 +41,23 @@ serve(async (req) => {
       
       oauthUrl.searchParams.append("response_type", "code");
       
-      // Use the Supabase Function URL for the callback
-      const redirectUri = "https://wllhsxoabzdzulomizzx.functions.supabase.co/amazon-callback";
-      oauthUrl.searchParams.append("redirect_uri", redirectUri);
+      // Determine which redirect URI to use
+      let callbackUri;
+      if (redirectUri === "adspirer") {
+        callbackUri = ALLOWED_REDIRECT_URIS.adspirer;
+      } else {
+        // Default to Supabase function URL
+        callbackUri = ALLOWED_REDIRECT_URIS.supabase;
+      }
+      
+      oauthUrl.searchParams.append("redirect_uri", callbackUri);
       
       // Create state with advertiser ID to use after callback
       const state = JSON.stringify({ 
         advertiserId,
         useTestAccount: !!useTestAccount,
         redirectOrigin: new URL(req.url).origin, // To redirect back to the client app after callback
+        callbackType: redirectUri || "supabase" // Store which callback type was used
       });
       
       // Use base64 encoding for safety

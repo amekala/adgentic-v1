@@ -2,6 +2,12 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.5.0";
 
+// Available redirect URIs that can be used for the OAuth flow
+const ALLOWED_REDIRECT_URIS = {
+  supabase: "https://wllhsxoabzdzulomizzx.functions.supabase.co/amazon-callback",
+  adspirer: "https://www.adspirer.com/api/amazon-callback"
+};
+
 // This function handles the OAuth callback from Amazon Advertising API
 serve(async (req) => {
   try {
@@ -33,7 +39,7 @@ serve(async (req) => {
       return redirectToErrorPage("Invalid state parameter.");
     }
     
-    const { advertiserId, redirectOrigin, useTestAccount } = state;
+    const { advertiserId, redirectOrigin, useTestAccount, callbackType } = state;
     
     if (!advertiserId) {
       console.error("Missing advertiser ID in state");
@@ -43,7 +49,9 @@ serve(async (req) => {
     // Get configuration from environment variables
     const clientId = Deno.env.get("AMAZON_ADS_CLIENT_ID");
     const clientSecret = Deno.env.get("AMAZON_ADS_CLIENT_SECRET");
-    const redirectUri = "https://wllhsxoabzdzulomizzx.functions.supabase.co/amazon-callback";
+    
+    // Use the same redirect URI that was used for the authorization request
+    const redirectUri = ALLOWED_REDIRECT_URIS[callbackType || "supabase"];
     
     if (!clientId || !clientSecret) {
       console.error("Missing client credentials");
@@ -182,6 +190,22 @@ serve(async (req) => {
       operation_type: "initial_connection",
       status: "success",
     });
+    
+    // If this is the Adspirer callback, handle it differently
+    if (callbackType === "adspirer") {
+      // This is the format expected by the Adspirer frontend
+      return new Response(JSON.stringify({
+        success: true,
+        message: "Amazon Ads connected successfully",
+        profileId
+      }), {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*"
+        }
+      });
+    }
     
     // Redirect back to the application with success message
     const successUrl = new URL(redirectOrigin || "https://app.adspirer.com");
