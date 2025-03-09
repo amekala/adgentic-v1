@@ -1,4 +1,3 @@
-
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { OpenAI } from 'https://deno.land/x/openai@v4.23.0/mod.ts';
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.5.0";
@@ -9,13 +8,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, {
       status: 204,
-      headers: {
-        ...corsHeaders,
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-        'Access-Control-Allow-Credentials': 'true'
-      }
+      headers: corsHeaders
     });
   }
 
@@ -32,24 +25,32 @@ serve(async (req) => {
       });
     }
 
+    // Get Supabase configuration - try both formats of environment variables
+    const supabaseUrl = Deno.env.get('PUBLIC_SUPABASE_URL') || '';
+    const supabaseAnonKey = Deno.env.get('PUBLIC_SUPABASE_ANON_KEY') || '';
+    
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.error('Missing Supabase configuration.');
+      console.error('PUBLIC_SUPABASE_URL:', supabaseUrl);
+      console.error('PUBLIC_SUPABASE_ANON_KEY presence:', !!supabaseAnonKey);
+      
+      return new Response(JSON.stringify({ 
+        error: 'Missing Supabase configuration. Check environment variables.',
+        details: {
+          url_present: !!supabaseUrl,
+          key_present: !!supabaseAnonKey
+        }
+      }), { 
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+    
     // Create auth client
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       return new Response(JSON.stringify({ error: 'Missing authorization header' }), { 
         status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
-    
-    const supabaseUrl = Deno.env.get('PUBLIC_SUPABASE_URL') || Deno.env.get('SUPABASE_URL') || '';
-    const supabaseAnonKey = Deno.env.get('PUBLIC_SUPABASE_ANON_KEY') || Deno.env.get('SUPABASE_ANON_KEY') || '';
-    
-    console.log('Supabase URL:', supabaseUrl);
-    console.log('Supabase Key available:', !!supabaseAnonKey);
-    
-    if (!supabaseUrl || !supabaseAnonKey) {
-      return new Response(JSON.stringify({ error: 'Supabase configuration missing' }), { 
-        status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
@@ -67,25 +68,27 @@ serve(async (req) => {
     
     // Validate campaign context if provided
     if (context?.campaignId) {
-      // Get the Supabase client
-      const supabaseUrl = Deno.env.get('PUBLIC_SUPABASE_URL') || Deno.env.get('SUPABASE_URL') || '';
-      const supabaseAnonKey = Deno.env.get('PUBLIC_SUPABASE_ANON_KEY') || Deno.env.get('SUPABASE_ANON_KEY') || '';
-
       // Verify the campaign exists
-      const supabaseAdmin = createClient(supabaseUrl, supabaseAnonKey, {
-        global: { headers: { Authorization: authHeader } },
-      });
-      
-      const { data: campaign, error: campaignError } = await supabaseAdmin
+      const { data: campaign, error: campaignError } = await supabase
         .from('campaigns')
         .select('campaign_name')
         .eq('id', context.campaignId)
-        .single();
+        .maybeSingle();
         
-      if (campaignError || !campaign) {
-        console.error('Campaign validation error:', campaignError || 'Campaign not found');
+      if (campaignError) {
+        console.error('Campaign validation error:', campaignError);
         return new Response(JSON.stringify({ 
-          error: `Campaign validation failed: ${campaignError?.message || 'Campaign not found'}` 
+          error: `Campaign validation failed: ${campaignError.message}` 
+        }), { 
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+      
+      if (!campaign) {
+        console.error('Campaign not found:', context.campaignId);
+        return new Response(JSON.stringify({ 
+          error: `Campaign not found with ID: ${context.campaignId}` 
         }), { 
           status: 404,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -100,7 +103,14 @@ serve(async (req) => {
 
     // Process the most recent user message to detect Amazon campaign queries
     const latestUserMessage = messages.slice().reverse().find(msg => msg.role === 'user');
-    const amazonCampaignData = await checkForAmazonCampaignQueries(latestUserMessage?.content, supabase, context);
+    let amazonCampaignData;
+    
+    try {
+      amazonCampaignData = await checkForAmazonCampaignQueries(latestUserMessage?.content, supabase, context);
+    } catch (error) {
+      console.error('Error checking for Amazon campaign queries:', error);
+      // Continue without Amazon data rather than failing the whole request
+    }
     
     let systemContext = '';
     if (context?.campaignName) {
@@ -676,77 +686,6 @@ const generateAIResponse = async (messages, context) => {
     return errorResponse;
   }
 };
-
-// Helper to generate prompts for missing fields
-function generateMissingFieldsPrompt(intent, missingFields) {
-  if (intent === 'create_campaign') {
-    const fieldDescriptions = {
-      name: "a name for your campaign",
-      dailyBudget: "the daily budget amount in dollars",
-      startDate: "when the campaign should start (YYYY-MM-DD)",
-      targetingType: "the targeting type (manual or automatic)"
-    };
-    
-    const missingFieldsText = missingFields.map(field => fieldDescriptions[field]).join(', ');
-    return `To create an Amazon Advertising campaign, I need ${missingFieldsText}. Could you please provide this information?`;
-  } else if (intent === 'adjust_budget') {
-    const fieldDescriptions = {
-      campaignId: "which campaign you want to modify (either the ID or name)",
-      newDailyBudget: "the new daily budget amount in dollars"
-    };
-    
-    const missingFieldsText = missingFields.map(field => fieldDescriptions[field]).join(', ');
-    return `To adjust the budget for your campaign, I need to know ${missingFieldsText}. Could you please provide this information?`;
-  } else if (intent === 'get_campaign_report') {
-    const fieldDescriptions = {
-      campaignIds: "which campaign(s) you want to see reports for (either the ID or name)",
-      startDate: "the start date for the report period (YYYY-MM-DD)"
-    };
-    
-    const missingFieldsText = missingFields.map(field => fieldDescriptions[field]).join(', ');
-    return `To generate a performance report, I need to know ${missingFieldsText}. Could you please provide this information?`;
-  }
-  
-  return "I need more information to proceed with your request.";
-}
-
-// Extract parameters for campaign creation from conversation
-function extractCampaignCreationParams(messages) {
-  const allText = messages.map(m => m.content).join(' ');
-  
-  return {
-    name: extractCampaignName(allText) || "New Campaign",
-    dailyBudget: extractBudget(allText) || 10,
-    startDate: extractDate(allText) || new Date().toISOString().split('T')[0],
-    targetingType: allText.toLowerCase().includes('auto') || allText.toLowerCase().includes('automatic') ? 'auto' : 'manual',
-    state: "enabled"
-  };
-}
-
-// Extract parameters for budget adjustment from conversation
-function extractBudgetAdjustmentParams(messages) {
-  const allText = messages.map(m => m.content).join(' ');
-  
-  return {
-    campaignId: extractCampaignIdentifier(allText) || null,
-    newDailyBudget: extractBudget(allText) || 10
-  };
-}
-
-// Extract parameters for report generation from conversation
-function extractReportParams(messages) {
-  const allText = messages.map(m => m.content).join(' ');
-  
-  return {
-    campaignIds: extractCampaignIdentifier(allText) || null,
-    startDate: extractDate(allText) || (() => {
-      const date = new Date();
-      date.setDate(date.getDate() - 30); // Default to last 30 days
-      return date.toISOString().split('T')[0];
-    })(),
-    endDate: new Date().toISOString().split('T')[0] // Default to today
-  };
-}
 
 function extractFollowupPrompts(content) {
   // Look for the "Follow-up Questions:" section
