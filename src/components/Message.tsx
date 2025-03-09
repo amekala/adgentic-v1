@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
@@ -129,14 +128,14 @@ const Message: React.FC<MessageComponentProps> = ({
           </div>
         )}
         
-        {/* Followup Prompts with improved hover effect */}
+        {/* Followup Prompts */}
         {hasFollowupPrompts && (
           <div className="flex flex-wrap gap-2 mt-3">
             {message.followupPrompts.map((prompt, index) => (
               <button
                 key={index}
                 onClick={() => onFollowupClick && onFollowupClick(prompt.text)}
-                className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200/70 rounded-full text-sm text-gray-700 transition-colors"
+                className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-full text-sm text-gray-700 transition-colors"
               >
                 {prompt.text}
               </button>

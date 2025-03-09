@@ -1,4 +1,3 @@
-
 import { useEffect, useRef } from 'react';
 import Message, { MessageProps } from './Message';
 import ChatActionPills from './ChatActionPills';

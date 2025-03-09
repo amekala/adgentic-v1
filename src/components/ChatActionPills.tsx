@@ -1,4 +1,3 @@
-
 import { BarChart3, Lightbulb, Target, PenSquare } from 'lucide-react';
 
 interface ChatActionPillsProps {
@@ -7,10 +6,67 @@ interface ChatActionPillsProps {
 }
 
 const ChatActionPills = ({ onPillClick, className = '' }: ChatActionPillsProps) => {
-  // Empty component - pills removed as requested
+  // Suggestions with rich styling and clear visual design
+  const suggestions = [
+    {
+      id: 'analyze',
+      label: 'Campaign Analysis',
+      icon: <BarChart3 className="h-4 w-4" />,
+      message: "Let's analyze your campaign performance and find opportunities for improvement.",
+      color: "bg-blue-50 text-blue-900 border-blue-200",
+      iconBg: "bg-blue-100",
+      iconColor: "text-blue-500"
+    },
+    {
+      id: 'ideas',
+      label: 'Get Ideas',
+      icon: <Lightbulb className="h-4 w-4" />,
+      message: "I'll help you brainstorm creative ideas to enhance your campaign.",
+      color: "bg-amber-50 text-amber-900 border-amber-200",
+      iconBg: "bg-amber-100",
+      iconColor: "text-amber-500"
+    },
+    {
+      id: 'targeting',
+      label: 'Targeting Strategy',
+      icon: <Target className="h-4 w-4" />,
+      message: "Let's optimize your campaign targeting strategy.",
+      color: "bg-green-50 text-green-900 border-green-200",
+      iconBg: "bg-green-100",
+      iconColor: "text-green-500"
+    },
+    {
+      id: 'optimize',
+      label: 'Campaign Goals',
+      icon: <PenSquare className="h-4 w-4" />,
+      message: "Let's define clear goals and KPIs for your campaign.",
+      color: "bg-purple-50 text-purple-900 border-purple-200",
+      iconBg: "bg-purple-100",
+      iconColor: "text-purple-500"
+    }
+  ];
+
   return (
     <div className={`w-full max-w-3xl mx-auto ${className}`}>
-      {/* Pills have been removed as requested */}
+      <div className="space-y-3">
+        <p className="text-sm text-adspirer-text-secondary">
+          How can I help with your advertising campaign today?
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {suggestions.map((suggestion) => (
+            <button
+              key={suggestion.id}
+              onClick={() => onPillClick?.(suggestion.message)}
+              className={`flex items-center gap-3 px-4 py-3 rounded-lg ${suggestion.color || 'bg-white text-adspirer-text-primary'} border border-current hover:border-adspirer-border hover:bg-opacity-75 shadow-sm transition-all text-sm`}
+            >
+              <div className={`p-2 rounded-md ${suggestion.iconBg || 'bg-white'} ${suggestion.iconColor || 'text-adspirer-accent'}`}>
+                {suggestion.icon}
+              </div>
+              <span className="font-medium">{suggestion.label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
     </div>
   );
 };
