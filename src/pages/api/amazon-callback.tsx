@@ -12,12 +12,19 @@ export default function AmazonCallbackHandler() {
   useEffect(() => {
     async function processCallback() {
       try {
+        console.log("Amazon callback handler activated");
+        console.log("Full URL:", window.location.href);
+        
         // Get query parameters from the URL
         const searchParams = new URLSearchParams(location.search);
         const code = searchParams.get('code');
         const state = searchParams.get('state');
         
+        console.log("Code parameter:", code?.substring(0, 5) + "...");
+        console.log("State parameter:", state?.substring(0, 10) + "...");
+        
         if (!code || !state) {
+          console.error("Missing required parameters:", { code, state });
           setStatus('error');
           setMessage('Missing required parameters');
           return;
@@ -41,6 +48,12 @@ export default function AmazonCallbackHandler() {
           return;
         }
 
+        console.log("Calling token-exchange function with:", {
+          advertiserId,
+          useTestAccount: !!useTestAccount,
+          codeLength: code.length
+        });
+
         // Call our token exchange function
         const { data, error } = await supabase.functions.invoke('token-exchange', {
           body: {
@@ -48,6 +61,12 @@ export default function AmazonCallbackHandler() {
             advertiserId,
             useTestAccount: !!useTestAccount
           }
+        });
+
+        console.log("Token exchange response:", {
+          success: !!data?.success,
+          error: error?.message || null,
+          message: data?.message || null
         });
 
         if (error) {

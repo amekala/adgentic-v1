@@ -7,7 +7,10 @@ const corsHeaders = {
 };
 
 // The URL to which Amazon redirects after login
-const REDIRECT_URI = "https://www.adspirer.com/api/amazon-callback";
+const isDevelopment = Deno.env.get("ENVIRONMENT") === "development";
+const REDIRECT_URI = isDevelopment
+  ? "http://localhost:8080/api/amazon-callback"
+  : "https://www.adspirer.com/api/amazon-callback";
 
 serve(async (req) => {
   // Handle CORS preflight requests

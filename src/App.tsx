@@ -103,6 +103,9 @@ const App = () => (
                 </ProtectedRoute>
               } />
               
+              {/* Special routes - needed for OAuth callbacks */}
+              <Route path="/api/amazon-callback" element={<AmazonCallbackHandler />} />
+
               {/* This catch-all redirects any unknown routes to the Marketing page */}
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
