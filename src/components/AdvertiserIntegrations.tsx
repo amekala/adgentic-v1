@@ -41,8 +41,7 @@ export default function AdvertiserIntegrations({ advertiserId }: { advertiserId:
           .insert({
             id: id,
             name: 'Test Advertiser',
-            company_email: 'test@example.com',
-            status: 'active'
+            company_email: 'test@example.com'
           });
 
         if (createError) {
@@ -154,9 +153,10 @@ export default function AdvertiserIntegrations({ advertiserId }: { advertiserId:
           setPlatforms(platforms);
           clearInterval(intervalId);
           
+          // Show special message about using hardcoded profile ID
           toast({
             title: 'Connection Successful',
-            description: `Connected to Amazon Ads (Profile ID: ${amazonPlatform.profile_id})`,
+            description: `Connected to Amazon Ads (Using profile ID: 3211012118364113)`,
           });
         }
       } catch (error) {
@@ -197,7 +197,7 @@ export default function AdvertiserIntegrations({ advertiserId }: { advertiserId:
                   <h3 className="font-medium">Amazon Advertising</h3>
                   <p className="text-sm text-gray-500">
                     {getAmazonPlatform() 
-                      ? `Connected (Profile ID: ${getAmazonPlatform().profile_id})` 
+                      ? `Connected (Using profile ID: 3211012118364113)` 
                       : 'Not connected'}
                   </p>
                 </div>

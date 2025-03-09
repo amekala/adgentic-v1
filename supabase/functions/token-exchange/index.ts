@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.5.0";
 
@@ -250,19 +249,11 @@ serve(async (req) => {
       );
     }
     
-    const profiles = await profilesResponse.json();
-    let profileId = null;
-    
-    if (profiles && profiles.length > 0) {
-      // Use the first profile by default
-      profileId = profiles[0].profileId;
-      console.log(`Using profile ID: ${profileId}`);
-    } else {
-      console.warn("No profiles found in Amazon Advertising account");
-    }
+    // Hard-code the profile ID as requested
+    const profileId = "3211012118364113";
+    console.log(`Using hardcoded profile ID: ${profileId}`);
     
     // Find or create Amazon platform in database
-    console.log("Looking for Amazon platform in database");
     let platformId;
     
     try {
@@ -375,4 +366,4 @@ serve(async (req) => {
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
-}); 
+});

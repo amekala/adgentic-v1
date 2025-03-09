@@ -1,3 +1,4 @@
+
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.5.0';
 
@@ -126,28 +127,66 @@ serve(async (req) => {
     });
 
     const requestData = await req.json();
-    const { operation, platformCredentialId, chatMode } = requestData;
+    const { operation, platformCredentialId, chatMode, advertiserId } = requestData;
 
     if (!operation) {
       return createResponse({ error: 'Missing operation parameter' }, 400);
     }
     
-    if (!platformCredentialId) {
-      return createResponse({ error: 'Missing platformCredentialId parameter' }, 400);
+    if (!platformCredentialId && !advertiserId) {
+      return createResponse({ error: 'Missing platformCredentialId or advertiserId parameter' }, 400);
     }
 
     // Get platform credential details
-    const { data: credential, error: credentialError } = await supabase
-      .from('platform_credentials')
-      .select('profile_id, platform_id, advertiser_id')
-      .eq('id', platformCredentialId)
-      .single();
+    let credential;
+    
+    if (platformCredentialId) {
+      const { data, error } = await supabase
+        .from('platform_credentials')
+        .select('profile_id, platform_id, advertiser_id')
+        .eq('id', platformCredentialId)
+        .single();
+        
+      if (error || !data) {
+        return createResponse({ 
+          error: `Failed to retrieve platform credential: ${error?.message || 'Not found'}` 
+        }, 404);
+      }
       
-    if (credentialError || !credential) {
-      return createResponse({ 
-        error: `Failed to retrieve platform credential: ${credentialError?.message || 'Not found'}` 
-      }, 404);
+      credential = data;
+    } else if (advertiserId) {
+      // Get the platform_id for Amazon
+      const { data: platformData, error: platformError } = await supabase
+        .from('ad_platforms')
+        .select('id')
+        .eq('name', 'amazon')
+        .single();
+        
+      if (platformError || !platformData) {
+        return createResponse({ 
+          error: `Failed to find Amazon platform: ${platformError?.message}` 
+        }, 404);
+      }
+      
+      const { data, error } = await supabase
+        .from('platform_credentials')
+        .select('id, profile_id, platform_id, advertiser_id')
+        .eq('advertiser_id', advertiserId)
+        .eq('platform_id', platformData.id)
+        .single();
+        
+      if (error || !data) {
+        return createResponse({ 
+          error: `Failed to retrieve platform credential for advertiser: ${error?.message || 'Not found'}` 
+        }, 404);
+      }
+      
+      credential = data;
+      platformCredentialId = data.id;
     }
+    
+    // Override the profile ID with the hardcoded value
+    const profileId = "3211012118364113";
     
     // Get Amazon client ID from environment
     const clientId = Deno.env.get('AMAZON_ADS_CLIENT_ID');
@@ -161,6 +200,20 @@ serve(async (req) => {
       accessToken = await getAmazonToken(supabase, platformCredentialId);
     } catch (tokenError) {
       return createResponse({ error: `Token error: ${tokenError.message}` }, 500);
+    }
+
+    // Log the API interaction
+    try {
+      await supabase.from("platform_operation_logs").insert({
+        advertiser_id: credential.advertiser_id,
+        platform_id: credential.platform_id,
+        operation_type: operation,
+        request_payload: requestData,
+        success: true
+      });
+    } catch (logError) {
+      console.warn('Error logging API interaction:', logError);
+      // Non-fatal error, continue with the operation
     }
 
     // Handle different operations
@@ -180,7 +233,7 @@ serve(async (req) => {
           headers: {
             'Authorization': `Bearer ${accessToken}`,
             'Amazon-Advertising-API-ClientId': clientId,
-            'Amazon-Advertising-API-Scope': credential.profile_id,
+            'Amazon-Advertising-API-Scope': profileId,
             'Content-Type': 'application/json'
           }
         });
@@ -209,7 +262,7 @@ serve(async (req) => {
           headers: {
             'Authorization': `Bearer ${accessToken}`,
             'Amazon-Advertising-API-ClientId': clientId,
-            'Amazon-Advertising-API-Scope': credential.profile_id,
+            'Amazon-Advertising-API-Scope': profileId,
             'Content-Type': 'application/json'
           }
         });
@@ -275,7 +328,7 @@ serve(async (req) => {
           headers: {
             'Authorization': `Bearer ${accessToken}`,
             'Amazon-Advertising-API-ClientId': clientId,
-            'Amazon-Advertising-API-Scope': credential.profile_id,
+            'Amazon-Advertising-API-Scope': profileId,
             'Content-Type': 'application/json'
           },
           body: JSON.stringify(campaignData)
@@ -311,7 +364,7 @@ serve(async (req) => {
           headers: {
             'Authorization': `Bearer ${accessToken}`,
             'Amazon-Advertising-API-ClientId': clientId,
-            'Amazon-Advertising-API-Scope': credential.profile_id,
+            'Amazon-Advertising-API-Scope': profileId,
             'Content-Type': 'application/json'
           },
           body: JSON.stringify(updateData)
@@ -352,6 +405,19 @@ serve(async (req) => {
       
       default:
         return createResponse({ error: `Unsupported operation: ${operation}` }, 400);
+    }
+
+    // Log successful response
+    try {
+      await supabase.from("platform_operation_logs").update({
+        response_payload: responseData,
+        success: true
+      }).eq('advertiser_id', credential.advertiser_id)
+        .eq('platform_id', credential.platform_id)
+        .eq('operation_type', operation);
+    } catch (logError) {
+      console.warn('Error updating API interaction log:', logError);
+      // Non-fatal error, continue with the response
     }
 
     // Return the response data

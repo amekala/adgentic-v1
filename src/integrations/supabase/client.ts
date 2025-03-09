@@ -73,3 +73,67 @@ export const storeAmazonAdsTokens = async (credentials: {
     };
   }
 };
+
+// New utility function to get a valid Amazon Ads token
+export const getAmazonAdsToken = async (advertiserId: string): Promise<{ accessToken: string, profileId: string }> => {
+  try {
+    // First, get the platform_id for Amazon
+    const { data: platformData, error: platformError } = await supabase
+      .from('ad_platforms')
+      .select('id')
+      .eq('name', 'amazon')
+      .single();
+    
+    if (platformError || !platformData) {
+      throw new Error(`Failed to find Amazon platform: ${platformError?.message}`);
+    }
+
+    // Get the credentials for this advertiser and platform
+    const { data: credentials, error: credentialsError } = await supabase
+      .from('platform_credentials')
+      .select('id, access_token, refresh_token, token_expires_at, profile_id')
+      .eq('advertiser_id', advertiserId)
+      .eq('platform_id', platformData.id)
+      .single();
+    
+    if (credentialsError || !credentials) {
+      throw new Error(`Failed to retrieve credentials: ${credentialsError?.message || 'Not found'}`);
+    }
+
+    // Always use the hardcoded profile ID for Amazon API calls
+    const profileId = "3211012118364113";
+    
+    // Check if token is expired
+    const currentTime = new Date();
+    const tokenExpiresAt = credentials.token_expires_at ? new Date(credentials.token_expires_at) : null;
+    
+    // If token is still valid, return it
+    if (credentials.access_token && tokenExpiresAt && currentTime < tokenExpiresAt) {
+      return { 
+        accessToken: credentials.access_token,
+        profileId
+      };
+    }
+    
+    // If token is expired, use the token_manager function to refresh it
+    const { data: tokenData, error: tokenError } = await supabase.functions.invoke('token_manager', {
+      body: {
+        operation: 'get_token',
+        platformCredentialId: credentials.id
+      }
+    });
+    
+    if (tokenError || !tokenData?.access_token) {
+      throw new Error(`Failed to refresh token: ${tokenError?.message || 'No token returned'}`);
+    }
+    
+    return { 
+      accessToken: tokenData.access_token,
+      profileId
+    };
+  } catch (error) {
+    console.error('Error getting Amazon Ads token:', error);
+    throw error;
+  }
+};
+
