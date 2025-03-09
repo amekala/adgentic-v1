@@ -6,9 +6,9 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Use our client-side callback handler for Amazon redirects
-const REDIRECT_URI = "https://www.adspirer.com/#/api/amazon-callback";
-const CLIENT_REDIRECT_URI = "/#/api/amazon-callback"; // Client-side route to handle callbacks
+// Use our client-side callback handler for Amazon redirects - must match whitelist in Amazon developer console
+const REDIRECT_URI = "https://www.adspirer.com/api/amazon-callback";
+const CLIENT_REDIRECT_URI = "/api/amazon-callback"; // Client-side route to handle callbacks
 
 serve(async (req) => {
   // Handle CORS preflight requests

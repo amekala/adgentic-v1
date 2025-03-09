@@ -4,29 +4,46 @@
   <meta charset="utf-8">
   <title>Redirecting...</title>
   <script>
-    // Preserve URL parameters when redirecting
-    const location = window.location;
-    const pathWithoutLeadingSlash = location.pathname.replace(/^\/+/, '');
-    const searchParams = location.search;
-    const hash = location.hash;
-    
-    // Create a new URL with preserved query params
-    const redirectURL = '/' + 
-                   (pathWithoutLeadingSlash ? '?' + encodeURIComponent('path=' + pathWithoutLeadingSlash) : '') + 
-                   (searchParams ? (pathWithoutLeadingSlash ? '&' : '?') + encodeURIComponent('query=' + searchParams.substring(1)) : '') +
-                   (hash ? '#' + hash : '');
-    
-    // If this is an Amazon callback request specifically, handle it differently
-    if (location.pathname.includes('/api/amazon-callback') || location.pathname.includes('api/amazon-callback')) {
-      // Special handling for Amazon callback - redirect directly with parameters preserved
-      window.location.href = '/#/api/amazon-callback' + location.search + location.hash;
-    } else {
-      // For all other pages, redirect to the app root
-      window.location.href = redirectURL;
+    // Handle Amazon OAuth callback specifically
+    function handleAmazonCallback() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const code = urlParams.get('code');
+      const state = urlParams.get('state');
+      
+      // Log for debugging
+      console.log("Amazon callback detected in 404.html");
+      console.log("Code present:", !!code);
+      console.log("State present:", !!state);
+      
+      if (code && state) {
+        // Preserve the Amazon callback parameters and redirect to our app route
+        window.location.replace('/#/api/amazon-callback' + window.location.search);
+        return true;
+      }
+      return false;
     }
+    
+    // Main redirect logic
+    function handleRedirect() {
+      const path = window.location.pathname;
+      
+      // Check if this is an Amazon callback
+      if (path.includes('/api/amazon-callback')) {
+        if (handleAmazonCallback()) {
+          return;
+        }
+      }
+      
+      // Default redirect to home page
+      window.location.replace('/');
+    }
+    
+    // Execute redirect
+    handleRedirect();
   </script>
 </head>
 <body>
-  <p>Redirecting...</p>
+  <h2>Redirecting...</h2>
+  <p>We're redirecting you to the right place. If you aren't redirected automatically, <a href="/">click here</a>.</p>
 </body>
 </html>

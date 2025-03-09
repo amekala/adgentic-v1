@@ -6,11 +6,11 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// The URL to which Amazon redirects after login
+// The URL to which Amazon redirects after login - must match whitelist in Amazon developer console
 const isDevelopment = Deno.env.get("ENVIRONMENT") === "development";
 const REDIRECT_URI = isDevelopment
-  ? "http://localhost:8080/#/api/amazon-callback"
-  : "https://www.adspirer.com/#/api/amazon-callback";
+  ? "http://localhost:8080/api/amazon-callback"
+  : "https://www.adspirer.com/api/amazon-callback";
 
 serve(async (req) => {
   // Handle CORS preflight requests
