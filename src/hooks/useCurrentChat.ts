@@ -278,16 +278,13 @@ export const useCurrentChat = () => {
       }));
       
       // System message that will be prepended
-      const systemMessage = {
-        role: 'system' as const,
-        content: campaignId 
-          ? `You are Adgentic, an AI assistant specialized in advertising campaigns. This is a conversation about campaign: ${campaign?.campaign_name || 'unknown'}.`
-          : `You are Adgentic, an AI assistant specialized in advertising and marketing campaigns.`
-      };
+      const systemPrompt = campaign 
+        ? `You are Adspirer, an AI assistant specialized in advertising campaigns. This is a conversation about campaign: ${campaign?.campaign_name || 'unknown'}.`
+        : `You are Adspirer, an AI assistant specialized in advertising and marketing campaigns.`
       
       // Add system message and context
       const completeMessages = [
-        systemMessage,
+        { role: 'system', content: systemPrompt },
         ...formattedMessages
       ];
       

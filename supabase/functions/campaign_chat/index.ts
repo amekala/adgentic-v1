@@ -72,7 +72,7 @@ serve(async (req) => {
 
     // Update system message with campaign context and enhanced formatting instructions
     const systemMessageIndex = messages.findIndex(m => m.role === 'system');
-    const enhancedSystemPrompt = `You are Adgentic, an AI assistant specialized in advertising and marketing campaigns. ${systemContext}
+    const enhancedSystemPrompt = `You are Adspirer, an AI assistant specialized in advertising and marketing campaigns. ${systemContext}
 
 Your responses should be:
 1. Well-formatted with markdown for readability (use headings, bullets, bold, etc.)

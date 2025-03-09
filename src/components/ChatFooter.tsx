@@ -1,4 +1,3 @@
-
 import ChatInput from './ChatInput';
 
 interface ChatFooterProps {
@@ -12,8 +11,8 @@ const ChatFooter = ({ onSend, isLoading }: ChatFooterProps) => {
       <div className="w-full max-w-3xl mx-auto">
         <ChatInput onSend={onSend} isLoading={isLoading} />
       </div>
-      <div className="text-xs text-center text-adgentic-text-secondary">
-        Adgentic can make mistakes. Check important info.
+      <div className="text-xs text-center text-adspirer-text-secondary">
+        Adspirer can make mistakes. Check important info.
       </div>
     </div>
   );

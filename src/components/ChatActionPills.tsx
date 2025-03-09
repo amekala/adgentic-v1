@@ -1,4 +1,3 @@
-
 import { BarChart3, Lightbulb, Target, PenSquare } from 'lucide-react';
 
 interface ChatActionPillsProps {
@@ -50,17 +49,17 @@ const ChatActionPills = ({ onPillClick, className = '' }: ChatActionPillsProps) 
   return (
     <div className={`w-full max-w-3xl mx-auto ${className}`}>
       <div className="space-y-3">
-        <p className="text-sm text-adgentic-text-secondary">
-          Get started with one of these topics, or ask me anything about your campaign:
+        <p className="text-sm text-adspirer-text-secondary">
+          How can I help with your advertising campaign today?
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {suggestions.map((suggestion) => (
             <button
               key={suggestion.id}
               onClick={() => onPillClick?.(suggestion.message)}
-              className={`flex items-center gap-3 px-4 py-3 rounded-lg ${suggestion.color || 'bg-white text-adgentic-text-primary'} border border-current hover:border-adgentic-border shadow-sm transition-all text-sm`}
+              className={`flex items-center gap-3 px-4 py-3 rounded-lg ${suggestion.color || 'bg-white text-adspirer-text-primary'} border border-current hover:border-adspirer-border shadow-sm transition-all text-sm`}
             >
-              <div className={`p-2 rounded-md ${suggestion.iconBg || 'bg-white'} ${suggestion.iconColor || 'text-adgentic-accent'}`}>
+              <div className={`p-2 rounded-md ${suggestion.iconBg || 'bg-white'} ${suggestion.iconColor || 'text-adspirer-accent'}`}>
                 {suggestion.icon}
               </div>
               <span className="font-medium">{suggestion.label}</span>

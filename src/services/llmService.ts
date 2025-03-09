@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { MessageProps } from '@/components/Message';
 
@@ -32,7 +31,7 @@ export const callLLMAPI = async (
       
     const systemMessage = {
       role: 'system' as const,
-      content: `You are Adgentic, an AI assistant specialized in advertising and marketing campaigns. 
+      content: `You are Adspirer, an AI assistant specialized in advertising and marketing campaigns. 
                ${campaignContext}
                You help users optimize their ad campaigns and provide insights on marketing strategies.
 
