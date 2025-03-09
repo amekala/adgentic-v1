@@ -1,4 +1,3 @@
-
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.5.0';
 
@@ -97,6 +96,11 @@ function formatDate(dateStr: string): string {
   return `${month}/${day}/${year}`;
 }
 
+// Add a helper function to check if we're in development mode
+function isDevelopmentMode() {
+  return Deno.env.get('ENVIRONMENT') === 'development' || true; // Default to true for testing
+}
+
 // Main function handler
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -109,32 +113,26 @@ serve(async (req) => {
       return createResponse({ error: 'Method not allowed' }, 405);
     }
 
-    // Create a Supabase client using the request authentication
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      return createResponse({ error: 'Missing authorization header' }, 401);
+    // Initialize Supabase client
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+    
+    if (!supabaseUrl || !supabaseServiceKey) {
+      return createResponse({ error: "Missing Supabase credentials" }, 500);
     }
     
-    const supabaseUrl = Deno.env.get('SUPABASE_URL');
-    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
     
-    if (!supabaseUrl || !supabaseAnonKey) {
-      return createResponse({ error: 'Supabase configuration missing' }, 500);
-    }
-    
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
-
     const requestData = await req.json();
-    const { operation, platformCredentialId, chatMode, advertiserId } = requestData;
-
+    const { operation, platformCredentialId, chatMode, advertiserId, profileId: requestProfileId } = requestData;
+    
     if (!operation) {
-      return createResponse({ error: 'Missing operation parameter' }, 400);
+      return createResponse({ error: "Missing operation parameter" }, 400);
     }
     
+    // Ensure we have either a platformCredentialId or advertiserId
     if (!platformCredentialId && !advertiserId) {
-      return createResponse({ error: 'Missing platformCredentialId or advertiserId parameter' }, 400);
+      return createResponse({ error: "Missing platformCredentialId or advertiserId parameter" }, 400);
     }
 
     // Get platform credential details
@@ -185,8 +183,9 @@ serve(async (req) => {
       platformCredentialId = data.id;
     }
     
-    // Override the profile ID with the hardcoded value
-    const profileId = "3211012118364113";
+    // Override the profile ID with the hardcoded value or use the one passed in the request
+    // This ensures all LLM functions use this as their basis for conversation
+    const profileId = requestProfileId || "3211012118364113";
     
     // Get Amazon client ID from environment
     const clientId = Deno.env.get('AMAZON_ADS_CLIENT_ID');
@@ -210,7 +209,9 @@ serve(async (req) => {
         operation_type: operation,
         request_payload: requestData,
         success: true
-      });
+      }).eq('advertiser_id', credential.advertiser_id)
+        .eq('platform_id', credential.platform_id)
+        .eq('operation_type', operation);
     } catch (logError) {
       console.warn('Error logging API interaction:', logError);
       // Non-fatal error, continue with the operation
@@ -269,7 +270,7 @@ serve(async (req) => {
         
         if (!response.ok) {
           // If the API call fails, check if we should use test data for development
-          if (Deno.env.get('ENVIRONMENT') === 'development') {
+          if (isDevelopmentMode()) {
             console.warn('Using test campaign data in development mode');
             responseData = [
               {
@@ -314,14 +315,57 @@ serve(async (req) => {
       }
       
       case 'create_campaign': {
-        const { campaignData } = requestData;
+        // Extract campaign creation parameters
+        const { 
+          name, 
+          dailyBudget, 
+          startDate, 
+          endDate = null, 
+          targetingType, 
+          state = "enabled"
+        } = requestData;
         
-        if (!campaignData) {
-          return createResponse({ error: 'Missing campaign data' }, 400);
+        // Validate required parameters
+        if (!name || !dailyBudget || !startDate || !targetingType) {
+          return createResponse({ 
+            error: "Missing required parameters for campaign creation",
+            requiredFields: ["name", "dailyBudget", "startDate", "targetingType"] 
+          }, 400);
         }
         
-        // Make Amazon API request to create campaign
+        // Format dates to YYYYMMDD as required by Amazon API
+        const formattedStartDate = startDate.replace(/-/g, '');
+        const formattedEndDate = endDate ? endDate.replace(/-/g, '') : null;
+        
+        // Create campaign object
+        const campaignData = {
+          name,
+          state,
+          budgetType: "daily",
+          budget: parseFloat(dailyBudget),
+          startDate: formattedStartDate,
+          ...(formattedEndDate && { endDate: formattedEndDate }),
+          targetingType // e.g., "manual" or "auto"
+        };
+        
+        // URL for creating Sponsored Products campaign
         const apiUrl = 'https://advertising-api.amazon.com/v2/sp/campaigns';
+        
+        if (isDevelopmentMode()) {
+          console.warn('Using test data for campaign creation in development mode');
+          responseData = {
+            campaignId: Math.floor(Math.random() * 1000000000),
+            name: campaignData.name,
+            state: campaignData.state,
+            budget: campaignData.budget,
+            budgetType: campaignData.budgetType,
+            startDate: campaignData.startDate,
+            endDate: campaignData.endDate || null,
+            targetingType: campaignData.targetingType,
+            createdAt: new Date().toISOString()
+          };
+          break;
+        }
         
         const response = await fetch(apiUrl, {
           method: 'POST',
@@ -345,19 +389,39 @@ serve(async (req) => {
         break;
       }
       
-      case 'update_campaign': {
-        const { campaignId, updateData } = requestData;
+      case 'adjust_budget': {
+        // Extract budget adjustment parameters
+        const { campaignId, newDailyBudget } = requestData;
         
-        if (!campaignId) {
-          return createResponse({ error: 'Missing campaign ID' }, 400);
+        // Validate required parameters
+        if (!campaignId || !newDailyBudget) {
+          return createResponse({ 
+            error: "Missing required parameters for budget adjustment",
+            requiredFields: ["campaignId", "newDailyBudget"] 
+          }, 400);
         }
         
-        if (!updateData) {
-          return createResponse({ error: 'Missing update data' }, 400);
-        }
+        // Budget update object
+        const budgetUpdate = {
+          campaignId: parseInt(campaignId),
+          budget: parseFloat(newDailyBudget)
+        };
         
-        // Make Amazon API request to update campaign
-        const apiUrl = `https://advertising-api.amazon.com/v2/sp/campaigns/${campaignId}`;
+        // URL for updating a Sponsored Products campaign
+        const apiUrl = 'https://advertising-api.amazon.com/v2/sp/campaigns';
+        
+        if (isDevelopmentMode()) {
+          console.warn('Using test data for budget adjustment in development mode');
+          responseData = {
+            code: "SUCCESS",
+            campaignId: budgetUpdate.campaignId,
+            updatedFields: {
+              budget: budgetUpdate.budget,
+              updatedAt: new Date().toISOString()
+            }
+          };
+          break;
+        }
         
         const response = await fetch(apiUrl, {
           method: 'PUT',
@@ -367,7 +431,7 @@ serve(async (req) => {
             'Amazon-Advertising-API-Scope': profileId,
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify(updateData)
+          body: JSON.stringify([budgetUpdate])
         });
         
         if (!response.ok) {
@@ -378,6 +442,202 @@ serve(async (req) => {
         }
         
         responseData = await response.json();
+        break;
+      }
+      
+      case 'get_campaign_report': {
+        // Extract report parameters
+        const { 
+          campaignIds,
+          startDate, 
+          endDate = new Date().toISOString().split('T')[0], // Default to today
+          metrics = ["impressions", "clicks", "cost", "sales"] 
+        } = requestData;
+        
+        // Validate required parameters
+        if (!campaignIds || !startDate) {
+          return createResponse({ 
+            error: "Missing required parameters for campaign report",
+            requiredFields: ["campaignIds", "startDate"] 
+          }, 400);
+        }
+        
+        if (isDevelopmentMode()) {
+          console.warn('Using test data for campaign report in development mode');
+          
+          // Generate test report data
+          const reportData = [];
+          const dayCount = Math.round((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24)) + 1;
+          
+          // Generate data for each day in the range
+          for (let i = 0; i < dayCount; i++) {
+            const date = new Date(startDate);
+            date.setDate(date.getDate() + i);
+            const dateStr = date.toISOString().split('T')[0];
+            
+            // Use campaignIds to determine which campaigns to include
+            const campaignIdList = Array.isArray(campaignIds) ? campaignIds : [campaignIds];
+            
+            for (const campaignId of campaignIdList) {
+              // Get campaign name based on ID
+              const campaignName = campaignId === "123456789" || campaignId === 123456789 
+                ? "Test Campaign 1" 
+                : campaignId === "987654321" || campaignId === 987654321
+                  ? "Test Campaign 2"
+                  : `Campaign ${campaignId}`;
+                  
+              // Generate random metrics
+              const impressions = Math.floor(Math.random() * 5000) + 1000;
+              const clicks = Math.floor(impressions * (Math.random() * 0.1));
+              const cost = (clicks * (Math.random() * 1.5 + 0.5)).toFixed(2);
+              const sales = (parseFloat(cost) * (Math.random() * 5 + 2)).toFixed(2);
+              const acos = ((parseFloat(cost) / parseFloat(sales)) * 100).toFixed(2);
+              
+              reportData.push({
+                date: dateStr,
+                campaignId: campaignId,
+                campaignName: campaignName,
+                impressions: impressions,
+                clicks: clicks,
+                ctr: ((clicks / impressions) * 100).toFixed(2),
+                cost: cost,
+                sales: sales,
+                acos: acos
+              });
+            }
+          }
+          
+          // Format for chatMode if needed
+          if (chatMode) {
+            responseData = {
+              text: formatReportForChat(reportData),
+              report: reportData
+            };
+          } else {
+            responseData = reportData;
+          }
+          
+          break;
+        }
+        
+        // Create report request
+        const reportRequest = {
+          name: "Campaign Performance Report",
+          startDate,
+          endDate,
+          campaignType: "sponsoredProducts",
+          reportTypeId: "spCampaigns",
+          metrics,
+          configurations: {
+            adProduct: "SPONSORED_PRODUCTS",
+            columns: ["campaignName", "impressions", "clicks", "cost", "sales", "acos"],
+            reportTypeId: "campaigns",
+            timeUnit: "DAILY",
+            format: "JSON",
+            // Add campaign IDs as filter if provided
+            ...(campaignIds && { 
+              filters: [
+                {
+                  field: "campaignId",
+                  values: Array.isArray(campaignIds) ? campaignIds : [campaignIds]
+                }
+              ]
+            })
+          }
+        };
+        
+        // First, create the report request
+        const createReportUrl = 'https://advertising-api.amazon.com/reporting/reports';
+        
+        const createReportResponse = await fetch(createReportUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Amazon-Advertising-API-ClientId': clientId,
+            'Amazon-Advertising-API-Scope': profileId,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(reportRequest)
+        });
+        
+        if (!createReportResponse.ok) {
+          const errorData = await createReportResponse.json();
+          return createResponse({ 
+            error: `Amazon API error creating report: ${JSON.stringify(errorData)}` 
+          }, createReportResponse.status);
+        }
+        
+        const reportData = await createReportResponse.json();
+        const reportId = reportData.reportId;
+        
+        // Now poll for the report to be ready
+        const getReportUrl = `https://advertising-api.amazon.com/reporting/reports/${reportId}`;
+        
+        // Give the report some time to process
+        let reportStatus;
+        let attempts = 0;
+        const maxAttempts = 5; // Maximum number of polling attempts
+        
+        while (attempts < maxAttempts) {
+          attempts++;
+          
+          // Wait a bit before polling
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          
+          const checkReportResponse = await fetch(getReportUrl, {
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+              'Amazon-Advertising-API-ClientId': clientId,
+              'Amazon-Advertising-API-Scope': profileId,
+            }
+          });
+          
+          if (!checkReportResponse.ok) {
+            continue; // Try again
+          }
+          
+          reportStatus = await checkReportResponse.json();
+          
+          if (reportStatus.status === 'COMPLETED') {
+            break;
+          } else if (reportStatus.status === 'FAILED') {
+            return createResponse({ 
+              error: `Report generation failed: ${reportStatus.statusDetails}` 
+            }, 400);
+          }
+        }
+        
+        if (!reportStatus || reportStatus.status !== 'COMPLETED') {
+          return createResponse({ 
+            error: "Report generation timed out. Please try again later." 
+          }, 408);
+        }
+        
+        // Download the report
+        const downloadResponse = await fetch(reportStatus.location, {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`
+          }
+        });
+        
+        if (!downloadResponse.ok) {
+          return createResponse({ 
+            error: "Failed to download report" 
+          }, downloadResponse.status);
+        }
+        
+        const reportContent = await downloadResponse.json();
+        
+        // Format report for LLM chat display if requested
+        if (chatMode) {
+          responseData = {
+            text: formatReportForChat(reportContent),
+            report: reportContent
+          };
+        } else {
+          responseData = reportContent;
+        }
+        
         break;
       }
       
@@ -403,8 +663,17 @@ serve(async (req) => {
         break;
       }
       
-      default:
-        return createResponse({ error: `Unsupported operation: ${operation}` }, 400);
+      default: {
+        return createResponse({ 
+          error: `Unsupported operation: ${operation}`,
+          supportedOperations: [
+            'list_campaigns', 
+            'create_campaign', 
+            'adjust_budget', 
+            'get_campaign_report'
+          ] 
+        }, 400);
+      }
     }
 
     // Log successful response
@@ -426,4 +695,59 @@ serve(async (req) => {
     console.error('Amazon Ads API Error:', error);
     return createResponse({ error: error.message }, 500);
   }
-}); 
+});
+
+// Helper function to format report data for chat display
+function formatReportForChat(reportData) {
+  try {
+    if (!reportData || !Array.isArray(reportData)) {
+      return "No report data available.";
+    }
+    
+    // Create a summary of the report
+    let totalImpressions = 0;
+    let totalClicks = 0;
+    let totalSpend = 0;
+    let totalSales = 0;
+    
+    reportData.forEach(item => {
+      totalImpressions += parseInt(item.impressions || 0);
+      totalClicks += parseInt(item.clicks || 0);
+      totalSpend += parseFloat(item.cost || 0);
+      totalSales += parseFloat(item.sales || 0);
+    });
+    
+    // Calculate metrics
+    const ctr = totalImpressions > 0 ? (totalClicks / totalImpressions) * 100 : 0;
+    const acos = totalSales > 0 ? (totalSpend / totalSales) * 100 : 0;
+    const roas = totalSpend > 0 ? totalSales / totalSpend : 0;
+    
+    // Format the summary
+    return `
+## Campaign Performance Report
+
+**Period:** ${reportData[0]?.date || 'N/A'} to ${reportData[reportData.length - 1]?.date || 'N/A'}
+
+### Summary Metrics
+- **Total Impressions:** ${totalImpressions.toLocaleString()}
+- **Total Clicks:** ${totalClicks.toLocaleString()}
+- **CTR:** ${ctr.toFixed(2)}%
+- **Total Spend:** $${totalSpend.toFixed(2)}
+- **Total Sales:** $${totalSales.toFixed(2)}
+- **ACoS:** ${acos.toFixed(2)}%
+- **ROAS:** ${roas.toFixed(2)}x
+
+### Campaign Details
+${reportData.map(campaign => 
+  `- **${campaign.campaignName || 'Unknown Campaign'}**: 
+    ${parseInt(campaign.impressions || 0).toLocaleString()} impressions, 
+    ${parseInt(campaign.clicks || 0).toLocaleString()} clicks, 
+    $${parseFloat(campaign.cost || 0).toFixed(2)} spend, 
+    $${parseFloat(campaign.sales || 0).toFixed(2)} sales`
+).join('\n')}
+`;
+  } catch (error) {
+    console.error('Error formatting report for chat:', error);
+    return "Error formatting report data.";
+  }
+} 

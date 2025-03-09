@@ -5,7 +5,7 @@ import MessageList from '@/components/MessageList';
 import ChatActionPills from '@/components/ChatActionPills';
 import EmptyState from './EmptyState';
 import { useToast } from '@/hooks/use-toast';
-import { generateResponse } from '@/services/responseGenerator';
+import { callLLMAPI } from '@/services/llmService';
 
 interface ChatInterfaceProps {
   onActionClick: (action: string) => void;
@@ -37,10 +37,11 @@ const ChatInterface = ({ onActionClick }: ChatInterfaceProps) => {
       const newMessages = [...messages, userMessage];
       setMessages(newMessages);
 
-      // Generate response with potential AI integration
+      // Use our enhanced LLM service that supports Amazon API operations
       setTimeout(async () => {
         try {
-          const assistantResponse = await generateResponse(content);
+          // Use callLLMAPI instead of generateResponse
+          const assistantResponse = await callLLMAPI(content, newMessages, null, null);
           setMessages([...newMessages, assistantResponse]);
         } catch (error) {
           console.error('Response generation error:', error);

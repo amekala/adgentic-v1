@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
@@ -18,7 +17,14 @@ export interface MessageProps {
   actionButtons?: Array<{ label: string; primary?: boolean }>;
   metrics?: Array<{ label: string; value: string; improvement?: boolean }>;
   followupPrompts?: Array<{ text: string }>;
+  followupQuestions?: Array<{ text: string }>;
+  structuredData?: any;
   apiData?: any;
+  toolCall?: {
+    type: string;
+    operation: string;
+    params: any;
+  };
 }
 
 interface MessageComponentProps {

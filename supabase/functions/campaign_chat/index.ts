@@ -146,10 +146,34 @@ async function checkForAmazonCampaignQueries(userMessage, supabase, context) {
   // If the message is asking about campaigns (either explicitly Amazon or generally)
   if (messageAskingForCampaigns || messageHasAmazonKeywords) {
     try {
-      // Get the advertiser ID from context
-      const advertiserId = context?.advertiserId;
-      if (!advertiserId) return null;
+      // Check if we have Amazon credentials in the context (from LLM service)
+      const amazonCredentialId = context?.amazonCredentialId;
+      const amazonProfileId = context?.amazonProfileId || "3211012118364113"; // Use hardcoded fallback
       
+      // If we already have credential ID from context, use it directly
+      if (amazonCredentialId) {
+        console.log('Using Amazon credential ID from context:', amazonCredentialId);
+        console.log('Using Amazon profile ID:', amazonProfileId);
+        
+        // Call the amazon_ads function to retrieve campaigns with the credentials from context
+        const { data: amazonData, error } = await supabase.functions.invoke('amazon_ads', {
+          body: {
+            operation: 'list_campaigns',
+            platformCredentialId: amazonCredentialId,
+            profileId: amazonProfileId,
+            chatMode: true
+          }
+        });
+        
+        if (error) throw error;
+        
+        return {
+          hasAmazonCampaigns: true,
+          campaignInfo: amazonData.text
+        };
+      }
+      
+      // Fall back to looking up credentials if not provided in context
       // Look up Amazon platform in the database
       const { data: platformData } = await supabase
         .from('ad_platforms')
@@ -159,11 +183,11 @@ async function checkForAmazonCampaignQueries(userMessage, supabase, context) {
       
       if (!platformData?.id) return null;
       
-      // Find active platform credentials for this advertiser
+      // Find active platform credentials using the hardcoded profile ID
       const { data: credentials } = await supabase
         .from('platform_credentials')
         .select('id')
-        .eq('advertiser_id', advertiserId)
+        .eq('profile_id', amazonProfileId)
         .eq('platform_id', platformData.id)
         .eq('is_active', true)
         .limit(1);
@@ -180,6 +204,7 @@ async function checkForAmazonCampaignQueries(userMessage, supabase, context) {
         body: {
           operation: 'list_campaigns',
           platformCredentialId,
+          profileId: amazonProfileId,
           chatMode: true
         }
       });
@@ -199,39 +224,418 @@ async function checkForAmazonCampaignQueries(userMessage, supabase, context) {
   return null;
 }
 
+// Process the user's message and detect intent for API calls
+async function processUserMessage(userMessage, previousMessages, supabase, context) {
+  // Check for campaign creation intent
+  if (containsIntent(userMessage, ['create campaign', 'new campaign', 'start campaign', 'launch campaign'])) {
+    return {
+      intent: 'create_campaign',
+      missingFields: detectMissingCampaignFields(userMessage, previousMessages),
+      context: context
+    };
+  }
+  
+  // Check for budget adjustment intent
+  if (containsIntent(userMessage, ['adjust budget', 'increase budget', 'decrease budget', 'change budget', 'update budget'])) {
+    return {
+      intent: 'adjust_budget',
+      missingFields: detectMissingBudgetFields(userMessage, previousMessages),
+      context: context
+    };
+  }
+  
+  // Check for report generation intent
+  if (containsIntent(userMessage, ['get report', 'pull report', 'show report', 'campaign performance', 'campaign metrics', 'campaign results'])) {
+    return {
+      intent: 'get_campaign_report',
+      missingFields: detectMissingReportFields(userMessage, previousMessages),
+      context: context
+    };
+  }
+  
+  // Check if there's Amazon campaign data that should be included
+  const amazonCampaignData = await checkForAmazonCampaignQueries(userMessage, supabase, context);
+  if (amazonCampaignData?.hasAmazonCampaigns) {
+    return {
+      intent: 'provide_information',
+      amazonCampaignData,
+      context: context
+    };
+  }
+  
+  // No specific API intent detected
+  return {
+    intent: 'general_query',
+    context: context
+  };
+}
+
+// Helper function to determine if a message contains specific intents
+function containsIntent(message, intentPhrases) {
+  const lowerMessage = message.toLowerCase();
+  return intentPhrases.some(phrase => lowerMessage.includes(phrase.toLowerCase()));
+}
+
+// Check for missing campaign creation fields
+function detectMissingCampaignFields(message, previousMessages) {
+  const requiredFields = ['name', 'dailyBudget', 'startDate', 'targetingType'];
+  const missingFields = [];
+  
+  // Extract all text from the current conversation
+  const allText = [message, ...previousMessages.map(m => m.content)].join(' ').toLowerCase();
+  
+  // Check for campaign name
+  if (!extractCampaignName(allText)) {
+    missingFields.push('name');
+  }
+  
+  // Check for budget
+  if (!extractBudget(allText)) {
+    missingFields.push('dailyBudget');
+  }
+  
+  // Check for start date
+  if (!extractDate(allText)) {
+    missingFields.push('startDate');
+  }
+  
+  // Check for targeting type
+  if (!allText.includes('manual') && !allText.includes('auto') && !allText.includes('automatic')) {
+    missingFields.push('targetingType');
+  }
+  
+  return missingFields;
+}
+
+// Check for missing budget adjustment fields
+function detectMissingBudgetFields(message, previousMessages) {
+  const missingFields = [];
+  
+  // Extract all text from the current conversation
+  const allText = [message, ...previousMessages.map(m => m.content)].join(' ').toLowerCase();
+  
+  // Check for campaign ID or name
+  if (!extractCampaignIdentifier(allText)) {
+    missingFields.push('campaignId');
+  }
+  
+  // Check for new budget amount
+  if (!extractBudget(allText)) {
+    missingFields.push('newDailyBudget');
+  }
+  
+  return missingFields;
+}
+
+// Check for missing report fields
+function detectMissingReportFields(message, previousMessages) {
+  const missingFields = [];
+  
+  // Extract all text from the current conversation
+  const allText = [message, ...previousMessages.map(m => m.content)].join(' ').toLowerCase();
+  
+  // Check for campaign ID or name
+  if (!extractCampaignIdentifier(allText)) {
+    missingFields.push('campaignIds');
+  }
+  
+  // Check for date range
+  if (!extractDate(allText)) {
+    missingFields.push('startDate');
+  }
+  
+  return missingFields;
+}
+
+// Extract campaign name from text
+function extractCampaignName(text) {
+  // Try to find phrases like "name: X" or "called X" or "named X"
+  const namePatterns = [
+    /campaign(?:\s+name)?(?:\s+is)?(?:\s+called)?(?:\s+named)?(?:\s*[:;])?\s*["']?([^"',.?!]+)["']?/i,
+    /name(?:\s+of)?(?:\s+the)?(?:\s+campaign)?(?:\s*[:;])?\s*["']?([^"',.?!]+)["']?/i,
+    /call(?:\s+it)(?:\s*[:;])?\s*["']?([^"',.?!]+)["']?/i
+  ];
+  
+  for (const pattern of namePatterns) {
+    const match = text.match(pattern);
+    if (match && match[1]?.trim()) {
+      return match[1].trim();
+    }
+  }
+  
+  return null;
+}
+
+// Extract budget amount from text
+function extractBudget(text) {
+  // Try to find phrases with dollar amounts
+  const budgetPatterns = [
+    /budget(?:\s+of)?(?:\s*[:;])?\s*\$?\s*(\d+(?:\.\d+)?)/i, 
+    /\$\s*(\d+(?:\.\d+)?)(?:\s+budget)?/i,
+    /(\d+(?:\.\d+)?)(?:\s+dollars)/i
+  ];
+  
+  for (const pattern of budgetPatterns) {
+    const match = text.match(pattern);
+    if (match && match[1]) {
+      return parseFloat(match[1]);
+    }
+  }
+  
+  return null;
+}
+
+// Extract date from text
+function extractDate(text) {
+  // Try various date formats
+  const datePatterns = [
+    // YYYY-MM-DD
+    /(\d{4}-\d{1,2}-\d{1,2})/,
+    // MM/DD/YYYY
+    /(\d{1,2}\/\d{1,2}\/\d{4})/,
+    // Month Name DD, YYYY
+    /(Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\s+\d{1,2}(?:st|nd|rd|th)?,?\s+\d{4})/i
+  ];
+  
+  for (const pattern of datePatterns) {
+    const match = text.match(pattern);
+    if (match && match[1]) {
+      // Convert to YYYY-MM-DD format
+      const dateStr = match[1];
+      try {
+        const date = new Date(dateStr);
+        if (!isNaN(date.getTime())) {
+          return date.toISOString().split('T')[0];
+        }
+      } catch (e) {
+        // Invalid date, continue to next pattern
+      }
+    }
+  }
+  
+  return null;
+}
+
+// Extract campaign identifier (ID or name)
+function extractCampaignIdentifier(text) {
+  // First check for campaign ID
+  const idMatch = text.match(/campaign\s+id\s*[:;]?\s*(\d+)/i) || 
+                 text.match(/id\s*[:;]?\s*(\d+)/i);
+  
+  if (idMatch && idMatch[1]) {
+    return idMatch[1];
+  }
+  
+  // If no ID found, try to extract a campaign name
+  return extractCampaignName(text);
+}
+
+// Enhance the generateAIResponse function to handle API intents
 const generateAIResponse = async (messages, context) => {
   try {
+    // Extract the latest user message
+    const latestUserMessage = messages.filter(m => m.role === 'user').pop();
+    
+    if (!latestUserMessage) {
+      return { role: 'assistant', content: "I'm sorry, I couldn't find your message. How can I help you with your Amazon Advertising campaigns?" };
+    }
+    
+    // Get previous messages excluding the newest user message
+    const previousMessages = messages.filter(m => m !== latestUserMessage);
+    
+    // Process the message to detect API intents
+    const processedMessage = await processUserMessage(
+      latestUserMessage.content, 
+      previousMessages, 
+      supabase, 
+      context
+    );
+    
+    // Handle different intents
+    let assistantPrompt = '';
+    let toolCall = null;
+    
+    if (processedMessage.intent === 'create_campaign') {
+      if (processedMessage.missingFields.length > 0) {
+        // Ask for missing information to create a campaign
+        assistantPrompt = generateMissingFieldsPrompt('create_campaign', processedMessage.missingFields);
+      } else {
+        // We have all the information, suggest executing the API call
+        toolCall = {
+          type: 'api_call',
+          operation: 'create_campaign',
+          params: extractCampaignCreationParams(messages)
+        };
+        assistantPrompt = "I have all the information needed to create your Amazon Advertising campaign. Would you like me to proceed with creating it now?";
+      }
+    } else if (processedMessage.intent === 'adjust_budget') {
+      if (processedMessage.missingFields.length > 0) {
+        // Ask for missing information to adjust budget
+        assistantPrompt = generateMissingFieldsPrompt('adjust_budget', processedMessage.missingFields);
+      } else {
+        // We have all the information, suggest executing the API call
+        toolCall = {
+          type: 'api_call',
+          operation: 'adjust_budget',
+          params: extractBudgetAdjustmentParams(messages)
+        };
+        assistantPrompt = "I have all the information needed to adjust the budget for your campaign. Would you like me to proceed with updating it now?";
+      }
+    } else if (processedMessage.intent === 'get_campaign_report') {
+      if (processedMessage.missingFields.length > 0) {
+        // Ask for missing information to generate a report
+        assistantPrompt = generateMissingFieldsPrompt('get_campaign_report', processedMessage.missingFields);
+      } else {
+        // We have all the information, suggest executing the API call
+        toolCall = {
+          type: 'api_call',
+          operation: 'get_campaign_report',
+          params: extractReportParams(messages)
+        };
+        assistantPrompt = "I have all the information needed to generate a performance report for your campaign. Would you like me to proceed with generating it now?";
+      }
+    } else if (processedMessage.intent === 'provide_information' && processedMessage.amazonCampaignData) {
+      // We have some Amazon campaign data to provide
+      assistantPrompt = "Here's information about your Amazon Advertising campaigns:";
+    } else {
+      // General query, no specific API intent
+      assistantPrompt = null; // Let the AI generate a natural response
+    }
+    
+    // If we have an API intent with missing fields, inject a system message
+    if (assistantPrompt) {
+      // Find system message
+      const systemMessageIndex = messages.findIndex(m => m.role === 'system');
+      if (systemMessageIndex >= 0) {
+        const apiContext = `The user is asking about ${processedMessage.intent.replace('_', ' ')}. ${assistantPrompt}`;
+        messages[systemMessageIndex].content += `\n\n${apiContext}`;
+      }
+    }
+    
+    // Continue with OpenAI call
     const openAI = new OpenAI({
       apiKey: Deno.env.get('OPENAI_API_KEY')
     });
 
     const response = await openAI.chat.completions.create({
-      model: 'gpt-4-turbo',
+      model: "gpt-4o",
       messages: messages,
       temperature: 0.7,
-      max_tokens: 1000,
+      max_tokens: 1500,
+      top_p: 1,
+      frequency_penalty: 0,
+      presence_penalty: 0
     });
 
-    const content = response.choices[0].message.content;
+    // Extract the response content
+    let aiContent = response.choices[0].message.content || "";
     
-    // Extract the follow-up prompts from the response
-    const followupPrompts = extractFollowupPrompts(content);
+    // If we have Amazon campaign data, insert it
+    if (processedMessage.intent === 'provide_information' && processedMessage.amazonCampaignData?.campaignInfo) {
+      aiContent = `${aiContent}\n\n${processedMessage.amazonCampaignData.campaignInfo}`;
+    }
     
-    // Determine action buttons based on content
-    const actionButtons = determineActionButtons(content, context);
-
+    // If we have a tool call, add it to response
+    if (toolCall) {
+      return { 
+        role: 'assistant', 
+        content: aiContent,
+        toolCall
+      };
+    }
+    
+    // Extract follow-up questions
+    const followups = extractFollowupPrompts(aiContent);
+    
+    // Add action buttons if applicable
+    const actionButtons = determineActionButtons(aiContent, context);
+    
+    // Return the formatted response
     return {
-      content: content,
-      followupPrompts: followupPrompts.length > 0 
-        ? followupPrompts 
-        : generateDefaultFollowups(context),
-      actionButtons: actionButtons,
+      role: 'assistant',
+      content: aiContent,
+      followupQuestions: followups.length > 0 ? followups : generateDefaultFollowups(context),
+      actionButtons: actionButtons
     };
   } catch (error) {
-    console.error('OpenAI API Error:', error);
-    throw new Error(`AI response generation failed: ${error.message}`);
+    console.error('Error generating AI response:', error);
+    return { 
+      role: 'assistant', 
+      content: "I apologize, but I encountered an error while processing your request. Please try again or rephrase your question." 
+    };
   }
 };
+
+// Helper to generate prompts for missing fields
+function generateMissingFieldsPrompt(intent, missingFields) {
+  if (intent === 'create_campaign') {
+    const fieldDescriptions = {
+      name: "a name for your campaign",
+      dailyBudget: "the daily budget amount in dollars",
+      startDate: "when the campaign should start (YYYY-MM-DD)",
+      targetingType: "the targeting type (manual or automatic)"
+    };
+    
+    const missingFieldsText = missingFields.map(field => fieldDescriptions[field]).join(', ');
+    return `To create an Amazon Advertising campaign, I need ${missingFieldsText}. Could you please provide this information?`;
+  } else if (intent === 'adjust_budget') {
+    const fieldDescriptions = {
+      campaignId: "which campaign you want to modify (either the ID or name)",
+      newDailyBudget: "the new daily budget amount in dollars"
+    };
+    
+    const missingFieldsText = missingFields.map(field => fieldDescriptions[field]).join(', ');
+    return `To adjust the budget for your campaign, I need to know ${missingFieldsText}. Could you please provide this information?`;
+  } else if (intent === 'get_campaign_report') {
+    const fieldDescriptions = {
+      campaignIds: "which campaign(s) you want to see reports for (either the ID or name)",
+      startDate: "the start date for the report period (YYYY-MM-DD)"
+    };
+    
+    const missingFieldsText = missingFields.map(field => fieldDescriptions[field]).join(', ');
+    return `To generate a performance report, I need to know ${missingFieldsText}. Could you please provide this information?`;
+  }
+  
+  return "I need more information to proceed with your request.";
+}
+
+// Extract parameters for campaign creation from conversation
+function extractCampaignCreationParams(messages) {
+  const allText = messages.map(m => m.content).join(' ');
+  
+  return {
+    name: extractCampaignName(allText) || "New Campaign",
+    dailyBudget: extractBudget(allText) || 10,
+    startDate: extractDate(allText) || new Date().toISOString().split('T')[0],
+    targetingType: allText.toLowerCase().includes('auto') || allText.toLowerCase().includes('automatic') ? 'auto' : 'manual',
+    state: "enabled"
+  };
+}
+
+// Extract parameters for budget adjustment from conversation
+function extractBudgetAdjustmentParams(messages) {
+  const allText = messages.map(m => m.content).join(' ');
+  
+  return {
+    campaignId: extractCampaignIdentifier(allText) || null,
+    newDailyBudget: extractBudget(allText) || 10
+  };
+}
+
+// Extract parameters for report generation from conversation
+function extractReportParams(messages) {
+  const allText = messages.map(m => m.content).join(' ');
+  
+  return {
+    campaignIds: extractCampaignIdentifier(allText) || null,
+    startDate: extractDate(allText) || (() => {
+      const date = new Date();
+      date.setDate(date.getDate() - 30); // Default to last 30 days
+      return date.toISOString().split('T')[0];
+    })(),
+    endDate: new Date().toISOString().split('T')[0] // Default to today
+  };
+}
 
 function extractFollowupPrompts(content) {
   // Look for the "Follow-up Questions:" section

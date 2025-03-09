@@ -1,5 +1,239 @@
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, getAmazonLLMCredentials } from "@/integrations/supabase/client";
 import { MessageProps } from '@/components/Message';
+import { toast } from 'sonner';
+
+// Enhanced logging for debugging
+const logDebug = (message: string, data?: any) => {
+  console.log(`[Amazon API] ${message}`, data || '');
+};
+
+// Helper function to check if a message is related to Amazon
+const isAmazonRelatedQuery = (message: string): boolean => {
+  const amazonKeywords = [
+    'amazon', 'sponsored', 'ppc', 'advertising', 'campaign', 'ads',
+    'product listing', 'sales', 'ranking', 'acos', 'roas', 'marketing',
+    'budget', 'create campaign', 'report', 'performance'
+  ];
+  
+  const hasKeyword = amazonKeywords.some(keyword => 
+    message.toLowerCase().includes(keyword.toLowerCase())
+  );
+
+  logDebug(`Message contains Amazon keywords: ${hasKeyword}`, message);
+  return hasKeyword;
+};
+
+// Function to directly execute Amazon API operations for testing
+export const testAmazonApiOperation = async (
+  operation: string,
+  params: any
+): Promise<any> => {
+  try {
+    logDebug(`Testing Amazon API operation: ${operation}`, params);
+    
+    // Add default operation data for common operations
+    let testParams = params;
+    
+    if (operation === 'create_campaign' && !testParams) {
+      testParams = {
+        name: "Test Campaign " + new Date().toISOString().split('T')[0],
+        dailyBudget: 50,
+        startDate: new Date().toISOString().split('T')[0],
+        targetingType: "auto",
+        state: "enabled"
+      };
+    } else if (operation === 'adjust_budget' && !testParams) {
+      testParams = {
+        campaignId: 123456789,
+        newDailyBudget: 75
+      };
+    } else if (operation === 'get_campaign_report' && !testParams) {
+      const date = new Date();
+      const startDate = new Date();
+      startDate.setDate(date.getDate() - 30);
+      
+      testParams = {
+        campaignIds: 123456789,
+        startDate: startDate.toISOString().split('T')[0],
+        endDate: date.toISOString().split('T')[0]
+      };
+    }
+    
+    const result = await executeAmazonApiOperation(operation, testParams);
+    return result;
+  } catch (error) {
+    console.error('Error testing Amazon API operation:', error);
+    throw error;
+  }
+};
+
+// Function to execute Amazon API operations based on LLM responses
+const executeAmazonApiOperation = async (
+  operation: string,
+  params: any
+): Promise<{ success: boolean; data?: any; error?: string }> => {
+  try {
+    logDebug(`Executing Amazon API operation: ${operation}`, params);
+    
+    // Get Amazon credentials for the API call
+    const amazonCredentials = await getAmazonLLMCredentials();
+    logDebug(`Retrieved credentials with profile ID: ${amazonCredentials.profileId}`);
+    
+    // Call the amazon_ads function with the operation and parameters
+    const { data, error } = await supabase.functions.invoke('amazon_ads', {
+      body: {
+        operation,
+        profileId: amazonCredentials.profileId,
+        platformCredentialId: amazonCredentials.platformCredentialId,
+        ...params
+      }
+    });
+    
+    if (error) {
+      logDebug(`Error executing operation: ${error.message}`);
+      return { success: false, error: error.message };
+    }
+    
+    logDebug(`Operation executed successfully`, data);
+    return { success: true, data };
+  } catch (error: any) {
+    console.error('Error in Amazon API operation:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+// Function to detect Amazon operation intents in user messages
+const detectAmazonOperationIntent = (message: string): { 
+  intent: string | null;
+  params: any;
+} => {
+  const messageLower = message.toLowerCase();
+  
+  // Check for campaign creation intent
+  if (
+    messageLower.includes('create campaign') || 
+    messageLower.includes('new campaign') || 
+    messageLower.includes('start campaign') ||
+    messageLower.includes('launch campaign') ||
+    messageLower.includes('setup campaign')
+  ) {
+    logDebug(`Detected campaign creation intent`);
+    
+    // Extract basic parameters if available
+    const params: any = {};
+    
+    // Try to extract campaign name
+    const nameMatch = message.match(/campaign (?:called|named) ["']([^"']+)["']/i) ||
+                     message.match(/["']([^"']+)["'] campaign/i);
+    if (nameMatch) params.name = nameMatch[1];
+    
+    // Try to extract budget
+    const budgetMatch = message.match(/budget (?:of )?\$?(\d+(?:\.\d+)?)/i) ||
+                       message.match(/\$(\d+(?:\.\d+)?) (?:budget|per day)/i);
+    if (budgetMatch) params.dailyBudget = parseFloat(budgetMatch[1]);
+    
+    // Try to extract date and targeting
+    const targetingMatch = message.match(/(?:use |with |using )?(auto(?:matic)?|manual) targeting/i);
+    if (targetingMatch) params.targetingType = targetingMatch[1].toLowerCase().startsWith('auto') ? 'auto' : 'manual';
+    
+    return { intent: 'create_campaign', params };
+  }
+  
+  // Check for budget adjustment intent
+  if (
+    messageLower.includes('adjust budget') || 
+    messageLower.includes('change budget') || 
+    messageLower.includes('increase budget') ||
+    messageLower.includes('decrease budget') ||
+    messageLower.includes('update budget') ||
+    messageLower.includes('set budget')
+  ) {
+    logDebug(`Detected budget adjustment intent`);
+    
+    // Extract basic parameters if available
+    const params: any = {};
+    
+    // Try to extract campaign ID or name
+    const campaignMatch = message.match(/campaign (?:called|named|:)? ["']([^"']+)["']/i) ||
+                         message.match(/["']([^"']+)["'] campaign/i) ||
+                         message.match(/campaign (?:id:? )?(\d+)/i);
+    if (campaignMatch) params.campaignId = isNaN(Number(campaignMatch[1])) ? campaignMatch[1] : Number(campaignMatch[1]);
+    
+    // Try to extract budget
+    const budgetMatch = message.match(/budget (?:of |to )?\$?(\d+(?:\.\d+)?)/i) ||
+                       message.match(/\$(\d+(?:\.\d+)?) (?:budget|per day)/i);
+    if (budgetMatch) params.newDailyBudget = parseFloat(budgetMatch[1]);
+    
+    return { intent: 'adjust_budget', params };
+  }
+  
+  // Check for report generation intent
+  if (
+    messageLower.includes('generate report') || 
+    messageLower.includes('get report') || 
+    messageLower.includes('campaign report') ||
+    messageLower.includes('show performance') ||
+    messageLower.includes('performance report') ||
+    messageLower.includes('campaign metrics')
+  ) {
+    logDebug(`Detected report generation intent`);
+    
+    // Extract basic parameters if available
+    const params: any = {};
+    
+    // Try to extract campaign ID or name
+    const campaignMatch = message.match(/campaign (?:called|named|:)? ["']([^"']+)["']/i) ||
+                         message.match(/["']([^"']+)["'] campaign/i) ||
+                         message.match(/campaign (?:id:? )?(\d+)/i);
+    if (campaignMatch) params.campaignIds = isNaN(Number(campaignMatch[1])) ? campaignMatch[1] : Number(campaignMatch[1]);
+    
+    // Try to extract date range
+    const dateRangeMatch = message.match(/(?:from|between|since) ([\w\d, ]+) (?:to|and|until) ([\w\d, ]+)/i);
+    if (dateRangeMatch) {
+      try {
+        params.startDate = new Date(dateRangeMatch[1]).toISOString().split('T')[0];
+        params.endDate = new Date(dateRangeMatch[2]).toISOString().split('T')[0];
+      } catch (e) {
+        // Invalid date format, will ask for clarification
+      }
+    } else if (message.match(/last (\d+) days/i)) {
+      const daysMatch = message.match(/last (\d+) days/i);
+      if (daysMatch) {
+        const days = parseInt(daysMatch[1]);
+        const endDate = new Date();
+        const startDate = new Date();
+        startDate.setDate(endDate.getDate() - days);
+        params.startDate = startDate.toISOString().split('T')[0];
+        params.endDate = endDate.toISOString().split('T')[0];
+      }
+    }
+    
+    return { intent: 'get_campaign_report', params };
+  }
+  
+  // No specific Amazon operation intent detected
+  return { intent: null, params: {} };
+};
+
+// Function to check if we have all required parameters for an operation
+const getMissingParameters = (intent: string, params: any): string[] => {
+  const missingParams: string[] = [];
+  
+  if (intent === 'create_campaign') {
+    if (!params.name) missingParams.push('name');
+    if (!params.dailyBudget) missingParams.push('dailyBudget');
+    if (!params.startDate) missingParams.push('startDate');
+    if (!params.targetingType) missingParams.push('targetingType');
+  } else if (intent === 'adjust_budget') {
+    if (!params.campaignId) missingParams.push('campaignId');
+    if (!params.newDailyBudget) missingParams.push('newDailyBudget');
+  } else if (intent === 'get_campaign_report') {
+    if (!params.campaignIds) missingParams.push('campaignIds');
+    if (!params.startDate) missingParams.push('startDate');
+  }
+  
+  return missingParams;
+};
 
 // Function to call the OpenAI integration via Supabase Edge Function
 export const callLLMAPI = async (
@@ -12,6 +246,124 @@ export const callLLMAPI = async (
     console.log('Calling LLM API with message:', userMessage);
     console.log('Using campaignId:', campaignId);
     console.log('Using campaignName:', campaignName);
+    
+    // Check if this is a direct Amazon API call for testing
+    if (userMessage.startsWith('/amazon-test')) {
+      const commandMatch = userMessage.match(/\/amazon-test (\w+)(?:\s+(.*))?/);
+      if (commandMatch) {
+        const operation = commandMatch[1];
+        let params = null;
+        
+        if (commandMatch[2]) {
+          try {
+            params = JSON.parse(commandMatch[2]);
+          } catch (e) {
+            return {
+              role: 'assistant',
+              content: `Error parsing parameters. Use JSON format: /amazon-test ${operation} {"param1": "value1"}`
+            };
+          }
+        }
+        
+        logDebug(`Executing test Amazon API operation: ${operation}`, params);
+        const result = await testAmazonApiOperation(operation, params);
+        
+        if (result.success) {
+          return {
+            role: 'assistant',
+            content: `✅ Amazon API test successful!\n\nOperation: ${operation}\n\nResult:\n\`\`\`json\n${JSON.stringify(result.data, null, 2)}\n\`\`\``
+          };
+        } else {
+          return {
+            role: 'assistant',
+            content: `❌ Amazon API test failed.\n\nOperation: ${operation}\n\nError: ${result.error}`
+          };
+        }
+      }
+    }
+    
+    // First, check if this is a direct Amazon operation intent
+    if (isAmazonRelatedQuery(userMessage)) {
+      // Try to detect specific Amazon operation intent
+      const { intent, params } = detectAmazonOperationIntent(userMessage);
+      
+      if (intent) {
+        logDebug(`Detected Amazon operation intent: ${intent}`, params);
+        
+        // Update conversations from previous messages
+        const conversationParams = { ...params };
+        for (const message of previousMessages) {
+          if (message.role === 'user') {
+            const prevIntent = detectAmazonOperationIntent(message.content);
+            if (prevIntent.intent === intent) {
+              // Merge parameters from previous messages
+              Object.assign(conversationParams, prevIntent.params);
+            }
+          }
+        }
+        
+        // Check if we have all required parameters
+        const missingParams = getMissingParameters(intent, conversationParams);
+        
+        if (missingParams.length > 0) {
+          // We're missing some parameters, ask for them
+          logDebug(`Missing parameters for ${intent}: ${missingParams.join(', ')}`);
+          
+          let promptForMissing = '';
+          if (intent === 'create_campaign') {
+            promptForMissing = `I'd like to help you create an Amazon advertising campaign. To proceed, I need the following details:\n\n`;
+            if (missingParams.includes('name')) promptForMissing += `- What would you like to name this campaign?\n`;
+            if (missingParams.includes('dailyBudget')) promptForMissing += `- What daily budget would you like to set (in USD)?\n`;
+            if (missingParams.includes('startDate')) promptForMissing += `- When should the campaign start? (Please provide a date)\n`;
+            if (missingParams.includes('targetingType')) promptForMissing += `- Would you prefer automatic or manual targeting?\n`;
+          } else if (intent === 'adjust_budget') {
+            promptForMissing = `I'd like to help you adjust the budget for your Amazon campaign. To proceed, I need the following details:\n\n`;
+            if (missingParams.includes('campaignId')) promptForMissing += `- Which campaign would you like to modify? (Please provide the name or ID)\n`;
+            if (missingParams.includes('newDailyBudget')) promptForMissing += `- What should the new daily budget be (in USD)?\n`;
+          } else if (intent === 'get_campaign_report') {
+            promptForMissing = `I'd like to generate a performance report for your Amazon campaign. To proceed, I need the following details:\n\n`;
+            if (missingParams.includes('campaignIds')) promptForMissing += `- Which campaign would you like to see a report for? (Please provide the name or ID)\n`;
+            if (missingParams.includes('startDate')) promptForMissing += `- What time period would you like to analyze? (e.g., "last 30 days" or specific dates)\n`;
+          }
+          
+          promptForMissing += `\nPlease provide the missing information so I can complete your request.`;
+          
+          return {
+            role: 'assistant',
+            content: promptForMissing
+          };
+        } else {
+          // We have all required parameters, confirm and execute the operation
+          logDebug(`All required parameters are available for ${intent}`, conversationParams);
+          
+          let confirmationMessage = '';
+          if (intent === 'create_campaign') {
+            confirmationMessage = `I'll create an Amazon advertising campaign with these details:\n\n` +
+              `- Name: ${conversationParams.name}\n` +
+              `- Daily Budget: $${conversationParams.dailyBudget}\n` +
+              `- Start Date: ${conversationParams.startDate}\n` +
+              `- Targeting: ${conversationParams.targetingType === 'auto' ? 'Automatic' : 'Manual'}\n\n` +
+              `Would you like me to proceed with creating this campaign?`;
+          } else if (intent === 'adjust_budget') {
+            confirmationMessage = `I'll update the budget for campaign "${conversationParams.campaignId}" to $${conversationParams.newDailyBudget} per day.\n\n` +
+              `Would you like me to proceed with this budget adjustment?`;
+          } else if (intent === 'get_campaign_report') {
+            confirmationMessage = `I'll generate a performance report for campaign "${conversationParams.campaignIds}" from ${conversationParams.startDate} to ${conversationParams.endDate || 'today'}.\n\n` +
+              `Would you like me to proceed with generating this report?`;
+          }
+          
+          return {
+            role: 'assistant',
+            content: confirmationMessage,
+            toolCall: {
+              type: 'api_call',
+              operation: intent,
+              params: conversationParams
+            }
+          };
+        }
+      }
+    }
     
     // Filter out any undefined or null messages
     const filteredMessages = previousMessages.filter(msg => 
@@ -86,15 +438,33 @@ export const callLLMAPI = async (
     const functionName = campaignId ? 'campaign_chat' : 'chat';
     console.log(`Invoking Supabase Edge Function: ${functionName}`);
     
+    // Get Amazon credentials if the query is Amazon-related
+    let amazonCredentials = null;
+    if (isAmazonRelatedQuery(userMessage)) {
+      try {
+        amazonCredentials = await getAmazonLLMCredentials();
+        console.log('Retrieved Amazon credentials for LLM with profile ID:', amazonCredentials.profileId);
+      } catch (credentialError) {
+        console.warn('Could not retrieve Amazon credentials:', credentialError);
+      }
+    }
+    
     // Call the appropriate Supabase Edge Function
     const { data, error } = await supabase.functions.invoke(functionName, {
       body: { 
         messages: completeMessageHistory,
-        context: campaignId ? { 
-          campaignId, 
-          campaignName,
-          chatType: 'campaign' // Add chatType to ensure backward compatibility with both edge functions
-        } : undefined
+        context: {
+          ...(campaignId ? { 
+            campaignId, 
+            campaignName,
+            chatType: 'campaign' // Add chatType to ensure backward compatibility with both edge functions
+          } : { chatType: 'general' }),
+          // Include Amazon credentials in context if available
+          ...(amazonCredentials ? {
+            amazonProfileId: amazonCredentials.profileId,
+            amazonCredentialId: amazonCredentials.platformCredentialId
+          } : {})
+        }
       }
     });
     
@@ -117,148 +487,115 @@ export const callLLMAPI = async (
       throw new Error('No response data received from AI service');
     }
     
-    // Handle different possible response formats
+    // Handle different response formats
     if (typeof data === 'string') {
-      // Direct string response
+      // Simple string response
       assistantMessage.content = data;
-    } 
-    else if (data.content) {
-      // Most common format: {content: "..."}
+    } else if (data.content) {
+      // Object with content property (new format)
       assistantMessage.content = data.content;
       
-      // If the edge function returns actionButtons directly, use them
-      if (data.actionButtons && Array.isArray(data.actionButtons)) {
+      // Handle any follow-up questions and action buttons
+      if (data.followupQuestions) {
+        assistantMessage.followupQuestions = data.followupQuestions;
+      }
+      
+      if (data.actionButtons) {
         assistantMessage.actionButtons = data.actionButtons;
       }
       
-      // Extract structured data from the content if it contains JSON
-      if (typeof data.content === 'string' && 
-          (data.content.includes('```json') || data.content.includes('```'))) {
-        const structuredData = extractStructuredData(data.content);
+      // Check if we have a tool call (API operation request)
+      if (data.toolCall && data.toolCall.type === 'api_call') {
+        // Ask user for confirmation before executing the API call
+        const userConfirmed = window.confirm(
+          `Would you like to ${data.toolCall.operation.replace('_', ' ')} now? This will make changes to your Amazon Advertising account.`
+        );
         
-        // Use structured data if available
-        if (structuredData.title) {
-          assistantMessage.title = structuredData.title;
-        }
-        
-        if (structuredData.content) {
-          assistantMessage.content = structuredData.content;
-        }
-        
-        if (Array.isArray(structuredData.metrics) && structuredData.metrics.length > 0) {
-          assistantMessage.metrics = structuredData.metrics;
-        }
-        
-        if (Array.isArray(structuredData.actionButtons) && structuredData.actionButtons.length > 0) {
-          assistantMessage.actionButtons = structuredData.actionButtons;
+        if (userConfirmed) {
+          // Show loading state
+          toast.loading(`Executing ${data.toolCall.operation.replace('_', ' ')}...`);
+          
+          // Execute the Amazon API operation
+          const apiResult = await executeAmazonApiOperation(
+            data.toolCall.operation,
+            data.toolCall.params
+          );
+          
+          // Dismiss loading toast
+          toast.dismiss();
+          
+          if (apiResult.success) {
+            // Add a success message to the content
+            let successMessage = '';
+            
+            switch (data.toolCall.operation) {
+              case 'create_campaign':
+                successMessage = `✅ Successfully created campaign "${data.toolCall.params.name}" with daily budget $${data.toolCall.params.dailyBudget}.`;
+                break;
+              case 'adjust_budget':
+                successMessage = `✅ Successfully updated campaign budget to $${data.toolCall.params.newDailyBudget}.`;
+                break;
+              case 'get_campaign_report':
+                // Format the report data
+                if (apiResult.data?.text) {
+                  successMessage = `\n\n${apiResult.data.text}`;
+                } else {
+                  successMessage = `✅ Successfully generated campaign report.`;
+                }
+                break;
+              default:
+                successMessage = `✅ Successfully completed ${data.toolCall.operation.replace('_', ' ')}.`;
+            }
+            
+            assistantMessage.content += `\n\n${successMessage}`;
+            toast.success(`Successfully completed operation!`);
+          } else {
+            // Add the error message
+            assistantMessage.content += `\n\n❌ Error: ${apiResult.error || 'Something went wrong with the operation.'}`;
+            toast.error(`Error: ${apiResult.error || 'Operation failed'}`);
+          }
+        } else {
+          // User declined, add message indicating this
+          assistantMessage.content += `\n\nYou declined to execute the ${data.toolCall.operation.replace('_', ' ')} operation. Let me know if you'd like to try again or do something else.`;
         }
       }
-    }
-    else if (data.role === 'assistant' && data.content) {
-      // Format from campaign_chat function: {role: "assistant", content: "..."}
-      assistantMessage.content = data.content;
-      
-      // Use action buttons directly from campaign_chat response
-      if (data.actionButtons && Array.isArray(data.actionButtons)) {
-        assistantMessage.actionButtons = data.actionButtons;
-      }
-    }
-    else if (data.choices && data.choices[0] && data.choices[0].message) {
-      // Raw OpenAI API format
-      assistantMessage.content = data.choices[0].message.content;
+    } else if (data.text || data.message) {
+      // Old format
+      assistantMessage.content = data.text || data.message;
     }
     
-    // Clean up the content
-    assistantMessage.content = (assistantMessage.content || '').trim();
-    
-    // Ensure we always have content
-    if (!assistantMessage.content) {
-      assistantMessage.content = "I received an empty response. Please try again.";
+    // Try to extract structured data if present
+    const structuredData = extractStructuredData(assistantMessage.content);
+    if (structuredData) {
+      assistantMessage.structuredData = structuredData;
     }
     
-    // Log the processed message before returning
-    console.log('Processed assistant message:', assistantMessage);
-    
+    console.log('Processed assistant response:', assistantMessage);
     return assistantMessage;
-  } catch (error) {
-    console.error('Error in callLLMAPI:', error);
+  } catch (error: any) {
+    console.error('Error in LLM API call:', error);
     return {
       role: 'assistant',
-      content: 'I apologize, but I encountered an issue connecting to my knowledge base. Please try again in a moment.'
+      content: `I apologize, but I encountered an error: ${error.message || 'Unknown error'}. Please try again or rephrase your question.`
     };
   }
 };
 
-// Function to extract structured data from LLM response
+// Helper function to extract structured JSON data from a response
 function extractStructuredData(content: string) {
-  // Look for JSON blocks in the response - handle both ```json and just ``` format
-  const jsonMatch = content.match(/```json\n([\s\S]*?)\n```/) || content.match(/```([\s\S]*?)```/);
-  
-  if (jsonMatch && jsonMatch[1]) {
-    try {
-      // Parse the JSON
-      const jsonString = jsonMatch[1].trim();
-      console.log('Attempting to parse JSON:', jsonString);
-      
-      const structuredData = JSON.parse(jsonString);
-      console.log('Found structured data in response:', structuredData);
-      
-      // Remove the JSON block from the content
-      const cleanedContent = content.replace(/```json\n[\s\S]*?\n```/, '').trim() || 
-                            content.replace(/```[\s\S]*?```/, '').trim();
-      
-      // Return a safe object with default values for missing properties
-      return {
-        title: structuredData.title || '',
-        content: structuredData.content || cleanedContent,
-        metrics: Array.isArray(structuredData.metrics) ? structuredData.metrics : [],
-        actionButtons: Array.isArray(structuredData.actionButtons) ? structuredData.actionButtons : []
-      };
-    } catch (e) {
-      console.error("Error parsing JSON from LLM:", e);
-      console.log("Problematic JSON string:", jsonMatch[1]);
+  try {
+    // Look for JSON blocks in markdown format
+    const jsonMatch = content.match(/```json\s*({[\s\S]*?})\s*```/);
+    
+    if (jsonMatch && jsonMatch[1]) {
+      // Parse the JSON data
+      const jsonData = JSON.parse(jsonMatch[1]);
+      return jsonData;
     }
+    
+    return null;
+  } catch (error) {
+    console.warn('Could not extract structured data from response:', error);
+    return null;
   }
-
-  // If no JSON format was found, check if we can structure simple responses for follow-up questions
-  // This helps format regular text responses nicely
-  const lines = content.split('\n');
-  if (lines.length > 0) {
-    // If first line is short, treat it as a title
-    const firstLine = lines[0].trim();
-    if (firstLine.length < 80 && firstLine.length > 0) {
-      const remainingContent = lines.slice(1).join('\n').trim();
-      return {
-        title: firstLine,
-        content: remainingContent || firstLine, // Use title as content if no other content
-        metrics: [],
-        actionButtons: [
-          { label: "Tell me more", primary: true },
-          { label: "Adjust strategy", primary: false }
-        ]
-      };
-    }
-  }
-  
-  // Auto-format plain text responses into structured JSON format
-  // Find a potential title from the first line or create one
-  const firstLine = content.split('\n')[0].trim();
-  const title = firstLine.length < 50 ? firstLine : "Analysis Results";
-  
-  // Create a content section from the rest of the message
-  let cleanContent = content;
-  if (firstLine.length < 50) {
-    cleanContent = content.substring(firstLine.length).trim();
-  }
-  
-  // Force structured format with action buttons that make sense for the content
-  return {
-    title: title,
-    content: cleanContent,
-    metrics: [],
-    actionButtons: [
-      { label: "Tell me more", primary: true },
-      { label: "Optimize strategy", primary: false }
-    ]
-  };
 }
