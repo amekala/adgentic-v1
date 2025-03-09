@@ -13,35 +13,66 @@ serve(async (req) => {
   }
 
   try {
-    const apiKey = Deno.env.get('OPENAI_API_KEY');
-    if (!apiKey) {
-      throw new Error('Missing OpenAI API Key');
+    // Validate request method
+    if (req.method !== 'POST') {
+      return new Response(JSON.stringify({ error: 'Method Not Allowed' }), { 
+        status: 405,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
     }
 
-    if (req.method !== 'POST') {
-      return new Response('Method Not Allowed', { 
-        status: 405,
-        headers: corsHeaders
+    // Validate OpenAI API key
+    const apiKey = Deno.env.get('OPENAI_API_KEY');
+    if (!apiKey) {
+      console.error('Missing OpenAI API Key in environment variables');
+      return new Response(JSON.stringify({ 
+        error: 'Server configuration error: Missing OpenAI API Key',
+        code: 'missing_openai_key'
+      }), { 
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
     // Get Supabase configuration - try both formats of environment variables
-    const supabaseUrl = Deno.env.get('PUBLIC_SUPABASE_URL') || '';
-    const supabaseAnonKey = Deno.env.get('PUBLIC_SUPABASE_ANON_KEY') || '';
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') || 
+                        Deno.env.get('PUBLIC_SUPABASE_URL') || '';
+    
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') || 
+                           Deno.env.get('PUBLIC_SUPABASE_ANON_KEY') || '';
     
     if (!supabaseUrl || !supabaseAnonKey) {
       console.error('Missing Supabase configuration.');
-      console.error('PUBLIC_SUPABASE_URL:', supabaseUrl);
-      console.error('PUBLIC_SUPABASE_ANON_KEY presence:', !!supabaseAnonKey);
+      console.error('SUPABASE_URL or PUBLIC_SUPABASE_URL:', supabaseUrl);
+      console.error('SUPABASE_ANON_KEY or PUBLIC_SUPABASE_ANON_KEY present:', !!supabaseAnonKey);
       
       return new Response(JSON.stringify({ 
         error: 'Missing Supabase configuration. Check environment variables.',
         details: {
           url_present: !!supabaseUrl,
           key_present: !!supabaseAnonKey
-        }
+        },
+        code: 'missing_supabase_config'
       }), { 
         status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+    
+    // Get request body
+    const requestData = await req.json().catch(e => {
+      console.error('Error parsing request JSON:', e);
+      throw new Error('Invalid JSON in request body');
+    });
+    
+    const { messages, context } = requestData;
+
+    if (!messages || !Array.isArray(messages)) {
+      return new Response(JSON.stringify({ 
+        error: 'Invalid messages format', 
+        code: 'invalid_messages'
+      }), { 
+        status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
@@ -49,7 +80,10 @@ serve(async (req) => {
     // Create auth client
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
-      return new Response(JSON.stringify({ error: 'Missing authorization header' }), { 
+      return new Response(JSON.stringify({ 
+        error: 'Missing authorization header',
+        code: 'missing_auth'
+      }), { 
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
@@ -59,13 +93,6 @@ serve(async (req) => {
       global: { headers: { Authorization: authHeader } },
     });
 
-    const requestData = await req.json();
-    const { messages, context } = requestData;
-
-    if (!messages || !Array.isArray(messages)) {
-      throw new Error('Invalid messages format');
-    }
-    
     // Validate campaign context if provided
     if (context?.campaignId) {
       // Verify the campaign exists

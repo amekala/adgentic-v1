@@ -1,39 +1,54 @@
-
 #!/bin/bash
 
-# Deploy Supabase Edge Functions
-echo "Deploying Supabase Edge Functions..."
+# List of function names
+functions=(
+  "amazon-auth"
+  "amazon-callback"
+  "amazon_ads"
+  "campaign_chat"
+  "campaign_processor"
+  "chat"
+  "token-exchange"
+  "token-refresh"
+  "token_manager"
+)
 
-# Make sure Supabase CLI is installed
-if ! command -v supabase &> /dev/null
-then
-    echo "Supabase CLI could not be found. Installing..."
-    npm install -g supabase
-fi
+echo "🚀 Deploying Supabase Edge Functions..."
 
-# Deploy each function with appropriate secrets
-echo "Deploying token_manager function..."
-supabase functions deploy token_manager --project-ref wllhsxoabzdzulomizzx
+# Get the current directory
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+cd "$SCRIPT_DIR"
 
-echo "Deploying amazon_ads function..."
-supabase functions deploy amazon_ads --project-ref wllhsxoabzdzulomizzx
+# Copy shared files to each function directory
+echo "📋 Copying shared files to function directories..."
+for func in "${functions[@]}"; do
+  # Create directories if they don't exist
+  mkdir -p "supabase/functions/$func"
+  
+  # Copy the shared directory if it doesn't exist
+  if [ ! -d "supabase/functions/$func/_shared" ]; then
+    echo "  Creating shared directory for $func"
+    mkdir -p "supabase/functions/$func/_shared"
+  fi
+  
+  # Copy shared files
+  echo "  Copying shared files to $func"
+  cp -r "supabase/functions/_shared/"* "supabase/functions/$func/_shared/"
+done
 
-echo "Deploying campaign_chat function..."
-supabase functions deploy campaign_chat --project-ref wllhsxoabzdzulomizzx
+# Deploy each function
+for func in "${functions[@]}"; do
+  echo "📦 Deploying function: $func"
+  npx supabase functions deploy "$func" --project-ref wllhsxoabzdzulomizzx
+  
+  if [ $? -eq 0 ]; then
+    echo "✅ Successfully deployed $func"
+  else
+    echo "❌ Failed to deploy $func"
+  fi
+  
+  # Small delay between deployments
+  sleep 2
+done
 
-echo "Deploying chat function..."
-supabase functions deploy chat --project-ref wllhsxoabzdzulomizzx
-
-# Set environment variables
-echo "Setting environment variables..."
-supabase secrets set --project-ref wllhsxoabzdzulomizzx ENVIRONMENT=production
-supabase secrets set --project-ref wllhsxoabzdzulomizzx OPENAI_API_KEY=$OPENAI_API_KEY
-supabase secrets set --project-ref wllhsxoabzdzulomizzx AMAZON_ADS_CLIENT_ID=$AMAZON_ADS_CLIENT_ID
-supabase secrets set --project-ref wllhsxoabzdzulomizzx AMAZON_ADS_CLIENT_SECRET=$AMAZON_ADS_CLIENT_SECRET
-
-# Set the URL and key as PUBLIC_ prefixed variables instead of SUPABASE_ prefix
-echo "Setting Supabase connection variables..."
-supabase secrets set --project-ref wllhsxoabzdzulomizzx PUBLIC_SUPABASE_URL=https://wllhsxoabzdzulomizzx.supabase.co
-supabase secrets set --project-ref wllhsxoabzdzulomizzx PUBLIC_SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY
-
-echo "Deployment complete!" 
+echo "🎉 Deployment complete!" 

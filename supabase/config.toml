@@ -1,4 +1,3 @@
-
 project_id = "wllhsxoabzdzulomizzx"
 
 [api]
@@ -40,6 +39,10 @@ verify_jwt = false
 
 [functions.token_manager]
 verify_jwt = false
+
+[functions.token-refresh]
+verify_jwt = false
+import_map = "./import_map.json"
 
 [functions.amazon-auth]
 verify_jwt = false

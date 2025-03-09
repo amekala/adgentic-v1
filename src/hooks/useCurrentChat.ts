@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -274,52 +273,25 @@ export const useCurrentChat = () => {
   };
 
   const sendToAI = async (chatId: string, messageHistory: Message[]) => {
-    // Add thinking message
-    const thinkingMessage: Message = { role: 'assistant', content: '...' };
-    setMessages(prev => [...prev, thinkingMessage]);
+    console.log('Sending to AI...', { chatId, messageLength: messageHistory.length });
     
     try {
-      // Verify campaign exists first if this is a campaign chat
-      if (campaignId) {
-        console.log('Verifying campaign data before API call');
-        if (!campaign) {
-          // Fetch the campaign data first
-          try {
-            const { data: campaignData, error: campaignError } = await supabase
-              .from('campaigns')
-              .select('*')
-              .eq('id', campaignId)
-              .single();
-              
-            if (campaignError || !campaignData) {
-              throw new Error(`Campaign not found: ${campaignError?.message || 'Invalid campaign ID'}`);
-            }
-            
-            // Set the campaign data
-            setCampaign(campaignData);
-            console.log('Successfully verified campaign exists:', campaignData.campaign_name);
-          } catch (err) {
-            console.error('Error verifying campaign:', err);
-            throw new Error('Failed to validate campaign. Please try again.');
-          }
-        }
+      // Ensure we have a valid auth session for API calls
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        throw new Error('No authenticated session found');
       }
       
-      // Ensure all messages are valid
-      const filteredHistory = messageHistory.filter(msg => 
-        msg && msg.role && msg.content
-      );
-      
-      // Format messages for the AI
-      const formattedMessages = filteredHistory.map(msg => ({
+      // Format messages for the API
+      const formattedMessages = messageHistory.map(msg => ({
         role: msg.role,
         content: msg.content
       }));
       
-      // System message that will be prepended
-      const systemPrompt = campaign 
-        ? `You are Adspirer, an AI assistant specialized in advertising campaigns. This is a conversation about campaign: ${campaign?.campaign_name || 'unknown'}.`
-        : `You are Adspirer, an AI assistant specialized in advertising and marketing campaigns.`
+      // System prompt varies by chat type
+      let systemPrompt = `You are Adspirer, an AI assistant specialized in digital advertising and marketing. 
+Be concise and clear in your responses. Format responses with markdown for readability.`;
       
       // Add system message and context
       const completeMessages = [
@@ -340,281 +312,164 @@ export const useCurrentChat = () => {
       // Determine which edge function to call based on chat type
       const functionName = campaignId ? 'campaign_chat' : 'chat';
       console.log(`Invoking Supabase Edge Function: ${functionName}`);
-      console.log(`With data:`, JSON.stringify(requestData, null, 2));
       
       // Check for valid configuration before making the call
       if (!supabase.functions) {
         throw new Error('Missing Supabase configuration. Check environment variables.');
       }
       
-      // Try calling through our Netlify proxy first to avoid CORS issues
+      // We'll try multiple approaches in sequence:
+      // 1. First try via Netlify proxy
+      // 2. Then try direct Supabase Edge Function
+      // 3. Finally fall back to a basic response if all else fails
+      
       let response;
+      let errorDetails = [];
+      
+      // 1. Try using Netlify proxy
       try {
-        console.log(`Trying Netlify proxy for Supabase function: ${functionName}`);
-        const authToken = await getSupabaseAuthToken();
+        console.log(`Trying Netlify proxy for function: ${functionName}`);
+        const authToken = session.access_token;
         
-        // Get the anon key from environment variables instead of accessing protected property
-        const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+        // Get the anon key from environment variables
+        const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 
+                                import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
         
         const proxyResponse = await fetch(`/api/supabase/${functionName}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${authToken}`,
-            'apikey': supabaseAnonKey || '' // Using environment variable instead of protected property
+            'apikey': supabaseAnonKey,
+            'x-client-info': 'adspirer-web-app',
           },
           body: JSON.stringify(requestData)
         });
         
         if (proxyResponse.ok) {
-          response = { data: await proxyResponse.json(), error: null };
-          console.log('Successfully used Netlify proxy for edge function');
+          const jsonResponse = await proxyResponse.json();
+          response = { data: jsonResponse, error: null };
+          console.log('Successfully used Netlify proxy');
         } else {
-          console.log('Netlify proxy failed with status:', proxyResponse.status);
-          throw new Error(`Proxy returned status ${proxyResponse.status}`);
+          const errorText = await proxyResponse.text().catch(() => 'No response text');
+          const errorMsg = `Netlify proxy failed with status: ${proxyResponse.status}, ${errorText}`;
+          console.warn(errorMsg);
+          errorDetails.push(errorMsg);
+          // Continue to next approach - don't throw here
         }
       } catch (proxyError) {
-        console.log('Netlify proxy failed, falling back to direct Supabase call:', proxyError);
-        
-        // Fall back to direct Supabase call with timeout
-        response = await Promise.race([
-          supabase.functions.invoke(functionName, {
-            body: requestData
-          }),
-          new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Supabase Edge Function timeout')), 20000)
-          )
-        ]);
+        const errorMsg = `Netlify proxy exception: ${proxyError.message || proxyError}`;
+        console.warn(errorMsg);
+        errorDetails.push(errorMsg);
+        // Continue to next approach
       }
       
-      console.log('Edge Function response received:', response);
-      
-      // Check if we received a response at all
+      // 2. If proxy failed, try direct Supabase Edge Function call
       if (!response) {
-        throw new Error('No response received from API');
-      }
-      
-      // Handle error case
-      if (response.error) {
-        console.error("API response error:", response.error);
-        throw new Error(`API error: ${response.error.message || response.error}`);
-      }
-      
-      // The raw AI response data
-      const responseData = response.data;
-      console.log('Raw response data:', responseData);
-      
-      if (!responseData) {
-        throw new Error('No data in API response');
-      }
-      
-      // Initialize with defaults
-      let responseContent = "I couldn't generate a response.";
-      let actionButtons: any[] = [];
-      let responseTitle: string | undefined = undefined;
-      
-      // Handle different response formats
-      if (typeof responseData === 'string') {
-        // Plain string response
-        responseContent = responseData;
-      } 
-      else if (responseData.content && typeof responseData.content === 'string') {
-        // Object with content field ({content: "..."})
-        responseContent = responseData.content;
-        
-        // Check for action buttons in the response
-        if (responseData.actionButtons && Array.isArray(responseData.actionButtons)) {
-          actionButtons = responseData.actionButtons;
-        }
-        
-        // Check for title in the response
-        if (responseData.title) {
-          responseTitle = responseData.title;
-        }
-      }
-      else if (responseData.role === 'assistant' && responseData.content) {
-        // Format from campaign_chat edge function: {role: "assistant", content: "..."}
-        responseContent = responseData.content;
-        
-        // Campaign chat includes action buttons
-        if (responseData.actionButtons && Array.isArray(responseData.actionButtons)) {
-          actionButtons = responseData.actionButtons;
-        }
-      }
-      else if (responseData.choices && responseData.choices[0] && responseData.choices[0].message) {
-        // Raw OpenAI API format
-        responseContent = responseData.choices[0].message.content;
-      }
-      else {
-        console.warn('Unexpected response format:', responseData);
-        responseContent = "Received an unexpected response format. Please try again.";
-      }
-      
-      // Extract structured data from response if it contains JSON
-      if (typeof responseContent === 'string' && 
-         (responseContent.includes('```json') || responseContent.includes('```'))) {
         try {
-          // Look for JSON blocks in the response
-          const jsonMatch = responseContent.match(/```json\n([\s\S]*?)\n```/) || 
-                          responseContent.match(/```([\s\S]*?)```/);
-                          
-          if (jsonMatch && jsonMatch[1]) {
-            // Parse the JSON
-            const jsonString = jsonMatch[1].trim();
-            const structuredData = JSON.parse(jsonString);
-            
-            console.log('Found structured data in response:', structuredData);
-            
-            // Extract parts from the structured data
-            if (structuredData.title) {
-              responseTitle = structuredData.title;
-            }
-            
-            if (structuredData.content) {
-              // Replace content with the cleaned version from JSON
-              responseContent = structuredData.content;
-            } else {
-              // Remove the JSON block from the content
-              responseContent = responseContent.replace(/```json\n[\s\S]*?\n```/, '').trim() || 
-                              responseContent.replace(/```[\s\S]*?```/, '').trim();
-            }
-            
-            // Use action buttons from structured data if available
-            if (structuredData.actionButtons && Array.isArray(structuredData.actionButtons)) {
-              actionButtons = structuredData.actionButtons;
-            }
-          }
-        } catch (e) {
-          console.error('Error parsing JSON from response:', e);
-          // If parsing fails, use the full content
+          console.log('Trying direct Supabase Edge Function call');
+          
+          // Set a timeout to prevent hanging indefinitely
+          response = await Promise.race([
+            supabase.functions.invoke(functionName, {
+              body: requestData
+            }),
+            new Promise((_, reject) => 
+              setTimeout(() => reject(new Error('Supabase Edge Function timeout after 20s')), 20000)
+            )
+          ]);
+          
+          console.log('Direct Supabase call response:', response);
+        } catch (supabaseError) {
+          const errorMsg = `Direct Supabase error: ${supabaseError.message || supabaseError}`;
+          console.warn(errorMsg);
+          errorDetails.push(errorMsg);
+          // Continue to fallback
         }
       }
       
-      // Ensure the content is not empty
-      if (!responseContent || responseContent.trim() === '') {
-        responseContent = "I received an empty response from the server. Please try again.";
+      // 3. If both approaches failed, use fallback
+      if (!response || response.error) {
+        console.warn('Using fallback response mechanism');
+        
+        // Prepare error details for better user experience
+        const errorMessage = response?.error 
+          ? `API error: ${response.error.message || JSON.stringify(response.error)}`
+          : `Failed to get AI response: ${errorDetails.join('; ')}`;
+        
+        console.error('Error getting AI response:', errorMessage);
+        
+        // Create a fallback response
+        return {
+          role: 'assistant' as const,
+          content: `I'm sorry, I couldn't connect to the AI service. Here is a basic response:
+
+Your campaign is important! When the full AI service is available, I can provide detailed analytics and insights about your advertising campaigns.
+
+**Troubleshooting**:
+- Error details: ${errorDetails.join('\n- ')}
+- Please check your internet connection
+- Try refreshing the page
+- Contact support if this problem persists
+`,
+          actionButtons: [
+            { label: 'Try Again', primary: true },
+            { label: 'Campaign Settings' }
+          ]
+        };
       }
       
-      // Build the complete assistant message
+      // Process successful response
+      console.log('Received AI response', response.data);
+      
+      if (!response.data || !response.data.content) {
+        throw new Error('Invalid response format from AI service');
+      }
+      
+      // Format the assistant response for the UI
       const assistantResponse: Message = {
         role: 'assistant',
-        content: responseContent.trim()
+        content: response.data.content,
       };
       
-      // Add optional properties if available
-      if (responseTitle) {
-        assistantResponse.title = responseTitle;
+      // Add any additional response data
+      if (response.data.metrics) {
+        assistantResponse.metrics = response.data.metrics;
       }
       
-      if (actionButtons.length > 0) {
-        assistantResponse.actionButtons = actionButtons;
+      if (response.data.actionButtons) {
+        assistantResponse.actionButtons = response.data.actionButtons;
       }
       
-      console.log('Final assistant response:', assistantResponse);
-      
-      // Replace thinking message with actual response
-      setMessages(prev => prev.map(msg => msg === thinkingMessage ? assistantResponse : msg));
-      
-      // Prepare the message for database storage
-      const dbMessage = {
-        chat_id: chatId,
-        role: 'assistant',
-        content: assistantResponse.content
-      };
-      
-      // Add actionbuttons if available
-      if (assistantResponse.actionButtons && assistantResponse.actionButtons.length > 0) {
+      // Update chat title if this is the first response
+      if (messages.length <= 1 && response.data.suggestedTitle) {
+        // Store suggested title for later use
+        console.log('Received suggested title:', response.data.suggestedTitle);
+        
+        // Update the chat title in Supabase
         try {
-          // @ts-ignore - actionbuttons is available in the DB but not typed
-          dbMessage.actionbuttons = assistantResponse.actionButtons;
-        } catch (e) {
-          console.error('Error serializing action buttons:', e);
+          await supabase
+            .from('chats')
+            .update({ title: response.data.suggestedTitle })
+            .eq('id', chatId);
+        } catch (titleUpdateError) {
+          console.warn('Failed to update chat title:', titleUpdateError);
         }
       }
       
-      // Save AI response to database
-      const { error } = await supabase
-        .from('chat_messages')
-        .insert(dbMessage);
-        
-      if (error) throw error;
+      return assistantResponse;
+    } catch (error) {
+      console.error('Error in sendToAI:', error);
       
-    } catch (error: any) {
-      console.error('Error getting AI response:', error);
-      
-      // Provide more detailed error message to the user
-      const errorMessage = error.message || 'Unknown error';
-      const detailMessage = errorMessage.includes('Invalid JSON') 
-        ? 'API returned invalid data format. Check Edge Function deployment.'
-        : errorMessage.includes('404') 
-          ? 'Edge Function not found. Check function deployment.'
-          : errorMessage.includes('Missing Supabase configuration')
-            ? 'API configuration missing. Check environment variables.'
-            : errorMessage.includes('CORS')
-              ? 'CORS policy blocked request. Using fallback response.'
-              : 'API connection failed. Check Supabase configuration.';
-      
-      toast.error(`Failed to get AI response: ${detailMessage}`);
-      
-      // For CORS errors, add a special message about using the proxy in future
-      if (errorMessage.includes('CORS')) {
-        console.log('CORS error detected, consider deploying the Netlify proxy to resolve this issue');
-      }
-      
-      // Fallback mechanism - generate a basic response without calling API
-      console.log('Using fallback response mechanism');
-      
-      // Generate a basic fallback response
-      const userMessage = messageHistory[messageHistory.length - 1]?.content || '';
-      let fallbackResponse = "I'm sorry, I couldn't connect to the AI service. Here is a basic response:";
-      let fallbackButtons = [];
-      
-      if (campaignId) {
-        fallbackResponse += "\n\nYour campaign is important! When the full AI service is available, I can provide detailed analytics and insights about your advertising campaigns.";
-        fallbackButtons = [
-          { label: 'Campaign Settings', primary: false },
-          { label: 'Performance Analysis', primary: true },
-          { label: 'Budget Allocation', primary: false }
-        ];
-      } else if (userMessage.toLowerCase().includes('hello') || userMessage.toLowerCase().includes('hi')) {
-        fallbackResponse += "\n\nHello! I'm sorry, but I'm currently operating in fallback mode due to connection issues with the AI service. How can I assist you with basic information?";
-      } else {
-        fallbackResponse += "\n\nI'm operating in fallback mode due to connection issues. Please try again later or check your network connection. You may need to check that your Supabase Edge Function is properly deployed.";
-      }
-      
-      // Replace thinking message with fallback response
-      setMessages(prev => 
-        prev.map(msg => 
-          msg.content === '...' ? {
-            role: 'assistant',
-            content: fallbackResponse,
-            actionButtons: fallbackButtons.length > 0 ? fallbackButtons : undefined
-          } : msg
-        )
-      );
-      
-      // Save fallback response to database
-      try {
-        const dbMessage = {
-          chat_id: chatId,
-          role: 'assistant',
-          content: fallbackResponse
-        };
-        
-        // Add actionbuttons if available
-        if (fallbackButtons.length > 0) {
-          // @ts-ignore
-          dbMessage.actionbuttons = fallbackButtons;
-        }
-        
-        await supabase
-          .from('chat_messages')
-          .insert(dbMessage);
-      } catch (dbError) {
-        console.error('Failed to save fallback response to database:', dbError);
-      }
-    } finally {
-      setIsSending(false);
+      // Return a graceful error response
+      return {
+        role: 'assistant',
+        content: `I apologize, but I encountered an error while processing your request: ${error.message || 'Unknown error'}. Please try again later.`,
+        actionButtons: [
+          { label: 'Try Again', primary: true },
+          { label: 'Campaign Settings' }
+        ]
+      };
     }
   };
 

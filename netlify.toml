@@ -9,22 +9,22 @@
   status = 200
   force = true
 
-# CORS Proxy for Supabase Functions
+# Handle OPTIONS preflight requests for CORS - this must come first
 [[redirects]]
   from = "/api/supabase/*"
   to = "https://wllhsxoabzdzulomizzx.supabase.co/functions/v1/:splat"
   status = 200
   force = true
-  headers = {Access-Control-Allow-Origin = "*", Access-Control-Allow-Methods = "GET, POST, PUT, DELETE, OPTIONS", Access-Control-Allow-Headers = "Origin, X-Requested-With, Content-Type, Accept, Authorization, apikey, x-client-info"}
-
-# Handle OPTIONS preflight requests for CORS
-[[redirects]]
-  from = "/api/supabase/*"
-  to = "https://wllhsxoabzdzulomizzx.supabase.co/functions/v1/:splat"
-  status = 200
-  force = true
-  headers = {Access-Control-Allow-Origin = "*", Access-Control-Allow-Methods = "GET, POST, PUT, DELETE, OPTIONS", Access-Control-Allow-Headers = "*", Access-Control-Max-Age = "86400"}
+  headers = {Access-Control-Allow-Origin = "*", Access-Control-Allow-Methods = "GET, POST, PUT, DELETE, OPTIONS, PATCH", Access-Control-Allow-Headers = "*", Access-Control-Max-Age = "86400"}
   methods = ["OPTIONS"]
+
+# CORS Proxy for Supabase Functions - this comes after OPTIONS
+[[redirects]]
+  from = "/api/supabase/*"
+  to = "https://wllhsxoabzdzulomizzx.supabase.co/functions/v1/:splat"
+  status = 200
+  force = true
+  headers = {Access-Control-Allow-Origin = "*", Access-Control-Allow-Methods = "GET, POST, PUT, DELETE, OPTIONS, PATCH", Access-Control-Allow-Headers = "*", Access-Control-Allow-Credentials = "true"}
 
 # Handle all routes for SPA
 [[redirects]]
