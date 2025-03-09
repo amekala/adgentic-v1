@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 
 /**
@@ -112,4 +113,4 @@ export async function withRetry<T>(
   }
   
   throw lastError || new Error('Operation failed after retries');
-} 
+}

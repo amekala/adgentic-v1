@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -139,4 +140,4 @@ export default function AdvertiserIntegrations({ advertiserId }: { advertiserId:
       </CardContent>
     </Card>
   );
-} 
+}

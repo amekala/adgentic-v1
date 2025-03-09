@@ -413,6 +413,7 @@ export type Database = {
       }
       platform_credentials: {
         Row: {
+          access_token: string | null
           advertiser_id: string
           created_at: string | null
           id: string
@@ -420,9 +421,11 @@ export type Database = {
           platform_id: string
           profile_id: string | null
           refresh_token: string
+          token_expires_at: string | null
           updated_at: string | null
         }
         Insert: {
+          access_token?: string | null
           advertiser_id: string
           created_at?: string | null
           id?: string
@@ -430,9 +433,11 @@ export type Database = {
           platform_id: string
           profile_id?: string | null
           refresh_token: string
+          token_expires_at?: string | null
           updated_at?: string | null
         }
         Update: {
+          access_token?: string | null
           advertiser_id?: string
           created_at?: string | null
           id?: string
@@ -440,6 +445,7 @@ export type Database = {
           platform_id?: string
           profile_id?: string | null
           refresh_token?: string
+          token_expires_at?: string | null
           updated_at?: string | null
         }
         Relationships: [
@@ -550,6 +556,51 @@ export type Database = {
             columns: ["advertiser_id"]
             isOneToOne: false
             referencedRelation: "advertisers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      token_refresh_logs: {
+        Row: {
+          advertiser_id: string
+          created_at: string | null
+          error_message: string | null
+          id: string
+          operation_type: string
+          platform_id: string
+          status: string
+        }
+        Insert: {
+          advertiser_id: string
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          operation_type: string
+          platform_id: string
+          status: string
+        }
+        Update: {
+          advertiser_id?: string
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          operation_type?: string
+          platform_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "token_refresh_logs_advertiser_id_fkey"
+            columns: ["advertiser_id"]
+            isOneToOne: false
+            referencedRelation: "advertisers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "token_refresh_logs_platform_id_fkey"
+            columns: ["platform_id"]
+            isOneToOne: false
+            referencedRelation: "ad_platforms"
             referencedColumns: ["id"]
           },
         ]
