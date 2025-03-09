@@ -30,7 +30,10 @@ supabase secrets set --project-ref wllhsxoabzdzulomizzx ENVIRONMENT=production
 supabase secrets set --project-ref wllhsxoabzdzulomizzx OPENAI_API_KEY=$OPENAI_API_KEY
 supabase secrets set --project-ref wllhsxoabzdzulomizzx AMAZON_ADS_CLIENT_ID=$AMAZON_ADS_CLIENT_ID
 supabase secrets set --project-ref wllhsxoabzdzulomizzx AMAZON_ADS_CLIENT_SECRET=$AMAZON_ADS_CLIENT_SECRET
-supabase secrets set --project-ref wllhsxoabzdzulomizzx SUPABASE_URL=https://wllhsxoabzdzulomizzx.supabase.co
-supabase secrets set --project-ref wllhsxoabzdzulomizzx SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY
+
+# Set the URL and key as PUBLIC_ prefixed variables instead of SUPABASE_ prefix
+echo "Setting Supabase connection variables..."
+supabase secrets set --project-ref wllhsxoabzdzulomizzx PUBLIC_SUPABASE_URL=https://wllhsxoabzdzulomizzx.supabase.co
+supabase secrets set --project-ref wllhsxoabzdzulomizzx PUBLIC_SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY
 
 echo "Deployment complete!" 
