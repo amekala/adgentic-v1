@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
@@ -38,8 +39,12 @@ serve(async (req) => {
       
       oauthUrl.searchParams.append("response_type", "code");
       
-      // Use the specified redirect URI for Amazon
-      oauthUrl.searchParams.append("redirect_uri", REDIRECT_URI);
+      // Use the dynamic redirect URI based on the environment
+      const effectiveRedirectUri = baseUrl 
+        ? `${baseUrl}${CLIENT_REDIRECT_URI}` 
+        : REDIRECT_URI;
+      
+      oauthUrl.searchParams.append("redirect_uri", effectiveRedirectUri);
       
       // Create state with advertiser ID to use after callback
       const state = JSON.stringify({ 

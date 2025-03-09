@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -15,6 +16,7 @@ import Dashboard from "./pages/dashboard";
 import Pricing from "./pages/Pricing";
 import Marketing from "./pages/Marketing";
 import About from "./pages/About";
+import AmazonCallbackHandler from "./pages/api/amazon-callback";
 
 // Auth pages
 import Login from "./pages/auth/Login";
@@ -50,6 +52,9 @@ const App = () => (
               <Route path="/auth/confirm" element={<ConfirmEmail />} />
               <Route path="/auth/reset-password" element={<ResetPassword />} />
               <Route path="/auth/update-password" element={<UpdatePassword />} />
+              
+              {/* Amazon OAuth Callback Handler */}
+              <Route path="/api/amazon-callback" element={<AmazonCallbackHandler />} />
               
               {/* Protected routes */}
               <Route path="/app" element={
