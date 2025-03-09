@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -10,7 +11,7 @@ import { useToast } from '@/components/ui/use-toast';
 export default function AdvertiserIntegrations({ advertiserId }: { advertiserId: string }) {
   const [platforms, setPlatforms] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [useTestAccount, setUseTestAccount] = useState(false);
+  const [useTestAccount, setUseTestAccount] = useState(true); // Default to true for easier testing
   const { toast } = useToast();
 
   useEffect(() => {

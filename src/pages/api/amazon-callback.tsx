@@ -55,17 +55,18 @@ export default function AmazonCallbackHandler() {
           return;
         }
 
-        // Check if advertiser exists, create a test one if useTestAccount is true
+        // If useTestAccount is true, try to create a test advertiser first
         if (useTestAccount) {
+          console.log("Using test account mode, will create advertiser if needed");
           try {
             // First check if advertiser exists
-            const { data: existingAdvertiser } = await supabase
+            const { data: existingAdvertiser, error: checkError } = await supabase
               .from('advertisers')
               .select('id')
               .eq('id', advertiserId)
               .single();
               
-            if (!existingAdvertiser) {
+            if (checkError || !existingAdvertiser) {
               console.log("Creating test advertiser:", advertiserId);
               const { error: createError } = await supabase
                 .from('advertisers')
@@ -82,6 +83,7 @@ export default function AmazonCallbackHandler() {
                 setErrorDetails(createError.message);
                 return;
               }
+              console.log("Test advertiser created successfully");
             }
           } catch (error) {
             console.error("Error checking/creating advertiser:", error);
@@ -124,7 +126,7 @@ export default function AmazonCallbackHandler() {
         
         // Redirect to the dashboard after a short delay
         setTimeout(() => {
-          navigate('/dashboard?success=amazon_connected');
+          navigate('/account?success=amazon_connected');
         }, 2000);
       } catch (error) {
         console.error('Error in callback processing:', error);
@@ -155,7 +157,7 @@ export default function AmazonCallbackHandler() {
         {errorDetails && (
           <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-xs text-red-800 break-all">
             <p className="font-semibold">Error details:</p>
-            <p>{errorDetails}</p>
+            <pre className="whitespace-pre-wrap">{errorDetails}</pre>
           </div>
         )}
         {status === 'success' && (
@@ -165,10 +167,10 @@ export default function AmazonCallbackHandler() {
         )}
         {status === 'error' && (
           <button
-            onClick={() => navigate('/dashboard')}
+            onClick={() => navigate('/account')}
             className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
           >
-            Return to Dashboard
+            Return to Account
           </button>
         )}
       </div>

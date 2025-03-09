@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -93,8 +94,12 @@ function App() {
                 <Route path="/auth/reset-password" element={<ResetPassword />} />
                 <Route path="/auth/update-password" element={<UpdatePassword />} />
                 
-                {/* Amazon OAuth Callback Handler */}
+                {/* Amazon OAuth Callback Handler - multiple variants to ensure matching */}
                 <Route path="/api/amazon-callback" element={<AmazonCallbackHandler />} />
+                <Route path="api/amazon-callback" element={<AmazonCallbackHandler />} />
+                {/* Explicitly match with * for query parameters */}
+                <Route path="/api/amazon-callback/*" element={<AmazonCallbackHandler />} />
+                <Route path="api/amazon-callback/*" element={<AmazonCallbackHandler />} />
                 
                 {/* Protected routes */}
                 <Route path="/app" element={
@@ -142,13 +147,6 @@ function App() {
                     <Navigate to="/account" replace />
                   </ProtectedRoute>
                 } />
-                
-                {/* Special routes - needed for OAuth callbacks - multiple variants to ensure matching */}
-                <Route path="/api/amazon-callback" element={<AmazonCallbackHandler />} />
-                <Route path="api/amazon-callback" element={<AmazonCallbackHandler />} />
-                {/* Explicitly match with * for query parameters */}
-                <Route path="/api/amazon-callback/*" element={<AmazonCallbackHandler />} />
-                <Route path="api/amazon-callback/*" element={<AmazonCallbackHandler />} />
 
                 {/* This catch-all redirects any unknown routes to the Marketing page */}
                 <Route path="*" element={<Navigate to="/" replace />} />
