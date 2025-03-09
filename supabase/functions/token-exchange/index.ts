@@ -19,9 +19,31 @@ serve(async (req) => {
   }
 
   try {
-    const { code, advertiserId, useTestAccount } = await req.json();
+    // Log request info for debugging
+    console.log("Token exchange function called");
+    
+    // Get request body
+    let requestBody;
+    try {
+      requestBody = await req.json();
+      console.log("Request body parsed successfully");
+    } catch (e) {
+      console.error("Error parsing request body:", e);
+      return new Response(
+        JSON.stringify({ success: false, error: "Failed to parse request body" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    
+    const { code, advertiserId, useTestAccount } = requestBody;
+    console.log("Parsed request parameters:", { 
+      hasCode: !!code, 
+      hasAdvertiserId: !!advertiserId,
+      useTestAccount: !!useTestAccount 
+    });
 
     if (!code) {
+      console.error("Missing code parameter");
       return new Response(
         JSON.stringify({ success: false, error: "Authorization code is required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -29,6 +51,7 @@ serve(async (req) => {
     }
 
     if (!advertiserId) {
+      console.error("Missing advertiserId parameter");
       return new Response(
         JSON.stringify({ success: false, error: "Advertiser ID is required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -38,39 +61,100 @@ serve(async (req) => {
     // Get credentials from environment
     const clientId = Deno.env.get("AMAZON_ADS_CLIENT_ID");
     const clientSecret = Deno.env.get("AMAZON_ADS_CLIENT_SECRET");
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    
+    console.log("Environment variables:", { 
+      hasClientId: !!clientId,
+      hasClientSecret: !!clientSecret,
+      hasSupabaseUrl: !!supabaseUrl,
+      hasSupabaseKey: !!supabaseServiceKey,
+      redirectUri: REDIRECT_URI
+    });
 
     if (!clientId || !clientSecret) {
+      console.error("Missing Amazon API credentials in environment");
       return new Response(
         JSON.stringify({ success: false, error: "Amazon API credentials not configured" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Exchange authorization code for tokens
-    const tokenResponse = await fetch("https://api.amazon.com/auth/o2/token", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: new URLSearchParams({
-        grant_type: "authorization_code",
-        code,
-        client_id: clientId,
-        client_secret: clientSecret,
-        redirect_uri: REDIRECT_URI,
-      }),
+    // Construct token exchange request
+    const tokenParams = {
+      grant_type: "authorization_code",
+      code,
+      client_id: clientId,
+      client_secret: clientSecret,
+      redirect_uri: REDIRECT_URI,
+    };
+    
+    console.log("Sending token exchange request with params:", {
+      ...tokenParams,
+      client_secret: "REDACTED",
+      code: code.substring(0, 5) + "..." // Only log part of the code for security
     });
     
-    if (!tokenResponse.ok) {
-      const errorData = await tokenResponse.json();
-      console.error("Token exchange error:", errorData);
+    // Define tokenResponse outside the try block so it's accessible later
+    let tokenResponse;
+    let tokenData;
+    
+    try {
+      // Exchange authorization code for tokens
+      tokenResponse = await fetch("https://api.amazon.com/auth/o2/token", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: new URLSearchParams(tokenParams),
+      });
+      
+      console.log("Token exchange response status:", tokenResponse.status);
+      
+      if (!tokenResponse.ok) {
+        let errorData;
+        try {
+          errorData = await tokenResponse.json();
+          console.error("Token exchange error:", errorData);
+        } catch (e) {
+          // If can't parse JSON, get text
+          const errorText = await tokenResponse.text();
+          console.error("Token exchange error (text):", errorText);
+          errorData = { error: "Error parsing response", details: errorText };
+        }
+        
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: `Failed to exchange token: ${JSON.stringify(errorData)}`,
+            statusCode: tokenResponse.status
+          }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      
+      // Parse the token data
+      try {
+        tokenData = await tokenResponse.json();
+        console.log("Token data received:", {
+          has_refresh_token: !!tokenData.refresh_token,
+          has_access_token: !!tokenData.access_token,
+          expires_in: tokenData.expires_in
+        });
+      } catch (e) {
+        console.error("Error parsing token response:", e);
+        return new Response(
+          JSON.stringify({ success: false, error: "Failed to parse token response" }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    } catch (fetchError) {
+      console.error("Fetch error during token exchange:", fetchError);
       return new Response(
-        JSON.stringify({ success: false, error: `Failed to exchange token: ${JSON.stringify(errorData)}` }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ success: false, error: `Network error: ${fetchError.message}` }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-    
-    const tokenData = await tokenResponse.json();
     const refreshToken = tokenData.refresh_token;
     const accessToken = tokenData.access_token;
     
@@ -86,18 +170,27 @@ serve(async (req) => {
     const tokenExpiresAt = new Date();
     tokenExpiresAt.setSeconds(tokenExpiresAt.getSeconds() + expiresInSeconds);
     
-    // Create a Supabase client for database operations
-    const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
-    
+    // Check for required Supabase configuration
     if (!supabaseUrl || !supabaseServiceKey) {
+      console.error("Missing Supabase configuration");
       return new Response(
         JSON.stringify({ success: false, error: "Supabase configuration missing" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
     
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    // Create a Supabase client for database operations
+    let supabase;
+    try {
+      supabase = createClient(supabaseUrl, supabaseServiceKey);
+      console.log("Supabase client created successfully");
+    } catch (error) {
+      console.error("Error creating Supabase client:", error);
+      return new Response(
+        JSON.stringify({ success: false, error: `Failed to create Supabase client: ${error.message}` }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
     
     // Fetch Amazon Advertising profiles using the access token
     const profilesResponse = await fetch("https://advertising-api.amazon.com/v2/profiles", {
@@ -128,76 +221,112 @@ serve(async (req) => {
     }
     
     // Find or create Amazon platform in database
-    const { data: platformData, error: platformError } = await supabase
-      .from("ad_platforms")
-      .select("id")
-      .eq("name", "amazon")
-      .single();
+    console.log("Looking for Amazon platform in database");
+    let platformId;
     
-    let platformId = platformData?.id;
-    
-    if (platformError || !platformId) {
-      // Insert platform record if it doesn't exist
-      const { data: newPlatform, error: createError } = await supabase
+    try {
+      const { data: platformData, error: platformError } = await supabase
         .from("ad_platforms")
-        .insert({
-          name: "amazon",
-          display_name: "Amazon Ads",
-          api_base_url: "https://advertising-api.amazon.com"
-        })
-        .select()
+        .select("id")
+        .eq("name", "amazon")
         .single();
       
-      if (createError) {
-        return new Response(
-          JSON.stringify({ success: false, error: `Failed to create platform record: ${createError.message}` }),
-          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+      if (platformError) {
+        console.log("Platform not found, will create new record:", platformError.message);
+      } else {
+        platformId = platformData?.id;
+        console.log("Found Amazon platform with ID:", platformId);
       }
       
-      platformId = newPlatform.id;
-    }
-    
-    // Store/update credentials in the database
-    const { error: credentialError } = await supabase
-      .from("platform_credentials")
-      .upsert({
-        advertiser_id: advertiserId,
-        platform_id: platformId,
-        profile_id: profileId,
-        refresh_token: refreshToken,
-        access_token: accessToken,
-        token_expires_at: tokenExpiresAt.toISOString(),
-        is_active: true,
-        updated_at: new Date().toISOString()
-      }, {
-        onConflict: "advertiser_id,platform_id"
-      });
-    
-    if (credentialError) {
+      if (!platformId) {
+        // Insert platform record if it doesn't exist
+        console.log("Creating new Amazon platform record");
+        const { data: newPlatform, error: createError } = await supabase
+          .from("ad_platforms")
+          .insert({
+            name: "amazon",
+            display_name: "Amazon Ads",
+            api_base_url: "https://advertising-api.amazon.com"
+          })
+          .select()
+          .single();
+        
+        if (createError) {
+          console.error("Error creating platform record:", createError);
+          return new Response(
+            JSON.stringify({ success: false, error: `Failed to create platform record: ${createError.message}` }),
+            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+        
+        platformId = newPlatform.id;
+        console.log("Created new Amazon platform with ID:", platformId);
+      }
+    } catch (dbError) {
+      console.error("Database error while finding/creating platform:", dbError);
       return new Response(
-        JSON.stringify({ success: false, error: `Failed to store credentials: ${credentialError.message}` }),
+        JSON.stringify({ success: false, error: `Database error: ${dbError.message}` }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
     
-    // Log successful connection
-    await supabase.from("token_refresh_logs").insert({
-      advertiser_id: advertiserId,
-      platform_id: platformId,
-      operation_type: "initial_connection",
-      status: "success",
-    });
-    
-    // Return success response
-    return new Response(
-      JSON.stringify({
-        success: true,
-        message: "Amazon Ads connection successful",
-        profileId: profileId
-      }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    // Store/update credentials in the database
+    try {
+      console.log("Storing credentials in database for advertiser:", advertiserId);
+      const { error: credentialError } = await supabase
+        .from("platform_credentials")
+        .upsert({
+          advertiser_id: advertiserId,
+          platform_id: platformId,
+          profile_id: profileId,
+          refresh_token: refreshToken,
+          access_token: accessToken,
+          token_expires_at: tokenExpiresAt.toISOString(),
+          is_active: true,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: "advertiser_id,platform_id"
+        });
+      
+      if (credentialError) {
+        console.error("Error storing credentials:", credentialError);
+        return new Response(
+          JSON.stringify({ success: false, error: `Failed to store credentials: ${credentialError.message}` }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      
+      // Log successful connection
+      try {
+        console.log("Logging successful connection");
+        await supabase.from("token_refresh_logs").insert({
+          advertiser_id: advertiserId,
+          platform_id: platformId,
+          operation_type: "initial_connection",
+          status: "success",
+        });
+      } catch (logError) {
+        // Non-fatal error, just log it
+        console.error("Error logging token refresh:", logError);
+      }
+      
+      // Return success response
+      console.log("Token exchange completed successfully");
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: "Amazon Ads connection successful",
+          profileId: profileId
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    } catch (dbError) {
+      console.error("Database error while storing credentials:", dbError);
+      return new Response(
+        JSON.stringify({ success: false, error: `Database error: ${dbError.message}` }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
   } catch (error) {
     console.error("Error in token exchange:", error);
     return new Response(
