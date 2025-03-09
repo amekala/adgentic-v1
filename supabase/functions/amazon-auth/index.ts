@@ -5,8 +5,9 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Use only the Adspirer callback URL
+// Use our client-side callback handler for Amazon redirects
 const REDIRECT_URI = "https://www.adspirer.com/api/amazon-callback";
+const CLIENT_REDIRECT_URI = "/api/amazon-callback"; // Client-side route to handle callbacks
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -15,7 +16,7 @@ serve(async (req) => {
   }
 
   try {
-    const { operation, advertiserId, useTestAccount } = await req.json();
+    const { operation, advertiserId, useTestAccount, baseUrl } = await req.json();
 
     const clientId = Deno.env.get("AMAZON_ADS_CLIENT_ID");
     if (!clientId) throw new Error("Client ID not configured");
@@ -37,14 +38,14 @@ serve(async (req) => {
       
       oauthUrl.searchParams.append("response_type", "code");
       
-      // Always use the Adspirer redirect URI
+      // Use the specified redirect URI for Amazon
       oauthUrl.searchParams.append("redirect_uri", REDIRECT_URI);
       
       // Create state with advertiser ID to use after callback
       const state = JSON.stringify({ 
         advertiserId,
         useTestAccount: !!useTestAccount,
-        redirectOrigin: new URL(req.url).origin, // To redirect back to the client app after callback
+        redirectOrigin: baseUrl || new URL(req.url).origin, // To redirect back to the client app after callback
       });
       
       // Use base64 encoding for safety
@@ -53,7 +54,8 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           success: true, 
-          authUrl: oauthUrl.toString() 
+          authUrl: oauthUrl.toString(),
+          callbackUri: CLIENT_REDIRECT_URI // Tell the client where to listen for the callback
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );

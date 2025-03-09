@@ -45,11 +45,15 @@ export default function AdvertiserIntegrations({ advertiserId }: { advertiserId:
 
   const connectAmazonAds = async () => {
     try {
+      // Get the base URL of the application
+      const baseUrl = window.location.origin;
+      
       const { data, error } = await supabase.functions.invoke('amazon-auth', {
         body: { 
           operation: 'get_auth_url',
           advertiserId,
-          useTestAccount
+          useTestAccount,
+          baseUrl
         }
       });
       
@@ -60,8 +64,11 @@ export default function AdvertiserIntegrations({ advertiserId }: { advertiserId:
       
       toast({
         title: 'Connecting...',
-        description: 'Please complete the authentication in the popup window',
+        description: 'Please complete the authentication in the popup window. You will be redirected back to the application when complete.',
       });
+      
+      // Start polling for changes in platform credentials
+      startPollingForConnection();
     } catch (error) {
       console.error('Error initiating connection:', error);
       toast({
@@ -70,6 +77,43 @@ export default function AdvertiserIntegrations({ advertiserId }: { advertiserId:
         variant: 'destructive'
       });
     }
+  };
+  
+  // Poll for changes in platform credentials
+  const startPollingForConnection = () => {
+    const intervalId = setInterval(async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke('token_manager', {
+          body: { 
+            operation: 'list_connected_platforms',
+            advertiserId
+          }
+        });
+        
+        if (error) throw error;
+        
+        const platforms = data?.platforms || [];
+        const amazonPlatform = platforms.find(p => p.platform_name === 'amazon');
+        
+        if (amazonPlatform) {
+          setPlatforms(platforms);
+          clearInterval(intervalId);
+          
+          toast({
+            title: 'Connection Successful',
+            description: `Connected to Amazon Ads (Profile ID: ${amazonPlatform.profile_id})`,
+          });
+        }
+      } catch (error) {
+        console.error('Error polling for connection:', error);
+        clearInterval(intervalId);
+      }
+    }, 3000); // Poll every 3 seconds
+    
+    // Stop polling after 2 minutes (40 attempts)
+    setTimeout(() => {
+      clearInterval(intervalId);
+    }, 120000);
   };
 
   const getAmazonPlatform = () => {
