@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.5.0";
 
@@ -39,7 +40,8 @@ serve(async (req) => {
     console.log("Parsed request parameters:", { 
       hasCode: !!code, 
       hasAdvertiserId: !!advertiserId,
-      useTestAccount: !!useTestAccount 
+      useTestAccount: !!useTestAccount,
+      code: code ? code.substring(0, 10) + "..." : null
     });
 
     if (!code) {
@@ -190,6 +192,45 @@ serve(async (req) => {
         JSON.stringify({ success: false, error: `Failed to create Supabase client: ${error.message}` }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
+    }
+    
+    // First, check if the advertiser exists in the database
+    const { data: advertiserData, error: advertiserError } = await supabase
+      .from("advertisers")
+      .select("id")
+      .eq("id", advertiserId)
+      .single();
+      
+    if (advertiserError) {
+      console.log("Advertiser not found, creating a new one for demo purposes");
+      
+      // If this is a test account, create a test advertiser
+      if (useTestAccount) {
+        const { error: createError } = await supabase
+          .from("advertisers")
+          .insert({
+            id: advertiserId,
+            name: "Test Advertiser",
+            status: "active",
+            created_at: new Date().toISOString()
+          });
+          
+        if (createError) {
+          console.error("Failed to create test advertiser:", createError);
+          return new Response(
+            JSON.stringify({ success: false, error: `Failed to create test advertiser: ${createError.message}` }),
+            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+        
+        console.log("Created test advertiser with ID:", advertiserId);
+      } else {
+        console.error("Advertiser not found:", advertiserError);
+        return new Response(
+          JSON.stringify({ success: false, error: `Advertiser not found: ${advertiserError.message}` }),
+          { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
     }
     
     // Fetch Amazon Advertising profiles using the access token

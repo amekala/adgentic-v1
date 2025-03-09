@@ -8,6 +8,7 @@ export default function AmazonCallbackHandler() {
   const navigate = useNavigate();
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [message, setMessage] = useState('Processing your Amazon integration...');
+  const [errorDetails, setErrorDetails] = useState<string | null>(null);
 
   useEffect(() => {
     async function processCallback() {
@@ -35,7 +36,12 @@ export default function AmazonCallbackHandler() {
         let stateData;
         try {
           stateData = JSON.parse(atob(state));
+          console.log("Decoded state data:", {
+            advertiserId: stateData.advertiserId?.substring(0, 8) + "...",
+            useTestAccount: !!stateData.useTestAccount
+          });
         } catch (e) {
+          console.error("Failed to decode state:", e);
           setStatus('error');
           setMessage('Invalid state parameter');
           return;
@@ -66,12 +72,17 @@ export default function AmazonCallbackHandler() {
 
         console.log("Token exchange response:", {
           success: !!data?.success,
-          error: error?.message || null,
+          error: error?.message || data?.error || null,
           message: data?.message || null
         });
 
-        if (error) {
-          throw new Error(`Token exchange failed: ${error.message}`);
+        if (error || !data?.success) {
+          const errorMsg = error?.message || data?.error || 'Unknown error';
+          console.error("Token exchange failed:", errorMsg);
+          setStatus('error');
+          setMessage(`Token exchange failed`);
+          setErrorDetails(errorMsg);
+          return;
         }
 
         // Handle successful integration
@@ -107,6 +118,12 @@ export default function AmazonCallbackHandler() {
         <p className={`${status === 'error' ? 'text-red-500' : 'text-gray-700'}`}>
           {message}
         </p>
+        {errorDetails && (
+          <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-xs text-red-800 break-all">
+            <p className="font-semibold">Error details:</p>
+            <p>{errorDetails}</p>
+          </div>
+        )}
         {status === 'success' && (
           <p className="mt-4 text-sm text-gray-500">
             Redirecting you to the dashboard...
