@@ -15,8 +15,57 @@ export default function AdvertiserIntegrations({ advertiserId }: { advertiserId:
   const { toast } = useToast();
 
   useEffect(() => {
+    // Ensure advertiser exists (especially important for test accounts)
+    if (useTestAccount) {
+      ensureTestAdvertiserExists(advertiserId);
+    }
+    
     fetchConnectedPlatforms();
-  }, [advertiserId]);
+  }, [advertiserId, useTestAccount]);
+
+  // Function to ensure a test advertiser exists in the database
+  const ensureTestAdvertiserExists = async (id: string) => {
+    try {
+      // Check if advertiser exists
+      const { data, error: checkError } = await supabase
+        .from('advertisers')
+        .select('id')
+        .eq('id', id)
+        .single();
+
+      if (checkError || !data) {
+        console.log('Test advertiser not found, creating one...');
+        // Create a test advertiser
+        const { error: createError } = await supabase
+          .from('advertisers')
+          .insert({
+            id: id,
+            name: 'Test Advertiser',
+            company_email: 'test@example.com',
+            status: 'active'
+          });
+
+        if (createError) {
+          console.error('Failed to create test advertiser:', createError);
+          toast({
+            title: 'Error',
+            description: 'Failed to create test advertiser account',
+            variant: 'destructive'
+          });
+        } else {
+          console.log('Test advertiser created successfully');
+          toast({
+            title: 'Success',
+            description: 'Created test advertiser account',
+          });
+        }
+      } else {
+        console.log('Test advertiser already exists:', id);
+      }
+    } catch (error) {
+      console.error('Error checking/creating advertiser:', error);
+    }
+  };
 
   const fetchConnectedPlatforms = async () => {
     setIsLoading(true);
@@ -46,6 +95,11 @@ export default function AdvertiserIntegrations({ advertiserId }: { advertiserId:
 
   const connectAmazonAds = async () => {
     try {
+      // Ensure test advertiser exists before connecting
+      if (useTestAccount) {
+        await ensureTestAdvertiserExists(advertiserId);
+      }
+      
       // Get the base URL of the application
       const baseUrl = window.location.origin;
       

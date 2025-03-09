@@ -55,38 +55,54 @@ export default function AmazonCallbackHandler() {
           return;
         }
 
-        // If useTestAccount is true, try to create a test advertiser first
+        // If useTestAccount is true, ensure the test advertiser exists
         if (useTestAccount) {
           console.log("Using test account mode, will create advertiser if needed");
-          try {
-            // First check if advertiser exists
-            const { data: existingAdvertiser, error: checkError } = await supabase
+          
+          // Check if advertiser exists
+          const { data: existingAdvertiser, error: checkError } = await supabase
+            .from('advertisers')
+            .select('id')
+            .eq('id', advertiserId)
+            .single();
+            
+          if (checkError || !existingAdvertiser) {
+            console.log("Creating test advertiser:", advertiserId);
+            // Create the test advertiser
+            const { error: createError } = await supabase
               .from('advertisers')
-              .select('id')
-              .eq('id', advertiserId)
-              .single();
+              .insert({
+                id: advertiserId,
+                name: 'Test Advertiser',
+                company_email: 'test@example.com',
+                status: 'active'
+              });
               
-            if (checkError || !existingAdvertiser) {
-              console.log("Creating test advertiser:", advertiserId);
-              const { error: createError } = await supabase
-                .from('advertisers')
-                .insert({
-                  id: advertiserId,
-                  name: 'Test Advertiser',
-                  status: 'active'
-                });
-                
-              if (createError) {
-                console.error("Failed to create test advertiser:", createError);
-                setStatus('error');
-                setMessage('Failed to create test advertiser');
-                setErrorDetails(createError.message);
-                return;
-              }
-              console.log("Test advertiser created successfully");
+            if (createError) {
+              console.error("Failed to create test advertiser:", createError);
+              setStatus('error');
+              setMessage('Failed to create test advertiser');
+              setErrorDetails(createError.message);
+              return;
             }
-          } catch (error) {
-            console.error("Error checking/creating advertiser:", error);
+            console.log("Test advertiser created successfully");
+          } else {
+            console.log("Test advertiser already exists:", advertiserId);
+          }
+        } else {
+          // Even if not using test account, verify advertiser exists
+          const { data: advertiser, error: advertiserError } = await supabase
+            .from('advertisers')
+            .select('id')
+            .eq('id', advertiserId)
+            .single();
+            
+          if (advertiserError || !advertiser) {
+            console.error("Advertiser not found:", advertiserId);
+            setStatus('error');
+            setMessage('Advertiser not found');
+            setErrorDetails(`The advertiser ID ${advertiserId} does not exist in the database. Please create it first or enable the 'Use test account' option.`);
+            return;
           }
         }
 

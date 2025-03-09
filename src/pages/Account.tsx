@@ -43,15 +43,62 @@ const Account = () => {
   const fetchAdvertiserData = async () => {
     setLoadingAdvertiser(true);
     try {
-      // For testing purposes, we'll "fake" having found an advertiser account
-      // This simplifies the flow until proper advertiser account creation is implemented
-      setAdvertiser({
-        id: '123e4567-e89b-12d3-a456-426614174000', // Using proper UUID format
-        name: 'Test Advertiser Account',
-        company_email: 'abhilashreddi@gmail.com'
-      });
+      // Try to fetch an existing advertiser for the current user
+      const { data: existingAdvertiser, error } = await supabase
+        .from('advertisers')
+        .select('*')
+        .limit(1)
+        .single();
+      
+      if (error || !existingAdvertiser) {
+        console.log('No advertiser found, creating test advertiser');
+        
+        // Create a test advertiser with a fixed ID for development
+        const testAdvertiserId = '123e4567-e89b-12d3-a456-426614174000';
+        
+        // Check if the test advertiser already exists
+        const { data: testAdvertiser, error: testError } = await supabase
+          .from('advertisers')
+          .select('*')
+          .eq('id', testAdvertiserId)
+          .single();
+          
+        if (testError || !testAdvertiser) {
+          // Create the test advertiser
+          const { data: newAdvertiser, error: createError } = await supabase
+            .from('advertisers')
+            .insert({
+              id: testAdvertiserId,
+              name: 'Test Advertiser Account',
+              company_email: 'test@example.com',
+              status: 'active'
+            })
+            .select()
+            .single();
+            
+          if (createError) {
+            console.error('Error creating test advertiser:', createError);
+            toast({
+              title: 'Error',
+              description: 'Failed to create test advertiser account',
+              variant: 'destructive'
+            });
+          } else {
+            setAdvertiser(newAdvertiser);
+          }
+        } else {
+          setAdvertiser(testAdvertiser);
+        }
+      } else {
+        setAdvertiser(existingAdvertiser);
+      }
     } catch (error) {
       console.error('Error fetching advertiser:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load advertiser data',
+        variant: 'destructive'
+      });
     } finally {
       setLoadingAdvertiser(false);
     }
@@ -508,13 +555,13 @@ const Account = () => {
             ) : (
               <div className="bg-[#383737] p-4 rounded-lg text-center">
                 <AlertCircle className="h-6 w-6 mx-auto mb-2 text-yellow-500" />
-                <p className="text-white mb-1">Ready to connect your ad accounts</p>
-                <p className="text-sm text-gray-400 mb-4">Connect your Amazon Ads account to get started</p>
+                <p className="text-white mb-1">No advertiser account found</p>
+                <p className="text-sm text-gray-400 mb-4">Please create an advertiser account first</p>
                 <Button 
-                  onClick={connectAmazonAds}
+                  onClick={fetchAdvertiserData}
                   className="bg-blue-500 hover:bg-blue-600"
                 >
-                  Connect to Amazon Ads
+                  Create Test Advertiser
                 </Button>
               </div>
             )}
