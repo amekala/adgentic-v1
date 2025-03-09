@@ -9,7 +9,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, {
       status: 204,
-      headers: corsHeaders
+      headers: corsHeaders(req)
     });
   }
 
@@ -22,7 +22,7 @@ serve(async (req) => {
     if (req.method !== 'POST') {
       return new Response('Method Not Allowed', { 
         status: 405,
-        headers: corsHeaders
+        headers: corsHeaders(req)
       });
     }
 
@@ -31,7 +31,7 @@ serve(async (req) => {
     if (!authHeader) {
       return new Response(JSON.stringify({ error: 'Missing authorization header' }), { 
         status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        headers: { ...corsHeaders(req), 'Content-Type': 'application/json' }
       });
     }
     
@@ -41,7 +41,7 @@ serve(async (req) => {
     if (!supabaseUrl || !supabaseAnonKey) {
       return new Response(JSON.stringify({ error: 'Supabase configuration missing' }), { 
         status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        headers: { ...corsHeaders(req), 'Content-Type': 'application/json' }
       });
     }
     
@@ -106,13 +106,13 @@ You MUST end EVERY response with a section titled "Follow-up Questions:" that co
     const aiResponse = await generateAIResponse(messages, context);
 
     return new Response(JSON.stringify(aiResponse), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders(req), 'Content-Type': 'application/json' },
     });
   } catch (error) {
     console.error('Error in campaign chat:', error);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders(req), 'Content-Type': 'application/json' },
     });
   }
 });

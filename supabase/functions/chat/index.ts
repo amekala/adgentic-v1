@@ -8,7 +8,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, {
       status: 204,
-      headers: corsHeaders
+      headers: corsHeaders(req)
     });
   }
 
@@ -21,7 +21,7 @@ serve(async (req) => {
     if (req.method !== 'POST') {
       return new Response('Method Not Allowed', { 
         status: 405,
-        headers: corsHeaders
+        headers: corsHeaders(req)
       });
     }
 
@@ -34,14 +34,14 @@ serve(async (req) => {
 
     const aiResponse = await generateAIResponse(messages);
     return new Response(JSON.stringify(aiResponse), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders(req), 'Content-Type': 'application/json' },
     });
 
   } catch (error) {
     console.error('Server Error:', error);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders(req), 'Content-Type': 'application/json' },
     });
   }
 });
