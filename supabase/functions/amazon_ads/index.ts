@@ -56,6 +56,46 @@ const TEST_PRODUCTS = [
   { asin: "B0MNOP3456", title: "Professional Blender Set" }
 ];
 
+// Format campaigns into a user-friendly string for chat
+function formatCampaignsForChat(campaigns: any[]) {
+  if (!campaigns || campaigns.length === 0) {
+    return "You don't have any Amazon advertising campaigns running at the moment.";
+  }
+  
+  let response = "Here are your Amazon advertising campaigns:\n\n";
+  
+  campaigns.forEach((campaign, index) => {
+    response += `${index + 1}. ${campaign.name} (${campaign.state})\n`;
+    
+    if (campaign.budget) {
+      response += `   Budget: $${(campaign.budget / 100).toFixed(2)}/day\n`;
+    }
+    
+    if (campaign.startDate) {
+      response += `   Start Date: ${formatDate(campaign.startDate)}\n`;
+    }
+    
+    if (campaign.endDate) {
+      response += `   End Date: ${formatDate(campaign.endDate)}\n`;
+    }
+    
+    response += "\n";
+  });
+  
+  return response;
+}
+
+// Format date from YYYYMMDD to MM/DD/YYYY
+function formatDate(dateStr: string): string {
+  if (!dateStr || dateStr.length !== 8) return dateStr;
+  
+  const year = dateStr.substring(0, 4);
+  const month = dateStr.substring(4, 6);
+  const day = dateStr.substring(6, 8);
+  
+  return `${month}/${day}/${year}`;
+}
+
 // Main function handler
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -86,7 +126,7 @@ serve(async (req) => {
     });
 
     const requestData = await req.json();
-    const { operation, platformCredentialId } = requestData;
+    const { operation, platformCredentialId, chatMode } = requestData;
 
     if (!operation) {
       return createResponse({ error: 'Missing operation parameter' }, 400);
@@ -158,6 +198,65 @@ serve(async (req) => {
         }
         
         responseData = await response.json();
+        break;
+      }
+      
+      case 'list_campaigns': {
+        // URL for listing Sponsored Products campaigns
+        const apiUrl = 'https://advertising-api.amazon.com/v2/sp/campaigns';
+        
+        const response = await fetch(apiUrl, {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Amazon-Advertising-API-ClientId': clientId,
+            'Amazon-Advertising-API-Scope': credential.profile_id,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (!response.ok) {
+          // If the API call fails, check if we should use test data for development
+          if (Deno.env.get('ENVIRONMENT') === 'development') {
+            console.warn('Using test campaign data in development mode');
+            responseData = [
+              {
+                campaignId: 123456789,
+                name: "Test Campaign 1",
+                state: "enabled",
+                budget: 1000,
+                budgetType: "daily",
+                startDate: "20230601",
+                endDate: "20241231"
+              },
+              {
+                campaignId: 987654321,
+                name: "Test Campaign 2",
+                state: "paused",
+                budget: 2500,
+                budgetType: "daily",
+                startDate: "20230715",
+                endDate: null
+              }
+            ];
+            break;
+          }
+          
+          const errorData = await response.json();
+          return createResponse({ 
+            error: `Amazon API error: ${JSON.stringify(errorData)}` 
+          }, response.status);
+        }
+        
+        responseData = await response.json();
+        
+        // If this is requested for chat, format the campaigns as a readable message
+        if (chatMode) {
+          responseData = {
+            text: formatCampaignsForChat(responseData),
+            campaigns: responseData
+          };
+        }
+        
         break;
       }
       

@@ -11,7 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    const { operation, advertiserId } = await req.json();
+    const { operation, advertiserId, useTestAccount } = await req.json();
 
     const clientId = Deno.env.get("AMAZON_ADS_CLIENT_ID");
     if (!clientId) throw new Error("Client ID not configured");
@@ -23,12 +23,27 @@ serve(async (req) => {
       // Build the auth URL with state
       const oauthUrl = new URL("https://www.amazon.com/ap/oa");
       oauthUrl.searchParams.append("client_id", clientId);
-      oauthUrl.searchParams.append("scope", "advertising::campaign_management");
+      
+      // Include test account creation scope if specified
+      if (useTestAccount) {
+        oauthUrl.searchParams.append("scope", "advertising::test:create_account advertising::campaign_management");
+      } else {
+        oauthUrl.searchParams.append("scope", "advertising::campaign_management");
+      }
+      
       oauthUrl.searchParams.append("response_type", "code");
-      oauthUrl.searchParams.append("redirect_uri", "https://www.adspirer.com/api/amazon-callback");
+      
+      // Use the Supabase Function URL for the callback
+      const redirectUri = "https://wllhsxoabzdzulomizzx.functions.supabase.co/amazon-callback";
+      oauthUrl.searchParams.append("redirect_uri", redirectUri);
       
       // Create state with advertiser ID to use after callback
-      const state = JSON.stringify({ advertiserId });
+      const state = JSON.stringify({ 
+        advertiserId,
+        useTestAccount: !!useTestAccount,
+        redirectOrigin: new URL(req.url).origin, // To redirect back to the client app after callback
+      });
+      
       // Use base64 encoding for safety
       oauthUrl.searchParams.append("state", btoa(state));
       
