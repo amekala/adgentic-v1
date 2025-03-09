@@ -1,11 +1,9 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
 
@@ -13,7 +11,6 @@ export default function AdvertiserIntegrations({ advertiserId }: { advertiserId:
   const [platforms, setPlatforms] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [useTestAccount, setUseTestAccount] = useState(false);
-  const [redirectUri, setRedirectUri] = useState<string>("supabase");
   const { toast } = useToast();
 
   useEffect(() => {
@@ -52,8 +49,7 @@ export default function AdvertiserIntegrations({ advertiserId }: { advertiserId:
         body: { 
           operation: 'get_auth_url',
           advertiserId,
-          useTestAccount,
-          redirectUri
+          useTestAccount
         }
       });
       
@@ -115,45 +111,18 @@ export default function AdvertiserIntegrations({ advertiserId }: { advertiserId:
               </Button>
             </div>
             
-            <div className="flex flex-col space-y-4 mt-2">
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="use-test-account"
-                  checked={useTestAccount}
-                  onCheckedChange={setUseTestAccount}
-                />
-                <Label htmlFor="use-test-account">Use test account</Label>
-                {useTestAccount && (
-                  <div className="text-xs text-amber-600 ml-2">
-                    This will create a test Amazon Advertising account for development purposes.
-                  </div>
-                )}
-              </div>
-              
-              <div className="flex flex-col space-y-2">
-                <Label>Redirect URI</Label>
-                <RadioGroup 
-                  value={redirectUri} 
-                  onValueChange={setRedirectUri}
-                  className="flex flex-col space-y-1"
-                >
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="supabase" id="supabase" />
-                    <Label htmlFor="supabase" className="font-normal">
-                      Supabase Function
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="adspirer" id="adspirer" />
-                    <Label htmlFor="adspirer" className="font-normal">
-                      Adspirer API
-                    </Label>
-                  </div>
-                </RadioGroup>
-                <p className="text-xs text-gray-500">
-                  The redirect URI must match one of the allowed URIs in your Amazon developer console.
-                </p>
-              </div>
+            <div className="flex items-center space-x-2 mt-2">
+              <Switch
+                id="use-test-account"
+                checked={useTestAccount}
+                onCheckedChange={setUseTestAccount}
+              />
+              <Label htmlFor="use-test-account">Use test account</Label>
+              {useTestAccount && (
+                <div className="text-xs text-amber-600 ml-2">
+                  This will create a test Amazon Advertising account for development purposes.
+                </div>
+              )}
             </div>
             
             {getAmazonPlatform() && getAmazonPlatform().token_status === 'expired' && (
