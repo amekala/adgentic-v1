@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -351,12 +352,16 @@ export const useCurrentChat = () => {
       try {
         console.log(`Trying Netlify proxy for Supabase function: ${functionName}`);
         const authToken = await getSupabaseAuthToken();
+        
+        // Get the anon key from environment variables instead of accessing protected property
+        const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+        
         const proxyResponse = await fetch(`/api/supabase/${functionName}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${authToken}`,
-            'apikey': supabase.supabaseKey || '' // Make sure we don't send undefined
+            'apikey': supabaseAnonKey || '' // Using environment variable instead of protected property
           },
           body: JSON.stringify(requestData)
         });
