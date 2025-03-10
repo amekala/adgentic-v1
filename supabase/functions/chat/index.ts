@@ -14,9 +14,11 @@ serve(async (req) => {
 
   try {
     // Log all environment variables for debugging (hiding sensitive data)
-    const envVars = Object.keys(Deno.env.toObject()).filter(key => !key.toLowerCase().includes('key') && !key.toLowerCase().includes('secret'));
+    const envVars = Object.keys(Deno.env.toObject())
+      .filter(key => !key.toLowerCase().includes('key') && !key.toLowerCase().includes('secret'));
     console.log('Available environment variables:', envVars);
     
+    // Look for API key in standardized environment variables
     const apiKey = Deno.env.get('OPENAI_API_KEY');
     if (!apiKey) {
       console.error('OpenAI API Key not found');

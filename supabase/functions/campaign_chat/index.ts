@@ -1,4 +1,3 @@
-
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { OpenAI } from 'https://deno.land/x/openai@v4.23.0/mod.ts';
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.5.0";
@@ -31,7 +30,7 @@ serve(async (req) => {
     // Validate OpenAI API key
     const apiKey = Deno.env.get('OPENAI_API_KEY');
     if (!apiKey) {
-      console.error('[campaign_chat] Missing OpenAI API Key');
+      console.error('[campaign_chat] Missing OpenAI API key');
       return new Response(JSON.stringify({ 
         error: 'Server configuration error: Missing OpenAI API Key',
         code: 'missing_openai_key'
@@ -41,42 +40,49 @@ serve(async (req) => {
       });
     }
 
-    // Get Supabase configuration - try both formats of environment variables
+    // Get Supabase configuration - standardized variable names
     const supabaseUrl = Deno.env.get('SUPABASE_URL') || 
-                        Deno.env.get('PUBLIC_SUPABASE_URL') || 
-                        Deno.env.get('VITE_SUPABASE_URL');
+                        Deno.env.get('VITE_SUPABASE_URL') || 
+                        Deno.env.get('PUBLIC_SUPABASE_URL');
     
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') || 
-                           Deno.env.get('PUBLIC_SUPABASE_ANON_KEY') || 
-                           Deno.env.get('VITE_SUPABASE_ANON_KEY');
+                           Deno.env.get('VITE_SUPABASE_ANON_KEY') || 
+                           Deno.env.get('PUBLIC_SUPABASE_ANON_KEY');
+    
+    // Debug log all environment variables (safely)
+    console.log('[campaign_chat] Available environment variables:', 
+      Object.keys(Deno.env.toObject())
+        .filter(k => !k.includes('KEY') && !k.includes('SECRET'))
+        .join(', ')
+    );
     
     if (!supabaseUrl || !supabaseAnonKey) {
-      console.error('Missing Supabase configuration.');
+      console.error('[campaign_chat] Missing Supabase configuration.');
       console.error('SUPABASE_URL present:', !!Deno.env.get('SUPABASE_URL'));
-      console.error('PUBLIC_SUPABASE_URL present:', !!Deno.env.get('PUBLIC_SUPABASE_URL'));
       console.error('VITE_SUPABASE_URL present:', !!Deno.env.get('VITE_SUPABASE_URL'));
+      console.error('PUBLIC_SUPABASE_URL present:', !!Deno.env.get('PUBLIC_SUPABASE_URL'));
       console.error('SUPABASE_ANON_KEY present:', !!Deno.env.get('SUPABASE_ANON_KEY'));
-      console.error('PUBLIC_SUPABASE_ANON_KEY present:', !!Deno.env.get('PUBLIC_SUPABASE_ANON_KEY'));
       console.error('VITE_SUPABASE_ANON_KEY present:', !!Deno.env.get('VITE_SUPABASE_ANON_KEY'));
+      console.error('PUBLIC_SUPABASE_ANON_KEY present:', !!Deno.env.get('PUBLIC_SUPABASE_ANON_KEY'));
       
       return new Response(JSON.stringify({ 
         error: 'Missing Supabase configuration. Check environment variables.',
         details: {
           url_sources: {
             SUPABASE_URL: !!Deno.env.get('SUPABASE_URL'),
-            PUBLIC_SUPABASE_URL: !!Deno.env.get('PUBLIC_SUPABASE_URL'),
             VITE_SUPABASE_URL: !!Deno.env.get('VITE_SUPABASE_URL'),
+            PUBLIC_SUPABASE_URL: !!Deno.env.get('PUBLIC_SUPABASE_URL'),
           },
           key_sources: {
             SUPABASE_ANON_KEY: !!Deno.env.get('SUPABASE_ANON_KEY'),
-            PUBLIC_SUPABASE_ANON_KEY: !!Deno.env.get('PUBLIC_SUPABASE_ANON_KEY'),
             VITE_SUPABASE_ANON_KEY: !!Deno.env.get('VITE_SUPABASE_ANON_KEY'),
+            PUBLIC_SUPABASE_ANON_KEY: !!Deno.env.get('PUBLIC_SUPABASE_ANON_KEY'),
           }
         },
         code: 'missing_supabase_config'
       }), { 
         status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
     
