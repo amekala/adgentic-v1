@@ -2,19 +2,19 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-// First try to get URLs from environment variables
+// Get URLs from environment variables with consistent naming
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 
                      import.meta.env.PUBLIC_SUPABASE_URL || 
                      "https://wllhsxoabzdzulomizzx.supabase.co";
 
-const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || 
-                                import.meta.env.PUBLIC_SUPABASE_ANON_KEY || 
-                                "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndsbGhzeG9hYnpkenVsb21penp4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDAzNjcxMTQsImV4cCI6MjA1NTk0MzExNH0.grR0m4oXBigY-o9dsvdw6l4zy2DPoneSzWyvhQSZsWY";
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || 
+                          import.meta.env.PUBLIC_SUPABASE_ANON_KEY || 
+                          "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndsbGhzeG9hYnpkenVsb21penp4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDAzNjcxMTQsImV4cCI6MjA1NTk0MzExNH0.grR0m4oXBigY-o9dsvdw6l4zy2DPoneSzWyvhQSZsWY";
 
 // Log the configuration for debugging
 console.log("[Supabase Client] Configuration:", { 
   url: SUPABASE_URL,
-  key_present: !!SUPABASE_PUBLISHABLE_KEY,
+  key_present: !!SUPABASE_ANON_KEY,
   env_vars_present: {
     VITE_SUPABASE_URL: !!import.meta.env.VITE_SUPABASE_URL,
     PUBLIC_SUPABASE_URL: !!import.meta.env.PUBLIC_SUPABASE_URL,
@@ -24,7 +24,7 @@ console.log("[Supabase Client] Configuration:", {
 });
 
 // Create the Supabase client with better error handling
-export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
@@ -34,7 +34,7 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
 
 // Export helper function to check if Supabase is properly configured
 export const isSupabaseConfigured = () => {
-  return !!SUPABASE_URL && !!SUPABASE_PUBLISHABLE_KEY && !!supabase.functions;
+  return !!SUPABASE_URL && !!SUPABASE_ANON_KEY && !!supabase.functions;
 };
 
 // Function to store Amazon Ads tokens received directly
@@ -232,4 +232,3 @@ export const getAmazonLLMCredentials = async (): Promise<{
     throw error;
   }
 };
-

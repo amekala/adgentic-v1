@@ -1,3 +1,4 @@
+
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { OpenAI } from 'https://deno.land/x/openai@v4.23.0/mod.ts';
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.5.0";
@@ -42,21 +43,35 @@ serve(async (req) => {
 
     // Get Supabase configuration - try both formats of environment variables
     const supabaseUrl = Deno.env.get('SUPABASE_URL') || 
-                        Deno.env.get('PUBLIC_SUPABASE_URL') || '';
+                        Deno.env.get('PUBLIC_SUPABASE_URL') || 
+                        Deno.env.get('VITE_SUPABASE_URL');
     
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') || 
-                           Deno.env.get('PUBLIC_SUPABASE_ANON_KEY') || '';
+                           Deno.env.get('PUBLIC_SUPABASE_ANON_KEY') || 
+                           Deno.env.get('VITE_SUPABASE_ANON_KEY');
     
     if (!supabaseUrl || !supabaseAnonKey) {
       console.error('Missing Supabase configuration.');
-      console.error('SUPABASE_URL or PUBLIC_SUPABASE_URL:', supabaseUrl);
-      console.error('SUPABASE_ANON_KEY or PUBLIC_SUPABASE_ANON_KEY present:', !!supabaseAnonKey);
+      console.error('SUPABASE_URL present:', !!Deno.env.get('SUPABASE_URL'));
+      console.error('PUBLIC_SUPABASE_URL present:', !!Deno.env.get('PUBLIC_SUPABASE_URL'));
+      console.error('VITE_SUPABASE_URL present:', !!Deno.env.get('VITE_SUPABASE_URL'));
+      console.error('SUPABASE_ANON_KEY present:', !!Deno.env.get('SUPABASE_ANON_KEY'));
+      console.error('PUBLIC_SUPABASE_ANON_KEY present:', !!Deno.env.get('PUBLIC_SUPABASE_ANON_KEY'));
+      console.error('VITE_SUPABASE_ANON_KEY present:', !!Deno.env.get('VITE_SUPABASE_ANON_KEY'));
       
       return new Response(JSON.stringify({ 
         error: 'Missing Supabase configuration. Check environment variables.',
         details: {
-          url_present: !!supabaseUrl,
-          key_present: !!supabaseAnonKey
+          url_sources: {
+            SUPABASE_URL: !!Deno.env.get('SUPABASE_URL'),
+            PUBLIC_SUPABASE_URL: !!Deno.env.get('PUBLIC_SUPABASE_URL'),
+            VITE_SUPABASE_URL: !!Deno.env.get('VITE_SUPABASE_URL'),
+          },
+          key_sources: {
+            SUPABASE_ANON_KEY: !!Deno.env.get('SUPABASE_ANON_KEY'),
+            PUBLIC_SUPABASE_ANON_KEY: !!Deno.env.get('PUBLIC_SUPABASE_ANON_KEY'),
+            VITE_SUPABASE_ANON_KEY: !!Deno.env.get('VITE_SUPABASE_ANON_KEY'),
+          }
         },
         code: 'missing_supabase_config'
       }), { 
